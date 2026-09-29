@@ -34,8 +34,9 @@ export class Nature {
     private readonly terrain: Terrain,
     private readonly collision: CollisionWorld,
     settings: QualitySettings,
+    placement: Placement,
   ) {
-    this.placement = new Placement(terrain);
+    this.placement = placement;
     const detail = settings.detail;
     const trees = this.planTrees();
     this.trees = new Trees(trees, detail >= 0.8 ? 1 : 0.7);

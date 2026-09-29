@@ -26,6 +26,22 @@ const SHOTS = [
   { name: 'training', x: -30, z: 22, yaw: -2.2, cam: { yaw: 0.9, pitch: 0.35, distance: 13 } },
   { name: 'pagoda', x: -12, z: -28, yaw: Math.PI, cam: { yaw: 0.2, pitch: 0.28, distance: 14 } },
   { name: 'waterfall', x: 30, z: -24, yaw: 2.3, cam: { yaw: -0.9, pitch: 0.22, distance: 12 } },
+  { name: 'gate', x: 0, z: 57, yaw: Math.PI, cam: { yaw: 0.35, pitch: 0.2, distance: 11 } },
+  {
+    name: 'pagoda-top',
+    x: -17,
+    z: -38,
+    yaw: Math.PI,
+    cam: { yaw: 0.25, pitch: 0.12, distance: 16 },
+  },
+  { name: 'pavilion', x: 8, z: 9, yaw: 2.6, cam: { yaw: -0.3, pitch: 0.3, distance: 12 } },
+  { name: 'village', x: 30, z: 40, yaw: Math.PI, cam: { yaw: 0.2, pitch: 0.3, distance: 16 } },
+  { name: 'bridge', x: 31, z: 9, yaw: Math.PI, cam: { yaw: 0.5, pitch: 0.35, distance: 13 } },
+  { name: 'bell', x: 33, z: -30, yaw: 2.3, cam: { yaw: -0.6, pitch: 0.25, distance: 11 } },
+  { name: 'dummies', x: -36, z: 18, yaw: -0.3, cam: { yaw: 0.3, pitch: 0.3, distance: 11 } },
+  { name: 'vista', x: 2, z: 30, yaw: Math.PI, cam: { yaw: 0.15, pitch: 0.42, distance: 20 } },
+  { name: 'falls', x: 38, z: -20, yaw: 2.4, cam: { yaw: -0.75, pitch: 0.12, distance: 14 } },
+  { name: 'banners', x: -4, z: 4, yaw: Math.PI, cam: { yaw: 0.1, pitch: 0.28, distance: 12 } },
 ];
 
 const browser = await chromium.launch({

@@ -57,16 +57,17 @@ export class Waterfall {
     this.bottom.copy(foot).addScaledVector(dir, -1.2);
     this.bottom.y = WATER_LEVEL;
 
-    // Path of the falling sheet: over the lip, then a slight outward arc down to the pool.
+    // Path of the falling sheet: over the lip, then an arc that lands in the pool.
     const path: Vector3[] = [];
     const out = dir.clone().negate();
     const fallHeight = lip.y - WATER_LEVEL;
+    const reach = Math.max(1.2, Math.hypot(this.bottom.x - lip.x, this.bottom.z - lip.z) - 0.6);
     path.push(back);
     path.push(lip.clone().addScaledVector(dir, 0.8));
-    for (let i = 0; i <= 20; i++) {
-      const t = i / 20;
-      const q = lip.clone().addScaledVector(out, 0.25 + Math.sqrt(t) * 2.6);
-      q.y = lip.y - fallHeight * t * t * 0.3 - fallHeight * t * 0.7;
+    for (let i = 0; i <= 22; i++) {
+      const t = i / 22;
+      const q = lip.clone().addScaledVector(out, 0.2 + (reach - 0.2) * Math.sqrt(t));
+      q.y = lip.y - fallHeight * Math.pow(t, 1.35);
       path.push(q);
     }
     const width = 3.4;
