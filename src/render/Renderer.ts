@@ -58,6 +58,8 @@ export class Renderer {
     this.webgl.toneMappingExposure = 1.0;
     this.webgl.shadowMap.enabled = settings.shadows;
     this.webgl.shadowMap.type = PCFShadowMap;
+    // Stats cover the whole frame (all passes), reset manually in render().
+    this.webgl.info.autoReset = false;
 
     this.bloom = new BloomEffect({
       mipmapBlur: true,
@@ -134,6 +136,7 @@ export class Renderer {
   }
 
   render(dt: number): void {
+    this.webgl.info.reset();
     this.composer.render(dt);
   }
 

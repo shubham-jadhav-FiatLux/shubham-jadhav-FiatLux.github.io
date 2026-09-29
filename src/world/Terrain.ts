@@ -16,6 +16,7 @@ import { PATHS, PLAZAS, TERRAIN_ORIGIN, TERRAIN_RES, WATER_LEVEL, type Surface }
 import { TerrainMask } from './TerrainMask';
 import { globalUniforms } from '../render/uniforms';
 import { NOISE_GLSL } from '../render/glsl';
+import { GRASS_COLORS, GRASS_COLOR_GLSL } from './palette';
 
 const tmpNormal = { x: 0, y: 1, z: 0 };
 
@@ -78,7 +79,7 @@ export class Terrain {
   /** Paints paths and plazas; other systems add shade and footprints before `commit()`. */
   private paintLayout(): void {
     for (const p of PATHS) {
-      this.mask.path(p.points, p.width + 1.2, 'nograss', 0.9);
+      this.mask.path(p.points, p.width + 0.7, 'nograss', 0.85);
       this.mask.path(p.points, p.width, 'dirt');
     }
     for (const p of PLAZAS) {
@@ -152,15 +153,13 @@ export class Terrain {
   private createMaterial(): MeshStandardMaterial {
     const mat = new MeshStandardMaterial({ roughness: 0.95, metalness: 0 });
     const colors = {
-      uGrassA: new Color('#5a7f2e'),
-      uGrassB: new Color('#8aa640'),
-      uGrassDry: new Color('#b7a95a'),
+      ...GRASS_COLORS,
       uDirtA: new Color('#b39067'),
       uDirtB: new Color('#9c7a55'),
       uStoneA: new Color('#b5aa94'),
       uStoneB: new Color('#978b78'),
       uSand: new Color('#d3bc8f'),
-      uRock: new Color('#8d8a7d'),
+      uRock: new Color('#8a877b'),
       uMoss: new Color('#667842'),
       uUnderwater: new Color('#2f6f73'),
     };
@@ -191,8 +190,9 @@ varying vec3 vTerrainNormal;
 uniform float uTime;
 uniform sampler2D uMaskMap;
 uniform vec3 uTerrain;
-uniform vec3 uGrassA, uGrassB, uGrassDry, uDirtA, uDirtB, uStoneA, uStoneB, uSand, uRock, uMoss, uUnderwater;
+uniform vec3 uDirtA, uDirtB, uStoneA, uStoneB, uSand, uRock, uMoss, uUnderwater;
 ${NOISE_GLSL}
+${GRASS_COLOR_GLSL}
 // Irregular flagstones: Voronoi cells with dark grout.
 vec3 flagstones(vec2 p, float n) {
   vec2 g = floor(p);
@@ -242,9 +242,7 @@ vec3 terrainColor(vec3 wp, vec3 nrm) {
   float nMid = vnoise(xz * 0.55);
   float nFine = vnoise(xz * 2.7);
 
-  vec3 grass = mix(uGrassA, uGrassB, smoothstep(0.3, 0.72, nLarge));
-  grass = mix(grass, uGrassDry, smoothstep(0.58, 0.78, fbm(xz * 0.021 + 4.0)) * 0.55);
-  grass *= 0.88 + 0.22 * nMid;
+  vec3 grass = grassGroundColor(xz) * (0.88 + 0.22 * nMid);
 
   float dirt = smoothstep(0.32, 0.62, m.r + (nMid - 0.5) * 0.38);
   vec3 dirtCol = mix(uDirtA, uDirtB, nFine) * (0.9 + 0.18 * nMid);
@@ -257,7 +255,12 @@ vec3 terrainColor(vec3 wp, vec3 nrm) {
   float slope = 1.0 - nrm.y;
   float rockAmt = smoothstep(0.3, 0.48, slope + (nMid - 0.5) * 0.12);
   vec3 rockCol = mix(uRock, uMoss, smoothstep(0.35, 0.7, nLarge) * (1.0 - smoothstep(0.35, 0.7, slope)));
-  rockCol *= 0.85 + 0.3 * nFine;
+  // Layered strata and vertical rain streaks on cliffs.
+  float strata = sin(wp.y * 2.6 + nMid * 3.0) * 0.5 + 0.5;
+  float streak = vnoise(vec2(dot(xz, vec2(0.7, 0.7)) * 1.3, wp.y * 0.08));
+  rockCol *= (0.78 + 0.22 * strata) * (0.8 + 0.35 * streak) * (0.88 + 0.24 * nFine);
+  // Vegetation clinging to ledges.
+  rockCol = mix(rockCol, uMoss * 0.85, smoothstep(0.55, 0.8, vnoise(xz * 0.4 + wp.y * 0.3)) * 0.55);
 
   vec3 col = grass;
   col = mix(col, uSand * (0.9 + 0.2 * nFine), sandAmt);
