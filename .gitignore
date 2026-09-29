@@ -1,0 +1,9 @@
+node_modules
+dist
+coverage
+screenshots/*.png
+!screenshots/.gitkeep
+*.log
+.DS_Store
+.vite
+*.ttf
