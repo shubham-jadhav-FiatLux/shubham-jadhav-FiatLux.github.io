@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Valley of Whispering Bamboo · An explorable portfolio</title>
+    <meta
+      name="description"
+      content="An explorable 3D portfolio: guide a panda through a misty valley of bamboo, blossoms and pagodas to discover projects, skills and stories."
+    />
+    <meta name="theme-color" content="#e8cfaa" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Valley of Whispering Bamboo" />
+    <meta
+      property="og:description"
+      content="A portfolio you can walk through. Built with three.js, TypeScript and GLSL."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='4' y='4' width='56' height='56' rx='10' fill='%23b8352b'/%3E%3Cpath d='M20 14v36M20 26h10M44 14v36M44 26h10M14 30l6-4M38 30l6-4' stroke='%23f3ead6' stroke-width='5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E"
+    />
+  </head>
+  <body>
+    <canvas
+      id="scene"
+      aria-label="An explorable 3D valley. Use the classic page link for a text version."
+    ></canvas>
+    <div id="ui"></div>
+
+    <div id="loader" class="loader" role="dialog" aria-modal="true" aria-labelledby="loader-title">
+      <svg
+        class="loader__wash"
+        viewBox="0 0 1600 600"
+        preserveAspectRatio="xMidYMax slice"
+        aria-hidden="true"
+      >
+        <defs>
+          <linearGradient id="ink-far" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#8d9aa6" stop-opacity="0.55" />
+            <stop offset="1" stop-color="#8d9aa6" stop-opacity="0" />
+          </linearGradient>
+          <linearGradient id="ink-mid" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#55626b" stop-opacity="0.7" />
+            <stop offset="1" stop-color="#55626b" stop-opacity="0.05" />
+          </linearGradient>
+          <linearGradient id="ink-near" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#2c3236" stop-opacity="0.85" />
+            <stop offset="1" stop-color="#2c3236" stop-opacity="0.15" />
+          </linearGradient>
+        </defs>
+        <path
+          fill="url(#ink-far)"
+          d="M0 420 C 80 400 120 250 190 250 C 250 250 260 380 320 380 C 380 380 400 200 470 190 C 540 180 560 360 640 360 C 700 360 720 280 780 270 C 850 260 880 380 960 370 C 1030 360 1050 170 1130 160 C 1210 150 1230 350 1300 350 C 1370 350 1390 250 1460 240 C 1530 230 1560 330 1600 340 L 1600 600 L 0 600 Z"
+        />
+        <path
+          fill="url(#ink-mid)"
+          d="M0 480 C 60 470 90 330 150 320 C 210 310 230 450 300 450 C 360 450 380 300 450 290 C 520 280 530 460 600 460 C 680 460 700 380 760 380 C 830 380 850 470 920 470 C 990 470 1010 290 1090 280 C 1170 270 1180 450 1250 460 C 1320 470 1350 360 1420 350 C 1490 340 1540 450 1600 450 L 1600 600 L 0 600 Z"
+        />
+        <path
+          fill="url(#ink-near)"
+          d="M0 560 C 70 550 110 430 170 425 C 230 420 250 530 330 535 C 410 540 430 470 500 470 C 570 470 600 545 680 545 C 760 545 790 450 860 445 C 930 440 960 540 1040 545 C 1120 550 1150 420 1220 415 C 1290 410 1320 530 1400 535 C 1480 540 1520 480 1600 470 L 1600 600 L 0 600 Z"
+        />
+      </svg>
+      <div class="loader__content">
+        <div class="seal seal--lg" aria-hidden="true">竹</div>
+        <h1 id="loader-title" class="loader__title">Valley of Whispering Bamboo</h1>
+        <p class="loader__tagline">A portfolio you can walk through</p>
+        <p class="loader__owner"></p>
+        <div class="loader__progress" aria-hidden="true"><div class="loader__brush"></div></div>
+        <p class="loader__status" role="status" aria-live="polite">Grinding the ink…</p>
+        <button type="button" class="btn btn--seal loader__begin" hidden>Begin the journey</button>
+        <p class="loader__hint" hidden>
+          Sound on · WASD or arrows to walk · Headphones recommended
+        </p>
+        <button type="button" class="linkish loader__classic">
+          Prefer a classic page? Read it here
+        </button>
+      </div>
+    </div>
+
+    <noscript>
+      <div class="noscript">
+        This portfolio is an interactive 3D experience and needs JavaScript.
+      </div>
+    </noscript>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
