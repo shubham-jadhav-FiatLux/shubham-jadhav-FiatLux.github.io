@@ -1,0 +1,71 @@
+#!/usr/bin/env node
+/**
+ * Captures reference screenshots of the valley with a headless browser.
+ *
+ *   npm run dev            # in one terminal
+ *   npm run shots          # in another  (or: node scripts/screenshots.mjs <url> [shotName...])
+ *
+ * Uses playwright-core with the locally installed Chromium (set CHROMIUM_PATH to override).
+ * Output goes to ./screenshots/.
+ */
+import { chromium } from 'playwright-core';
+import { mkdirSync } from 'node:fs';
+
+const url = process.argv[2] ?? 'http://localhost:5173/';
+const only = process.argv.slice(3);
+const outDir = new URL('../screenshots/', import.meta.url);
+mkdirSync(outDir, { recursive: true });
+
+/** Each shot places the panda and the follow camera. */
+const SHOTS = [
+  { name: 'title', title: true },
+  { name: 'spawn', x: 0, z: 58, yaw: Math.PI, cam: { yaw: 0.25, pitch: 0.32, distance: 10 } },
+  { name: 'panda-front', x: 0, z: 40, yaw: 0, cam: { yaw: 0.35, pitch: 0.18, distance: 4.2 } },
+  { name: 'crossroads', x: 2, z: 30, yaw: Math.PI, cam: { yaw: -0.2, pitch: 0.35, distance: 12 } },
+  { name: 'lake', x: 14, z: 16, yaw: 2.4, cam: { yaw: -0.6, pitch: 0.3, distance: 14 } },
+  { name: 'training', x: -30, z: 22, yaw: -2.2, cam: { yaw: 0.9, pitch: 0.35, distance: 13 } },
+  { name: 'pagoda', x: -12, z: -28, yaw: Math.PI, cam: { yaw: 0.2, pitch: 0.28, distance: 14 } },
+  { name: 'waterfall', x: 30, z: -24, yaw: 2.3, cam: { yaw: -0.9, pitch: 0.22, distance: 12 } },
+];
+
+const browser = await chromium.launch({
+  executablePath: process.env.CHROMIUM_PATH ?? '/opt/pw-browsers/chromium',
+  args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
+});
+const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+page.on('console', (m) => {
+  if (m.type() === 'error' || m.type() === 'warning') console.log(`[${m.type()}]`, m.text());
+});
+page.on('pageerror', (e) => console.log('[pageerror]', e.message));
+
+const sep = url.includes('?') ? '&' : '?';
+await page.goto(`${url}${sep}quality=${process.env.QUALITY ?? 'high'}&adaptive=0`);
+await page.waitForSelector('.loader--ready', { timeout: 180_000 });
+await page.waitForTimeout(1500);
+
+for (const shot of SHOTS) {
+  if (only.length && !only.includes(shot.name)) continue;
+  if (shot.title) {
+    await page.screenshot({ path: new URL(`${shot.name}.png`, outDir).pathname });
+    console.log('captured', shot.name);
+    continue;
+  }
+  await page.evaluate((s) => {
+    const app = window.__valley;
+    if (!app.started) {
+      document.querySelector('.loader__begin')?.click();
+    }
+    app.controller.teleport(s.x, s.z, s.yaw);
+    app.scarf.snap();
+    app.rig.startFollow(app.controller.position, s.yaw, 0.01);
+    app.rig.targetYaw = app.rig.yaw = s.cam.yaw;
+    app.rig.targetPitch = app.rig.pitch = s.cam.pitch;
+    app.rig.targetDistance = app.rig.distance = s.cam.distance;
+    app.input.lastActivity = performance.now();
+  }, shot);
+  await page.waitForTimeout(Number(process.env.SETTLE ?? 2500));
+  await page.screenshot({ path: new URL(`${shot.name}.png`, outDir).pathname });
+  console.log('captured', shot.name);
+}
+
+await browser.close();

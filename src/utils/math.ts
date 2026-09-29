@@ -35,7 +35,7 @@ export function damp(current: number, target: number, lambda: number, dt: number
   return lerp(current, target, 1 - Math.exp(-lambda * dt));
 }
 
-/** Wraps an angle to the range (-PI, PI]. */
+/** Wraps an angle to the range [-PI, PI). */
 export function wrapAngle(a: number): number {
   a = (a + Math.PI) % TAU;
   if (a < 0) a += TAU;
