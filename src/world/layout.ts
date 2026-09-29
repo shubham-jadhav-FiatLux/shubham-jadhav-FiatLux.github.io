@@ -191,3 +191,53 @@ export const PLAZAS: readonly Plaza[] = [
   { x: 37, z: -35, radius: 3.8, surface: 'stone' },
   { x: 32, z: 38, radius: 9, surface: 'dirt' },
 ];
+
+export interface HouseDef {
+  x: number;
+  z: number;
+  /** rotation around Y; the front door faces local +z */
+  rot: number;
+  width: number;
+  depth: number;
+  style: 'house' | 'teahouse' | 'hall';
+}
+
+/** Village houses and the training hall. */
+export const HOUSES: readonly HouseDef[] = [
+  { x: 23, z: 30.5, rot: 0.12, width: 6.4, depth: 4.6, style: 'house' },
+  { x: 40.5, z: 30, rot: -0.1, width: 5.6, depth: 4.4, style: 'house' },
+  { x: 24.5, z: 46.5, rot: Math.PI + 0.05, width: 6.8, depth: 4.8, style: 'teahouse' },
+  { x: 41, z: 46.5, rot: Math.PI - 0.08, width: 6, depth: 4.6, style: 'house' },
+  { x: -47.5, z: 5.5, rot: 0.8, width: 6, depth: 4.4, style: 'hall' },
+];
+
+/** Zig-zag bridge centre line across the lake (south shore → north shore). */
+export const BRIDGE_POINTS: readonly Vec2[] = [
+  [32, 12.5],
+  [31, 7],
+  [26.5, 3],
+  [31, -3],
+  [26, -8],
+  [30.5, -13.5],
+  [25.5, -18.5],
+  [26, -24.5],
+];
+
+export interface Circle {
+  x: number;
+  z: number;
+  r: number;
+}
+
+/** Areas kept clear of trees, bamboo and rocks. */
+export const RESERVED: readonly Circle[] = [
+  { x: 0, z: 61, r: 4 },
+  { x: 0, z: 50, r: 8 },
+  { x: 0, z: 22, r: 9 },
+  { x: -38, z: 15, r: 14 },
+  { x: 11.5, z: 2.5, r: 7 },
+  { x: 32, z: 38, r: 10 },
+  { x: -20, z: -50, r: 11.5 },
+  { x: 37, z: -35, r: 5.5 },
+  ...HOUSES.map((h) => ({ x: h.x, z: h.z, r: Math.hypot(h.width, h.depth) / 2 + 2 })),
+];

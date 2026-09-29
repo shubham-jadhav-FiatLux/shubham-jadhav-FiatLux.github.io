@@ -1,0 +1,367 @@
+import type { Scene } from 'three';
+import { Random } from '../../utils/random';
+import { SimplexNoise } from '../../utils/noise';
+import { lakeSdf } from '../heightfield';
+import { CLIFF, PAGODA_HILL, PLACES, TERRAIN_ORIGIN, TERRAIN_SIZE } from '../layout';
+import type { Terrain } from '../Terrain';
+import type { CollisionWorld } from '../../physics/CollisionWorld';
+import type { QualitySettings } from '../../core/Quality';
+import { Placement } from '../placement';
+import { Trees, FarForest, type TreeInstance, type FarTree } from './Trees';
+import { Bamboo, type BambooStalk } from './Bamboo';
+import { Rocks, type RockInstance } from './Rocks';
+import { Flowers } from './Flowers';
+import { Ambient } from './Ambient';
+
+const noise = new SimplexNoise(4242);
+
+/**
+ * Decides where every tree, bamboo stalk and rock goes (deterministically), paints their
+ * shade and bare patches into the terrain mask, registers colliders and builds the meshes.
+ */
+export class Nature {
+  readonly trees: Trees;
+  readonly bamboo: Bamboo;
+  readonly rocks: Rocks;
+  readonly flowers: Flowers;
+  readonly ambient: Ambient;
+  readonly farForest: FarForest;
+  readonly placement: Placement;
+  /** tree positions with crown radius, e.g. for the map */
+  readonly treeSpots: { x: number; z: number; r: number; kind: string }[] = [];
+
+  constructor(
+    private readonly terrain: Terrain,
+    private readonly collision: CollisionWorld,
+    settings: QualitySettings,
+  ) {
+    this.placement = new Placement(terrain);
+    const detail = settings.detail;
+    const trees = this.planTrees();
+    this.trees = new Trees(trees, detail >= 0.8 ? 1 : 0.7);
+    trees.forEach((t, i) => {
+      const crown = this.trees.crownOf(t, i);
+      this.treeSpots.push({ x: t.x, z: t.z, r: crown, kind: t.kind });
+      const trunkR = 0.28 * t.scale + 0.05;
+      collision.circle(t.x, t.z, trunkR, t.y - 1, t.y + 4, `tree:${t.kind}`);
+      terrain.mask.blob('shade', t.x, t.z, crown * 0.95, t.kind === 'pine' ? 0.4 : 0.55);
+      terrain.mask.circle('nograss', t.x, t.z, trunkR + 0.35, 0.8);
+    });
+
+    const stalks = this.planBamboo(detail);
+    this.bamboo = new Bamboo(stalks);
+    const rocks = this.planRocks();
+    this.rocks = new Rocks(rocks);
+    this.flowers = new Flowers(Math.round(7000 * detail));
+    this.ambient = new Ambient(
+      this.trees.blossomBlobs,
+      Math.round(650 * settings.particles),
+      Math.round(160 * settings.particles),
+    );
+    this.farForest = new FarForest(this.planFarForest());
+  }
+
+  addTo(scene: Scene): void {
+    this.trees.addTo(scene);
+    this.bamboo.addTo(scene);
+    this.rocks.addTo(scene);
+    this.flowers.addTo(scene);
+    this.ambient.addTo(scene);
+    this.farForest.addTo(scene);
+  }
+
+  private h(x: number, z: number): number {
+    return this.terrain.heightAt(x, z);
+  }
+
+  private planTrees(): TreeInstance[] {
+    const rand = new Random(2026);
+    const p = this.placement;
+    const out: TreeInstance[] = [];
+    const avoid: { x: number; z: number; r: number }[] = [];
+    const add = (
+      kind: TreeInstance['kind'],
+      x: number,
+      z: number,
+      scale: number,
+      variant?: number,
+    ) => {
+      out.push({ kind, x, y: this.h(x, z), z, rot: rand.range(0, Math.PI * 2), scale, variant });
+      avoid.push({ x, z, r: kind === 'pine' ? 5 : 6.5 });
+    };
+
+    // The old blossom tree in the middle of the crossroads.
+    add('blossom', PLACES.crossroads.x, PLACES.crossroads.z, 1.7, 3);
+
+    // Blossoms along paths and around the lake.
+    for (const pt of p.scatter({
+      bounds: [-45, -40, 55, 58],
+      count: 24,
+      minDist: 7.5,
+      rand,
+      pathMargin: 2.4,
+      reservedMargin: 1.5,
+      avoid,
+      density: (x, z) => {
+        const dp = p.distanceToPaths(x, z);
+        const sdf = lakeSdf(x, z);
+        return (dp < 9 ? 1 : 0.3) * (sdf < 14 ? 1 : 0.6);
+      },
+    })) {
+      add('blossom', pt.x, pt.z, rand.range(0.85, 1.15));
+    }
+
+    // Weeping willows on the lake shore.
+    for (const pt of p.scatter({
+      bounds: [0, -42, 62, 22],
+      count: 9,
+      minDist: 9,
+      rand,
+      lake: 'shore',
+      pathMargin: 2.2,
+      reservedMargin: 2.5,
+      avoid,
+    })) {
+      add('willow', pt.x, pt.z, rand.range(0.9, 1.15));
+    }
+
+    // Pines: on the pagoda hill, the north-east escarpment and the upper slopes.
+    for (const pt of p.scatter({
+      bounds: [-62, -80, 72, -18],
+      count: 26,
+      minDist: 6,
+      rand,
+      pathMargin: 2.5,
+      reservedMargin: 1,
+      maxSlope: 0.65,
+      avoid,
+      density: (x, z) => {
+        const hill = Math.hypot(x - PAGODA_HILL.x, z - PAGODA_HILL.z);
+        const onHill = hill > 11 && hill < PAGODA_HILL.radius ? 1 : 0;
+        const cliff = Math.hypot(x - CLIFF.x, z - CLIFF.z) < CLIFF.radius - 2 ? 1 : 0;
+        const high = this.h(x, z) > 7 ? 0.8 : 0.1;
+        return Math.max(onHill, cliff, high);
+      },
+    })) {
+      add('pine', pt.x, pt.z, rand.range(0.85, 1.25));
+    }
+
+    // Broadleaf trees in clumps across the meadows (and a few beyond the edge).
+    for (const pt of p.scatter({
+      bounds: [-78, -72, 78, 70],
+      count: 34,
+      minDist: 8.5,
+      rand,
+      pathMargin: 3.5,
+      reservedMargin: 3,
+      avoid,
+      density: (x, z) => {
+        const clump = noise.fbm2(x * 0.03, z * 0.03, 2);
+        return clump > 0.05 ? 1 : 0.15;
+      },
+    })) {
+      add('broadleaf', pt.x, pt.z, rand.range(0.85, 1.2));
+    }
+    return out;
+  }
+
+  private planBamboo(detail: number): BambooStalk[] {
+    const rand = new Random(88);
+    const p = this.placement;
+    const stalks: BambooStalk[] = [];
+    const centres: { x: number; z: number; n: number }[] = [];
+    const avoid = this.treeSpots.map((t) => ({ x: t.x, z: t.z, r: 2.5 }));
+    // West grove around the training grounds.
+    for (const c of p.scatter({
+      bounds: [-74, -28, -22, 46],
+      count: 34,
+      minDist: 4.2,
+      rand,
+      pathMargin: 2.4,
+      reservedMargin: 2,
+      avoid,
+      density: (x, z) => (noise.fbm2(x * 0.05 + 3, z * 0.05, 2) > -0.1 ? 1 : 0.2),
+    })) {
+      centres.push({ x: c.x, z: c.z, n: rand.int(7, 13) });
+    }
+    // North-west grove behind the pagoda hill.
+    for (const c of p.scatter({
+      bounds: [-72, -78, -34, -28],
+      count: 14,
+      minDist: 4.5,
+      rand,
+      pathMargin: 2.4,
+      reservedMargin: 2,
+      avoid,
+      maxSlope: 0.6,
+    })) {
+      centres.push({ x: c.x, z: c.z, n: rand.int(6, 11) });
+    }
+    // Framing the entrance gate and a few clumps by the village.
+    for (const [x, z] of [
+      [-8.5, 49],
+      [8.5, 49.5],
+      [-7, 55.5],
+      [7.5, 56],
+      [16, 33],
+      [48, 34],
+      [18, 50],
+    ] as const) {
+      centres.push({ x, z, n: rand.int(6, 10) });
+    }
+
+    for (const c of centres) {
+      const n = Math.max(3, Math.round(c.n * (0.6 + 0.4 * detail)));
+      const placed: { x: number; z: number }[] = [];
+      for (let a = 0; a < n * 8 && placed.length < n; a++) {
+        const ang = rand.range(0, Math.PI * 2);
+        const r = Math.sqrt(rand.float()) * 1.7;
+        const x = c.x + Math.cos(ang) * r;
+        const z = c.z + Math.sin(ang) * r;
+        if (placed.some((q) => (q.x - x) ** 2 + (q.z - z) ** 2 < 0.36 * 0.36)) continue;
+        if (p.distanceToPaths(x, z) < 1.1 || lakeSdf(x, z) < 1) continue;
+        placed.push({ x, z });
+        const y = this.h(x, z);
+        stalks.push({
+          x,
+          y,
+          z,
+          scale: rand.range(0.8, 1.2),
+          rot: rand.range(0, Math.PI * 2),
+          lean: rand.range(-0.08, 0.08),
+        });
+        this.collision.circle(x, z, 0.09, y - 1, y + 6, 'bamboo');
+      }
+      this.terrain.mask.blob('shade', c.x, c.z, 2.8, 0.4);
+      this.terrain.mask.circle('nograss', c.x, c.z, 1.6, 0.75);
+      this.terrain.mask.blob('dirt', c.x, c.z, 2.2, 0.55);
+    }
+    return stalks;
+  }
+
+  private planRocks(): RockInstance[] {
+    const rand = new Random(515);
+    const p = this.placement;
+    const out: RockInstance[] = [];
+    const avoid = this.treeSpots.map((t) => ({ x: t.x, z: t.z, r: 1.5 }));
+    const add = (r: RockInstance, collide = true) => {
+      out.push(r);
+      avoid.push({ x: r.x, z: r.z, r: r.size + 0.8 });
+      if (collide && r.size > 0.45) {
+        this.collision.circle(r.x, r.z, r.size * 0.85, r.y - 1, r.y + r.size * 1.2, 'rock');
+      }
+      this.terrain.mask.circle('nograss', r.x, r.z, r.size * 0.75, 0.7);
+      this.terrain.mask.blob('shade', r.x, r.z, r.size * 1.5, 0.35);
+    };
+
+    // Meadow boulders.
+    for (const pt of p.scatter({
+      bounds: [-70, -65, 70, 62],
+      count: 18,
+      minDist: 10,
+      rand,
+      pathMargin: 2,
+      reservedMargin: 1.5,
+      avoid,
+    })) {
+      add({
+        ...pt,
+        size: rand.range(0.5, 1.3),
+        rot: rand.range(0, 6.28),
+        style: rand.chance(0.5) ? 'boulder' : 'flat',
+      });
+    }
+    // Hillside outcrops.
+    for (const pt of p.scatter({
+      bounds: [-80, -80, 80, 75],
+      count: 26,
+      minDist: 8,
+      rand,
+      pathMargin: 2.5,
+      reservedMargin: 1,
+      maxSlope: 0.9,
+      avoid,
+      density: (x, z) => (this.terrain.slopeAt(x, z) > 0.12 || this.h(x, z) > 6 ? 1 : 0.05),
+    })) {
+      add({
+        ...pt,
+        size: rand.range(1, 2.4),
+        rot: rand.range(0, 6.28),
+        style: 'boulder',
+        sink: 0.35,
+      });
+    }
+    // Pebbles and stones along the shore.
+    for (const pt of p.scatter({
+      bounds: [0, -45, 62, 22],
+      count: 30,
+      minDist: 2.8,
+      rand,
+      lake: 'shore',
+      pathMargin: 1.2,
+      reservedMargin: 0.5,
+      avoid,
+    })) {
+      add(
+        {
+          ...pt,
+          size: rand.range(0.22, 0.6),
+          rot: rand.range(0, 6.28),
+          style: rand.chance(0.6) ? 'flat' : 'boulder',
+          sink: 0.3,
+        },
+        false,
+      );
+    }
+    // Big rocks along the escarpment edge (they hide the steep terrain), leaving the
+    // waterfall notch open.
+    for (let a = 2.05; a <= 2.95; a += 0.035) {
+      const r = CLIFF.radius - 1 + rand.spread(1.2);
+      const x = CLIFF.x + Math.cos(a) * r;
+      const z = CLIFF.z + Math.sin(a) * r;
+      if (Math.hypot(x - PLACES.waterfall.x, z - PLACES.waterfall.z) < 5) continue;
+      if (x < TERRAIN_ORIGIN + 5 || z < TERRAIN_ORIGIN + 5) continue;
+      const y = this.h(x, z);
+      add({
+        x,
+        y,
+        z,
+        size: rand.range(2.2, 3.8),
+        rot: rand.range(0, 6.28),
+        style: rand.chance(0.25) ? 'tall' : 'boulder',
+        sink: 0.3,
+        tilt: rand.spread(0.2),
+      });
+    }
+    // Scholar rocks in the gardens.
+    for (const [x, z, s] of [
+      [6.5, 7.5, 1.1],
+      [15.5, 8.5, 0.9],
+      [-6.5, 18.5, 1.0],
+      [-11.5, -45.5, 1.3],
+      [-28, -44.5, 1.1],
+      [4.8, 47.2, 0.8],
+      [33, -39.5, 1.0],
+    ] as const) {
+      add({ x, y: this.h(x, z), z, size: s, rot: rand.range(0, 6.28), style: 'tall', sink: 0.1 });
+    }
+    return out;
+  }
+
+  private planFarForest(): FarTree[] {
+    const rand = new Random(909);
+    const out: FarTree[] = [];
+    const half = TERRAIN_SIZE / 2 - 4;
+    for (let a = 0; a < 4000 && out.length < 700; a++) {
+      const x = rand.range(-half, half);
+      const z = rand.range(-half, half);
+      if (this.placement.insidePlayArea(x, z, -6)) continue;
+      if (this.terrain.slopeAt(x, z) > 0.55) continue;
+      const y = this.h(x, z);
+      if (y < 3) continue;
+      if (noise.fbm2(x * 0.02, z * 0.02, 2) < -0.25) continue;
+      out.push({ x, y, z, s: rand.range(0.8, 1.5), kind: y > 22 || rand.chance(0.45) ? 0 : 1 });
+    }
+    return out;
+  }
+}

@@ -20,6 +20,9 @@ import { PandaAnimator } from '../player/PandaAnimator';
 import { PlayerController } from '../player/PlayerController';
 import { ScarfTails } from '../player/ScarfTails';
 import { Particles, SPRITE } from '../effects/Particles';
+import { Grass } from '../world/nature/Grass';
+import { Nature } from '../world/nature/Nature';
+import { Water } from '../world/water/Water';
 
 export type AppEvents = {
   ready: void;
@@ -46,6 +49,9 @@ export class App extends Emitter<AppEvents> {
   readonly collision = new CollisionWorld();
 
   terrain!: Terrain;
+  grass!: Grass;
+  nature!: Nature;
+  water!: Water;
   sky!: Sky;
   lighting!: Lighting;
   panda!: Panda;
@@ -74,6 +80,7 @@ export class App extends Emitter<AppEvents> {
     this.quality.on('change', (s) => {
       this.renderer.applyQuality(s);
       this.lighting?.applyQuality(s);
+      this.grass?.applyQuality(s);
       this.onResize();
     });
     this.quality.on('scale', (k) => {
@@ -89,7 +96,9 @@ export class App extends Emitter<AppEvents> {
     const steps: [string, () => void][] = [
       ['Shaping the valley', () => this.buildTerrain()],
       ['Raising the mountains', () => this.buildSky()],
+      ['Growing bamboo and blossoms', () => this.buildNature()],
       ['Waking the panda', () => this.buildPlayer()],
+      ['Filling the lake', () => this.buildWater()],
       ['Finishing touches', () => this.terrain.mask.commit()],
     ];
     for (let i = 0; i < steps.length; i++) {
@@ -114,6 +123,20 @@ export class App extends Emitter<AppEvents> {
   private buildTerrain(): void {
     this.terrain = new Terrain();
     this.terrain.addTo(this.scene);
+    this.grass = new Grass(this.quality.settings);
+    this.grass.addTo(this.scene);
+  }
+
+  private buildNature(): void {
+    this.nature = new Nature(this.terrain, this.collision, this.quality.settings);
+    this.nature.addTo(this.scene);
+  }
+
+  private buildWater(): void {
+    this.water = new Water(this.terrain, this.particles, this.quality.settings, (x, z, s) =>
+      this.splash(x, z, s),
+    );
+    this.water.addTo(this.scene);
   }
 
   private buildSky(): void {
@@ -141,7 +164,10 @@ export class App extends Emitter<AppEvents> {
       this.animator.land(impact);
       if (impact > 4) this.dustRing(c.position, Math.min(1, impact / 14));
     });
-    c.on('splash', ({ x, z, strength }) => this.splash(x, z, strength));
+    c.on('splash', ({ x, z, strength }) => {
+      this.splash(x, z, strength);
+      this.water?.lake.ripple(x, z, strength * 1.5);
+    });
     this.animator.on('step', ({ run }) => {
       const s = c.surface;
       if (s === 'dirt' || s === 'sand' || (run && s === 'grass'))
@@ -242,7 +268,9 @@ export class App extends Emitter<AppEvents> {
     const w = window.innerWidth;
     const h = window.innerHeight;
     this.renderer.resize(w, h);
-    this.particles?.setViewport(h * this.renderer.webgl.getPixelRatio(), this.rig.camera.fov);
+    const px = h * this.renderer.webgl.getPixelRatio();
+    this.particles?.setViewport(px, this.rig.camera.fov);
+    this.nature?.ambient.setViewport(px, this.rig.camera.fov);
   };
 
   private tick = (dt: number, elapsed: number, frameTime: number): void => {
@@ -281,6 +309,7 @@ export class App extends Emitter<AppEvents> {
     if (this.started) tmp.copy(this.controller.position);
     else tmp.set(PLACES.crossroads.x, 2, PLACES.crossroads.z);
     this.lighting.update(tmp);
+    this.water.update(dt, elapsed, this.controller, this.quality.settings.particles);
     this.particles.update(dt, elapsed);
 
     this.renderer.render(dt);
