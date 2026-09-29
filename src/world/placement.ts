@@ -36,8 +36,12 @@ export interface ScatterOptions {
  * Keeps vegetation off paths, plazas, buildings and (unless asked) the lake.
  */
 export class Placement {
-  /** every object placed so far that later scatters should avoid */
-  readonly occupied: { x: number; z: number; r: number }[] = [];
+  /** extra areas claimed at runtime (banners, props...) that scatters avoid */
+  readonly reserved: { x: number; z: number; r: number }[] = [];
+
+  reserve(x: number, z: number, r: number): void {
+    this.reserved.push({ x, z, r });
+  }
 
   constructor(private readonly terrain: Terrain) {}
 
@@ -49,13 +53,13 @@ export class Placement {
   }
 
   inReserved(x: number, z: number, margin: number): boolean {
-    for (const c of RESERVED) {
+    const hit = (c: { x: number; z: number; r: number }) => {
       const dx = x - c.x;
       const dz = z - c.z;
       const r = c.r + margin;
-      if (dx * dx + dz * dz < r * r) return true;
-    }
-    return false;
+      return dx * dx + dz * dz < r * r;
+    };
+    return RESERVED.some(hit) || this.reserved.some(hit);
   }
 
   insidePlayArea(x: number, z: number, margin = 0): boolean {

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.2.0] - 2026-09-29
 
 ### Added
+
 - GPU grass: up to 70k wind-blown blades in one instanced draw call, placed on a world
   lattice that follows the panda, bending away from it and flattened by the spin kick.
 - Wildflower drifts, falling blossom petals that land on the ground, golden dust motes.
@@ -25,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the terrain splat map.
 
 ### Changed
+
 - The panda is baked into ~10 vertex-coloured meshes (was ~40) to cut draw calls.
 
 ### Added

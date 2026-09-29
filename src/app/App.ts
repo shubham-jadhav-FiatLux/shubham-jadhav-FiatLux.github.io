@@ -23,6 +23,10 @@ import { Particles, SPRITE } from '../effects/Particles';
 import { Grass } from '../world/nature/Grass';
 import { Nature } from '../world/nature/Nature';
 import { Water } from '../world/water/Water';
+import { Architecture } from '../world/architecture/Architecture';
+import { Placement } from '../world/placement';
+import { portfolio } from '../content/portfolio';
+import type { PortfolioContent } from '../content/types';
 
 export type AppEvents = {
   ready: void;
@@ -52,6 +56,8 @@ export class App extends Emitter<AppEvents> {
   grass!: Grass;
   nature!: Nature;
   water!: Water;
+  architecture!: Architecture;
+  placement!: Placement;
   sky!: Sky;
   lighting!: Lighting;
   panda!: Panda;
@@ -65,7 +71,10 @@ export class App extends Emitter<AppEvents> {
   uiBlocking = false;
   private reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
-  constructor(readonly canvas: HTMLCanvasElement) {
+  constructor(
+    readonly canvas: HTMLCanvasElement,
+    readonly content: PortfolioContent = portfolio,
+  ) {
     super();
     installAtmosphericFog();
     this.scene.fog = new Fog(ATMOSPHERE.fogColor, ATMOSPHERE.fogNear, ATMOSPHERE.fogFar);
@@ -93,9 +102,19 @@ export class App extends Emitter<AppEvents> {
   /** Builds the world step by step so the loading bar can breathe between steps. */
   async load(progress: (fraction: number, label: string) => void): Promise<void> {
     await this.debug.init();
+    // Canvas textures (signboards, banners, labels) need the brush font loaded first.
+    try {
+      await Promise.all([
+        document.fonts.load("64px 'Brush'", this.content.site.gateGlyphs + 'Aa一'),
+        document.fonts.load("700 32px 'Cormorant Garamond'"),
+      ]);
+    } catch {
+      /* fall back to system fonts */
+    }
     const steps: [string, () => void][] = [
       ['Shaping the valley', () => this.buildTerrain()],
       ['Raising the mountains', () => this.buildSky()],
+      ['Building the pagoda', () => this.buildArchitecture()],
       ['Growing bamboo and blossoms', () => this.buildNature()],
       ['Waking the panda', () => this.buildPlayer()],
       ['Filling the lake', () => this.buildWater()],
@@ -127,8 +146,19 @@ export class App extends Emitter<AppEvents> {
     this.grass.addTo(this.scene);
   }
 
+  private buildArchitecture(): void {
+    this.placement = new Placement(this.terrain);
+    this.architecture = new Architecture(
+      this.scene,
+      this.terrain,
+      this.collision,
+      this.placement,
+      this.content,
+    );
+  }
+
   private buildNature(): void {
-    this.nature = new Nature(this.terrain, this.collision, this.quality.settings);
+    this.nature = new Nature(this.terrain, this.collision, this.quality.settings, this.placement);
     this.nature.addTo(this.scene);
   }
 
@@ -310,6 +340,7 @@ export class App extends Emitter<AppEvents> {
     else tmp.set(PLACES.crossroads.x, 2, PLACES.crossroads.z);
     this.lighting.update(tmp);
     this.water.update(dt, elapsed, this.controller, this.quality.settings.particles);
+    this.architecture.update(dt, this.controller.position);
     this.particles.update(dt, elapsed);
 
     this.renderer.render(dt);
