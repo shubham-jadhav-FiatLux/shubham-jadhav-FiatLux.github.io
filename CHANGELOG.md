@@ -6,6 +6,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-09-30
+
+### Fixed
+
+- Keyboard players saw a touch hint instead of the E / F key in prompts.
+- Adaptive quality dropped a preset on every tab switch, could lower a preset the visitor
+  had picked and kept a reduced resolution after a manual change. The menu now shows
+  automatic changes too.
+- Content containing `$&`, `$'` or `` $` `` broke the generated page.
+- Discovery, bell and dummy timers ignored quick travel, progress reset and open panels:
+  a scroll could unroll under the map and the camera could stay in the discovery shot.
+- "Hide all scrolls again" did not re-arm the gate, which also greeted returning
+  visitors on every visit.
+- Opening a milestone or following a page-view link scrolled the page embedding the game.
+- Safari 15 could not parse the three.js bundle; `roundRect` now has a fallback.
+- Clicking the HUD prompt kept Space from jumping.
+- The map key did not work on AZERTY keyboards.
+- Gamepad polling could stop the game where a permissions policy blocks the Gamepad API.
+- After a short stall the music played every overdue note at once.
+
+### Added
+
+- Unit tests for the generated `index.html`; smoke checks for key prompts and interrupted
+  discovery ceremonies.
+
 ## [0.5.0] - 2026-09-30
 
 ### Added
@@ -133,7 +158,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Follow camera with orbit, zoom, look-ahead and cinematic shots.
 - Title screen, screenshot script and unit tests.
 
-[Unreleased]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.2.0...v0.3.0
