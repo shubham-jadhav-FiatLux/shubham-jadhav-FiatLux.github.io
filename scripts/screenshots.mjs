@@ -50,8 +50,10 @@ const SHOTS = [
     z: 5,
     yaw: 2.6,
     cam: { yaw: -0.4, pitch: 0.3, distance: 9 },
+    // let the follow camera arrive first, then catch the ceremony mid-flight
+    actionDelay: 2500,
     action: "window.__game.onTrigger(window.__game.zones.find('about'))",
-    settle: 900,
+    settle: 1100,
   },
   {
     name: 'scroll',
@@ -129,8 +131,11 @@ for (const shot of SHOTS) {
       g.menu.close();
       if (g.classic.isOpen) g.classic.close();
     }
-    if (s.action) new Function(s.action)();
   }, shot);
+  if (shot.action) {
+    await page.waitForTimeout(shot.actionDelay ?? 0);
+    await page.evaluate((code) => new Function(code)(), shot.action);
+  }
   await page.waitForTimeout(shot.settle ?? Number(process.env.SETTLE ?? 2500));
   await page.screenshot({ path: new URL(`${shot.name}.png`, outDir).pathname });
   console.log('captured', shot.name);
