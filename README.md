@@ -3,17 +3,19 @@
 ![A painted valley with a pagoda on a hill, a lake with a zig-zag bridge, a waterfall and a village](public/og-image.jpg)
 
 An explorable 3D portfolio. Guide a panda through a misty valley of bamboo groves,
-blossom trees, a koi lake and a hilltop pagoda. Every landmark holds a scroll with a piece
-of the author's story: who they are, what they can do, what they have built and how to
-reach them. Finding a scroll for the first time is a small ceremony: the panda bows, a
+blossom trees, a koi lake fed by a mountain waterfall and a hilltop pagoda, with
+butterflies drifting over the meadows and lanterns glowing in the evening light. Every
+landmark holds a scroll with a piece of the author's story: who they are, what they can
+do, what they have built and how to reach them. Finding a scroll for the first time is a small ceremony: the panda bows, a
 ring of golden ink spreads through the grass, a seal is stamped and the scroll unrolls.
 
 Built with **three.js**, **TypeScript** and hand-written **GLSL**. Every model, texture,
 sound and note of music is generated in code; there are no downloaded assets besides fonts.
 
-| ![The panda crossing the zig-zag bridge over the koi lake](docs/images/bridge.jpg) | ![The panda below the pagoda, next to a project banner](docs/images/pagoda-top.jpg) |
-| ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| ![The About scroll unrolled over the lake](docs/images/scroll.jpg)                 | ![The ink-wash map with quick travel](docs/images/map.jpg)                          |
+| ![The panda crossing the zig-zag bridge over the koi lake](docs/images/bridge.jpg)     | ![The panda below the pagoda, next to a project banner](docs/images/pagoda-top.jpg) |
+| -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| ![The waterfall pouring into its plunge pool by the bell tower](docs/images/falls.jpg) | ![Golden and green bamboo by the training grounds](docs/images/grove.jpg)           |
+| ![The About scroll unrolled over the lake](docs/images/scroll.jpg)                     | ![The ink-wash map with quick travel](docs/images/map.jpg)                          |
 
 ## Play
 
