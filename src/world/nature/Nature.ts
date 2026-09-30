@@ -1,8 +1,16 @@
 import type { Scene } from 'three';
 import { Random } from '../../utils/random';
 import { SimplexNoise } from '../../utils/noise';
-import { lakeSdf } from '../heightfield';
-import { CLIFF, PAGODA_HILL, PLACES, TERRAIN_ORIGIN, TERRAIN_SIZE } from '../layout';
+import { lakeSdf, riverAt } from '../heightfield';
+import {
+  CLIFF,
+  FALLS,
+  PAGODA_HILL,
+  PLACES,
+  TERRAIN_ORIGIN,
+  TERRAIN_SIZE,
+  WATER_LEVEL,
+} from '../layout';
 import type { Terrain } from '../Terrain';
 import type { CollisionWorld } from '../../physics/CollisionWorld';
 import type { QualitySettings } from '../../core/Quality';
@@ -280,7 +288,7 @@ export class Nature {
       rand,
       pathMargin: 2.5,
       reservedMargin: 1,
-      maxSlope: 0.9,
+      maxSlope: 0.55,
       avoid,
       density: (x, z) => (this.terrain.slopeAt(x, z) > 0.12 || this.h(x, z) > 6 ? 1 : 0.05),
     })) {
@@ -316,14 +324,18 @@ export class Nature {
       );
     }
     // Big rocks along the escarpment edge (they hide the steep terrain), leaving the
-    // waterfall notch open.
+    // waterfall alcove to its own, hand-placed rocks.
+    const nearFalls = (x: number, z: number, r: number) =>
+      Math.hypot(x - FALLS.lip.x, z - FALLS.lip.z) < r ||
+      Math.hypot(x - FALLS.foot.x, z - FALLS.foot.z) < r;
     for (let a = 2.05; a <= 2.95; a += 0.035) {
       const r = CLIFF.radius - 1 + rand.spread(1.2);
       const x = CLIFF.x + Math.cos(a) * r;
       const z = CLIFF.z + Math.sin(a) * r;
-      if (Math.hypot(x - PLACES.waterfall.x, z - PLACES.waterfall.z) < 5) continue;
+      if (nearFalls(x, z, 8.5)) continue;
       if (x < TERRAIN_ORIGIN + 5 || z < TERRAIN_ORIGIN + 5) continue;
       const y = this.h(x, z);
+      const n = this.terrain.normalAt(x, z);
       add({
         x,
         y,
@@ -332,9 +344,11 @@ export class Nature {
         rot: rand.range(0, 6.28),
         style: rand.chance(0.2) ? 'boulder' : 'cliff',
         sink: 0.3,
-        tilt: rand.spread(0.2),
+        tilt: Math.acos(Math.min(1, n.y)) * 0.6 + rand.spread(0.15),
+        tiltDir: Math.atan2(n.x, n.z),
       });
     }
+    this.planFallsRocks(add);
     // Scholar rocks in the gardens.
     for (const [x, z, s] of [
       [6.5, 7.5, 1.1],
@@ -348,6 +362,77 @@ export class Nature {
       add({ x, y: this.h(x, z), z, size: s, rot: rand.range(0, 6.28), style: 'tall', sink: 0.1 });
     }
     return out;
+  }
+
+  /**
+   * Rocks framing the waterfall: blocks either side of the lip, stacked slabs hiding the
+   * sides of the alcove, boulders around the plunge pool and one in the spray.
+   * Positions are given as (distance from the plateau centre along the fall line,
+   * offset across it).
+   */
+  private planFallsRocks(add: (r: RockInstance, collide?: boolean) => void): void {
+    const rand = new Random(777);
+    const at = (r: number, across: number) => ({
+      x: CLIFF.x + FALLS.dir.x * r + FALLS.across.x * across,
+      z: CLIFF.z + FALLS.dir.z * r + FALLS.across.z * across,
+    });
+    const put = (
+      r: number,
+      across: number,
+      size: number,
+      style: RockInstance['style'],
+      sink: number,
+      minY = -Infinity,
+    ) => {
+      const p = at(r, across);
+      // lean with the ground so rocks on the steep alcove sides sit against the face
+      const n = this.terrain.normalAt(p.x, p.z);
+      add({
+        x: p.x,
+        y: Math.max(this.h(p.x, p.z), minY),
+        z: p.z,
+        size,
+        rot: rand.range(0, Math.PI * 2),
+        style,
+        sink,
+        tilt: Math.acos(Math.min(1, n.y)) * 0.85 + rand.spread(0.12),
+        tiltDir: Math.atan2(n.x, n.z),
+      });
+    };
+    const lipR = CLIFF.radius - FALLS.recess - FALLS.edge;
+    for (const s of [-1, 1]) {
+      // blocks framing the notch on the plateau
+      // (kept back from the edge so their undersides never show from below)
+      put(lipR - 2.3, s * 3.4, s > 0 ? 1.8 : 2.0, 'cliff', 0.5);
+      put(lipR - 4.4, s * 4.4, 1.4, 'cliff', 0.35);
+      // slabs stacked down the sides of the alcove, set back into the face
+      put(lipR - 0.5, s * 5.1, 2.6, 'cliff', 0.6);
+      put(lipR + 1.6, s * 5.3, 2.3, 'cliff', 0.4, WATER_LEVEL - 0.6);
+      // boulders at the water's edge
+      put(lipR + 3.4, s * 5.6, s > 0 ? 1.5 : 1.8, 'boulder', 0.3, WATER_LEVEL - 0.5);
+      put(lipR + 6.2, s * 6.2, 1.2, 'boulder', 0.3, WATER_LEVEL - 0.4);
+    }
+    // a wet boulder in the spray and a couple of stepping stones in the stream
+    put(lipR + 4.4, 2.3, 0.85, 'boulder', 0.2, WATER_LEVEL - 0.35);
+    for (const [r, across] of [
+      [lipR - 2.2, 1.6],
+      [lipR - 4.6, -1.4],
+    ] as const) {
+      const p = at(r, across);
+      const bed = riverAt(p.x, p.z)?.bed ?? this.h(p.x, p.z);
+      add(
+        {
+          x: p.x,
+          y: bed + 0.18,
+          z: p.z,
+          size: 0.5,
+          rot: rand.range(0, 6.28),
+          style: 'boulder',
+          sink: 0.2,
+        },
+        false,
+      );
+    }
   }
 
   private planFarForest(): FarTree[] {

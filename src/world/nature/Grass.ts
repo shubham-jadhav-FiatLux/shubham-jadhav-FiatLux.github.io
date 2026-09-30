@@ -70,6 +70,7 @@ export class Grass {
         uRipple: globalUniforms.uRipple,
         uHeightMap: globalUniforms.uHeightMap,
         uMaskMap: globalUniforms.uMaskMap,
+        uDetailMap: globalUniforms.uDetailMap,
         uTerrain: globalUniforms.uTerrain,
         uTip: { value: tipColor },
         uSunColor: { value: sunColor },
@@ -110,8 +111,11 @@ ${GRASS_COLOR_GLSL}
   float ground = terrainHeightAt(worldXZ);
   vec4 mask = terrainMaskAt(worldXZ);
 
-  // Density: none on paths, paving, under buildings or in water.
-  float density = 1.0 - smoothstep(0.25, 0.6, max(max(mask.r, mask.g), mask.a));
+  // Density: none on paths, paving, gravel, steep ground, under buildings or in water.
+  // Ragged, noisy edges; blades get shorter and sparser towards them.
+  float bare = max(max(max(mask.r, mask.g), mask.a), terrainDetailAt(worldXZ).a);
+  bare += (vnoise(worldXZ * 1.9) - 0.5) * 0.22;
+  float density = 1.0 - smoothstep(0.25, 0.6, bare);
   density *= smoothstep(0.12, 0.45, ground);
   float meadow = fbm(worldXZ * 0.06);
   density *= 0.55 + 0.6 * smoothstep(0.2, 0.6, meadow);
@@ -121,6 +125,7 @@ ${GRASS_COLOR_GLSL}
   float fade = 1.0 - smoothstep(0.55, 1.0, edge);
 
   float height = mix(0.26, 0.66, rnd) * (0.7 + 0.6 * meadow) * fade;
+  height *= 1.0 - 0.62 * smoothstep(0.02, 0.5, bare);
   if (rnd2 > density) height = 0.0;
   float width = mix(0.045, 0.085, rnd2) * (height > 0.0 ? 1.0 : 0.0);
 

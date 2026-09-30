@@ -5,13 +5,14 @@ import {
   ShaderMaterial,
   UniformsLib,
   UniformsUtils,
+  Vector3,
   Vector4,
   type Scene,
 } from 'three';
 import { globalUniforms } from '../../render/uniforms';
 import { NOISE_GLSL, TERRAIN_GLSL } from '../../render/glsl';
 import { ATMOSPHERE } from '../../render/atmosphere';
-import { WATER_LEVEL } from '../layout';
+import { FALLS, WATER_LEVEL } from '../layout';
 
 const MAX_RIPPLES = 12;
 
@@ -46,6 +47,8 @@ export class Lake {
           uZenith: { value: ATMOSPHERE.skyZenith },
           uSunColor: { value: ATMOSPHERE.sunColor },
           uLevel: { value: WATER_LEVEL },
+          // where the waterfall lands: x, z, radius of the churn
+          uFallsFoot: { value: new Vector3(FALLS.foot.x, FALLS.foot.z, 2.6) },
         },
       ]),
       vertexShader: /* glsl */ `
@@ -68,6 +71,7 @@ export class Lake {
         uniform vec3 uZenith;
         uniform vec3 uSunColor;
         uniform float uLevel;
+        uniform vec3 uFallsFoot;
         uniform vec4 uRipples[${MAX_RIPPLES}];
         varying vec3 vWorld;
         ${NOISE_GLSL}
@@ -100,6 +104,13 @@ export class Lake {
             float envelope = exp(-pow((dist - front) * 2.6, 2.0)) * exp(-age * 1.1) * r.w;
             g += (d / max(dist, 1e-3)) * sin((dist - front) * 16.0) * envelope * 2.2;
           }
+          // Waves spreading from the foot of the waterfall.
+          vec2 fromFoot = xz - uFallsFoot.xy;
+          float fd = length(fromFoot);
+          vec2 outDir = fromFoot / max(fd, 1e-3);
+          float nearFalls = exp(-fd * 0.2);
+          g += outDir * sin(fd * 4.5 - uTime * 6.5) * nearFalls * 0.8;
+          g += noiseGrad(xz * 1.5 + uTime * vec2(0.35, -0.45)) * nearFalls * 0.7;
           vec3 n = normalize(vec3(-g.x * 0.3, 1.0, -g.y * 0.3));
           vec3 V = normalize(cameraPosition - vWorld);
           float fres = 0.03 + 0.97 * pow(1.0 - max(dot(n, V), 0.0), 5.0);
@@ -122,6 +133,14 @@ export class Lake {
           float bands = smoothstep(0.62, 0.7, fract(depth * 2.4 - uTime * 0.28 + vnoise(xz * 1.3) * 0.7));
           bands *= 1.0 - smoothstep(0.1, 0.55, depth);
           float foam = clamp(edge * (0.65 + 0.35 * vnoise(xz * 4.0 + uTime * 0.4)) + bands * 0.55, 0.0, 1.0);
+          // White water where the falls land, and foam trails drifting across the pool.
+          float churn = 1.0 - smoothstep(uFallsFoot.z * 0.5, uFallsFoot.z * 2.4, fd);
+          float boil = vnoise((xz - uFallsFoot.xy) * 1.3 - outDir * uTime * 1.1);
+          float fallsFoam = churn * smoothstep(0.3, 0.65, boil * 0.7 + churn * 0.45);
+          float trails = smoothstep(0.62, 0.8,
+            vnoise(vec2(fd * 0.55 - uTime * 0.32, atan(fromFoot.y, fromFoot.x) * 2.2)));
+          trails *= exp(-fd * 0.1) * (1.0 - churn) * smoothstep(0.3, 1.2, depth);
+          foam = max(foam, max(fallsFoam, trails * 0.55));
           col = mix(col, uFoam, foam);
 
           float alpha = mix(0.5, 0.94, smoothstep(0.0, 2.2, depth));

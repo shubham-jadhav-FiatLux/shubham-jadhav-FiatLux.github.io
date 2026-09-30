@@ -1,6 +1,6 @@
 import { distToPolyline } from '../utils/math';
 import type { Random } from '../utils/random';
-import { lakeSdf } from './heightfield';
+import { lakeSdf, riverAt } from './heightfield';
 import { BRIDGE_POINTS, PATHS, PLAY_AREA, RESERVED } from './layout';
 import type { Terrain } from './Terrain';
 
@@ -50,6 +50,12 @@ export class Placement {
     for (const p of PATHS) best = Math.min(best, distToPolyline(x, z, p.points) - p.width / 2);
     best = Math.min(best, distToPolyline(x, z, BRIDGE_POINTS) - 2);
     return best;
+  }
+
+  /** Distance from the stream's banks (negative inside the channel). */
+  distanceToStream(x: number, z: number): number {
+    const r = riverAt(x, z);
+    return r ? r.dist - r.halfWidth - 1.2 : Infinity;
   }
 
   inReserved(x: number, z: number, margin: number): boolean {
@@ -105,6 +111,7 @@ export class Placement {
       if (lake === 'shore' && (sdf < -0.5 || sdf > 5)) continue;
       if (lake === 'water' && sdf > -0.5) continue;
       if (this.distanceToPaths(x, z) < pathMargin) continue;
+      if (this.distanceToStream(x, z) < 0.6) continue;
       if (this.inReserved(x, z, reservedMargin)) continue;
       if (this.terrain.slopeAt(x, z) > maxSlope) continue;
       if (o.avoid && o.avoid.some((c) => (c.x - x) ** 2 + (c.z - z) ** 2 < c.r * c.r)) continue;

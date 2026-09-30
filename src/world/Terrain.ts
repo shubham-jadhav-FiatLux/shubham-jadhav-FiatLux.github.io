@@ -11,11 +11,21 @@ import {
   RedFormat,
   type Scene,
 } from 'three';
-import { buildHeightGrid, CELL, gridNormal, sampleGrid } from './heightfield';
-import { PATHS, PLAZAS, TERRAIN_ORIGIN, TERRAIN_RES, WATER_LEVEL, type Surface } from './layout';
+import { buildHeightGrid, CELL, gridNormal, riverCourse, sampleGrid } from './heightfield';
+import {
+  FALLS,
+  PATHS,
+  PLAZAS,
+  TERRAIN_ORIGIN,
+  TERRAIN_RES,
+  TERRAIN_SIZE,
+  WATER_LEVEL,
+  type Surface,
+} from './layout';
 import { TerrainMask } from './TerrainMask';
 import { globalUniforms } from '../render/uniforms';
-import { NOISE_GLSL } from '../render/glsl';
+import { BUMP_GLSL, NOISE_GLSL } from '../render/glsl';
+import { smoothstep } from '../utils/math';
 import { GRASS_COLORS, GRASS_COLOR_GLSL } from './palette';
 
 const tmpNormal = { x: 0, y: 1, z: 0 };
@@ -46,6 +56,7 @@ export class Terrain {
     this.mesh.matrixAutoUpdate = false;
     globalUniforms.uHeightMap.value = this.heightTexture;
     globalUniforms.uMaskMap.value = this.mask.texture;
+    globalUniforms.uDetailMap.value = this.mask.detailTexture;
   }
 
   addTo(scene: Scene): void {
@@ -69,6 +80,7 @@ export class Terrain {
   surfaceAt(x: number, z: number): Surface {
     const h = this.heightAt(x, z);
     if (h < WATER_LEVEL - 0.05) return 'water';
+    if (this.mask.sampleDetail(x, z).gravel > 0.6) return 'sand';
     const m = this.mask.sample(x, z);
     if (m.stone > 0.5) return 'stone';
     if (m.dirt > 0.45) return 'dirt';
@@ -86,6 +98,70 @@ export class Terrain {
       this.mask.circle('nograss', p.x, p.z, p.radius + 0.8, 1);
       this.mask.circle(p.surface === 'stone' ? 'stone' : 'dirt', p.x, p.z, p.radius);
     }
+    this.paintStream();
+    this.paintSteepGround();
+  }
+
+  /** Gravel bed and banks along the stream, no grass under the water. */
+  private paintStream(): void {
+    const pts = riverCourse.points;
+    for (let i = 0; i < pts.length - 1; i += 2) {
+      const a = pts[i]!;
+      const b = pts[Math.min(pts.length - 1, i + 2)]!;
+      const seg: [number, number][] = [
+        [a.x, a.z],
+        [b.x, b.z],
+      ];
+      this.mask.path(seg, (a.halfWidth + 1.2) * 2, 'gravel', 1);
+      this.mask.path(seg, (a.halfWidth + 1.9) * 2, 'gravel', 0.45);
+      this.mask.path(seg, (a.halfWidth + 1.5) * 2, 'nograss', 1);
+      this.mask.path(seg, (a.halfWidth + 0.6) * 2, 'wet', 0.35);
+    }
+    const spring = pts[0]!;
+    this.mask.circle('gravel', spring.x, spring.z, 4.1, 1);
+    this.mask.circle('nograss', spring.x, spring.z, 4.4, 1);
+    // Spray keeps the rock and ground around the falls and the pool wet.
+    const { lip, foot } = FALLS;
+    this.mask.path(
+      [
+        [lip.x, lip.z],
+        [foot.x, foot.z],
+      ],
+      6,
+      'wet',
+      0.9,
+    );
+    this.mask.blob('wet', foot.x, foot.z, 9, 0.85);
+  }
+
+  /** No grass on cliffs and steep banks (it looked pinned to the rock). */
+  private paintSteepGround(): void {
+    const n = TERRAIN_RES;
+    const slope = new Float32Array(n * n);
+    for (let j = 0; j < n; j++) {
+      for (let i = 0; i < n; i++) {
+        const x = TERRAIN_ORIGIN + i * CELL;
+        const z = TERRAIN_ORIGIN + j * CELL;
+        slope[j * n + i] = 1 - gridNormal(this.heights, x, z, tmpNormal).y;
+      }
+    }
+    const at = (x: number, z: number) => {
+      const fx = Math.min(n - 1.001, Math.max(0, (x - TERRAIN_ORIGIN) / CELL));
+      const fz = Math.min(n - 1.001, Math.max(0, (z - TERRAIN_ORIGIN) / CELL));
+      const i = Math.floor(fx);
+      const j = Math.floor(fz);
+      const u = fx - i;
+      const v = fz - j;
+      const s00 = slope[j * n + i]!;
+      const s10 = slope[j * n + i + 1]!;
+      const s01 = slope[(j + 1) * n + i]!;
+      const s11 = slope[(j + 1) * n + i + 1]!;
+      return (s00 * (1 - u) + s10 * u) * (1 - v) + (s01 * (1 - u) + s11 * u) * v;
+    };
+    const half = TERRAIN_SIZE / 2;
+    this.mask.field('nograss', { x0: -half, z0: -half, x1: half, z1: half }, (x, z) =>
+      smoothstep(0.3, 0.5, at(x, z)),
+    );
   }
 
   private createHeightTexture(): DataTexture {
@@ -159,14 +235,21 @@ export class Terrain {
       uStoneA: new Color('#b5aa94'),
       uStoneB: new Color('#978b78'),
       uSand: new Color('#d3bc8f'),
-      uRock: new Color('#8a877b'),
-      uMoss: new Color('#667842'),
+      uRock: new Color('#8f8574'),
+      uMoss: new Color('#5f7540'),
       uUnderwater: new Color('#2f6f73'),
+      uGravelA: new Color('#a4998a'),
+      uGravelB: new Color('#7f786c'),
+      uLitterA: new Color('#a7803f'),
+      uLitterB: new Color('#7b5a33'),
+      // warm glow that lanterns cast on the ground (emissive, HDR)
+      uLampLight: new Color('#ff9a45').multiplyScalar(0.55),
     };
     mat.onBeforeCompile = (shader) => {
       Object.assign(shader.uniforms, {
         uTime: globalUniforms.uTime,
         uMaskMap: globalUniforms.uMaskMap,
+        uDetailMap: globalUniforms.uDetailMap,
         uTerrain: globalUniforms.uTerrain,
         uRipple: globalUniforms.uRipple,
       });
@@ -190,10 +273,17 @@ varying vec3 vTerrainPos;
 varying vec3 vTerrainNormal;
 uniform float uTime;
 uniform sampler2D uMaskMap;
+uniform sampler2D uDetailMap;
 uniform vec3 uTerrain;
 uniform vec4 uRipple;
 uniform vec3 uDirtA, uDirtB, uStoneA, uStoneB, uSand, uRock, uMoss, uUnderwater;
+uniform vec3 uGravelA, uGravelB, uLitterA, uLitterB, uLampLight;
+// set by terrainColor(), used later for roughness, relief and glow
+float terrainWet = 0.0;
+float terrainLight = 0.0;
+float terrainRelief = 0.0;
 ${NOISE_GLSL}
+${BUMP_GLSL}
 ${GRASS_COLOR_GLSL}
 // Golden ink ring of a discovery, spreading over the ground.
 float inkRipple(vec2 xz) {
@@ -226,6 +316,22 @@ vec3 flagstones(vec2 p, float n) {
   vec3 c = mix(uStoneA, uStoneB, id) * (0.9 + 0.2 * n);
   return c * mix(0.55, 1.0, smoothstep(0.03, 0.12, edge));
 }
+// Rounded pebbles: Voronoi cells shaded as little domes with dark gaps.
+float pebbles(vec2 p) {
+  vec2 g = floor(p);
+  vec2 f = fract(p);
+  float d1 = 8.0;
+  float id = 0.0;
+  for (int y = -1; y <= 1; y++) {
+    for (int x = -1; x <= 1; x++) {
+      vec2 o = vec2(float(x), float(y));
+      vec2 r = o + 0.1 + hash22(g + o) * 0.8 - f;
+      float d = dot(r, r);
+      if (d < d1) { d1 = d; id = hash12(g + o); }
+    }
+  }
+  return (1.0 - smoothstep(0.1, 0.48, sqrt(d1))) * (0.7 + 0.6 * id);
+}
 float caustics(vec2 p, float t) {
   float c = 0.0;
   vec2 q = p * 0.9;
@@ -250,7 +356,9 @@ float caustics(vec2 p, float t) {
 }
 vec3 terrainColor(vec3 wp, vec3 nrm) {
   vec2 xz = wp.xz;
-  vec4 m = texture2D(uMaskMap, (xz - uTerrain.x) / uTerrain.y);
+  vec2 muv = (xz - uTerrain.x) / uTerrain.y;
+  vec4 m = texture2D(uMaskMap, muv);
+  vec4 det = texture2D(uDetailMap, muv);
   float nLarge = fbm(xz * 0.045);
   float nMid = vnoise(xz * 0.55);
   float nFine = vnoise(xz * 2.7);
@@ -267,21 +375,55 @@ vec3 terrainColor(vec3 wp, vec3 nrm) {
   float sandAmt = 1.0 - smoothstep(0.18, 0.85, wp.y + (nMid - 0.5) * 0.35);
   float slope = 1.0 - nrm.y;
   float rockAmt = smoothstep(0.3, 0.48, slope + (nMid - 0.5) * 0.12);
-  vec3 rockCol = mix(uRock, uMoss, smoothstep(0.35, 0.7, nLarge) * (1.0 - smoothstep(0.35, 0.7, slope)));
-  // Layered strata and vertical rain streaks on cliffs.
-  float strata = sin(wp.y * 2.6 + nMid * 3.0) * 0.5 + 0.5;
+
+  // Cliff rock: layered strata with lit ledges, shadowed undercuts and vertical joints.
+  float layerY = wp.y * (0.5 + 0.28 * vnoise(xz * 0.03)) + nLarge * 2.6 + vnoise(xz * 0.15) * 1.2;
+  float band = fract(layerY);
+  float layerId = floor(layerY);
+  float tone = hash12(vec2(layerId, 7.1));
+  float ledge = smoothstep(0.0, 0.05, band) * (1.0 - smoothstep(0.05, 0.2, band));
+  // ledges come and go along the cliff instead of running on forever
+  ledge *= smoothstep(0.3, 0.6, vnoise(vec2(dot(xz, vec2(0.6, 0.8)) * 0.25, layerId * 1.3)));
+  float undercut = smoothstep(0.7, 0.98, band);
+  float joint = smoothstep(0.88, 0.97,
+    vnoise(vec2(dot(xz, vec2(0.71, -0.71)) * 1.3 + layerId * 5.3, layerId * 1.7)));
   float streak = vnoise(vec2(dot(xz, vec2(0.7, 0.7)) * 1.3, wp.y * 0.08));
-  rockCol *= (0.78 + 0.22 * strata) * (0.8 + 0.35 * streak) * (0.88 + 0.24 * nFine);
-  // Vegetation clinging to ledges.
-  rockCol = mix(rockCol, uMoss * 0.85, smoothstep(0.55, 0.8, vnoise(xz * 0.4 + wp.y * 0.3)) * 0.55);
+  vec3 rockCol = mix(uRock, uMoss, smoothstep(0.35, 0.7, nLarge) * (1.0 - smoothstep(0.35, 0.7, slope)));
+  rockCol *= (0.8 + 0.3 * tone) * (0.84 + 0.3 * streak) * (0.9 + 0.2 * nFine);
+  rockCol *= 1.0 + ledge * 0.3 - undercut * 0.34 - joint * 0.32;
+  // cooler grey patches and rusty seep stains
+  rockCol *= mix(vec3(1.0), vec3(0.82, 0.86, 0.9), smoothstep(0.5, 0.8, fbm(xz * 0.06 + wp.y * 0.05)));
+  float seep = smoothstep(0.7, 0.9, vnoise(vec2(dot(xz, vec2(0.7, 0.7)) * 0.9, wp.y * 0.04 + 3.0)));
+  rockCol = mix(rockCol, rockCol * vec3(0.95, 0.72, 0.52), seep * 0.5);
+  // Moss and little plants clinging to the ledges.
+  float ledgeMoss = ledge * smoothstep(0.4, 0.7, vnoise(xz * 0.9 + layerId * 2.3));
+  rockCol = mix(rockCol, uMoss * (0.75 + 0.35 * nFine), ledgeMoss * 0.85);
+  rockCol = mix(rockCol, uMoss * 0.85, smoothstep(0.55, 0.8, vnoise(xz * 0.4 + wp.y * 0.3)) * 0.45);
+  terrainRelief = rockAmt * (band * 0.4 - undercut * 0.3 - joint * 0.25 + nFine * 0.08);
 
   vec3 col = grass;
   col = mix(col, uSand * (0.9 + 0.2 * nFine), sandAmt);
   col = mix(col, dirtCol, dirt);
   if (stone > 0.001) col = mix(col, flagstones(xz * 0.9, nFine), stone);
+
+  // Gravel stream beds and pebbly banks.
+  float gravel = smoothstep(0.12, 0.55, det.a + (nMid - 0.5) * 0.35);
+  if (gravel > 0.001) {
+    vec3 gcol = mix(uGravelA, uGravelB, nMid) * (0.62 + 0.42 * pebbles(xz * 4.3));
+    gcol = mix(gcol, uMoss * 0.8, smoothstep(0.6, 0.85, nFine) * 0.35);
+    col = mix(col, gcol, gravel);
+  }
+  // Fallen leaves under bamboo and trees.
+  float litter = det.b * smoothstep(0.3, 0.75, vnoise(xz * 2.3) * 0.6 + nFine * 0.55);
+  col = mix(col, mix(uLitterA, uLitterB, vnoise(xz * 7.0)), litter * 0.7);
+
   col = mix(col, rockCol, rockAmt);
   // Baked soft contact shade under trees and buildings.
   col *= 1.0 - m.b * 0.42;
+  // Wet ground and rock around the falls and the stream: darker, a little green.
+  terrainWet = det.g;
+  col *= mix(vec3(1.0), vec3(0.56, 0.63, 0.58), det.g);
+  terrainLight = det.r;
   // Wet sand darkening at the waterline.
   col *= mix(0.72, 1.0, smoothstep(-0.05, 0.3, wp.y));
   if (wp.y < 0.0) {
@@ -298,11 +440,19 @@ vec3 terrainColor(vec3 wp, vec3 nrm) {
           '#include <color_fragment>\ndiffuseColor.rgb = terrainColor(vTerrainPos, normalize(vTerrainNormal));',
         )
         .replace(
+          '#include <roughnessmap_fragment>',
+          '#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, 0.42, terrainWet);',
+        )
+        .replace(
+          '#include <normal_fragment_maps>',
+          '#include <normal_fragment_maps>\nnormal = bumpFromHeight(-vViewPosition, normal, terrainRelief * 0.5);',
+        )
+        .replace(
           '#include <emissivemap_fragment>',
-          '#include <emissivemap_fragment>\ntotalEmissiveRadiance += vec3(1.6, 1.1, 0.45) * inkRipple(vTerrainPos.xz);',
+          '#include <emissivemap_fragment>\ntotalEmissiveRadiance += vec3(1.6, 1.1, 0.45) * inkRipple(vTerrainPos.xz) + uLampLight * terrainLight;',
         );
     };
-    mat.customProgramCacheKey = () => 'terrain-v1';
+    mat.customProgramCacheKey = () => 'terrain-v2';
     return mat;
   }
 }

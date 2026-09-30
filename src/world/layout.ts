@@ -45,17 +45,71 @@ export interface Ellipse {
   rot: number;
 }
 
-/** The lake is the smooth union of these ellipses (main basin + waterfall pool). */
-export const LAKE_ELLIPSES: readonly Ellipse[] = [
-  { x: 28, z: -6, rx: 22, rz: 17, rot: 0.2 },
-  { x: 43, z: -24, rx: 11, rz: 8.5, rot: -0.4 },
-];
-
 /**
  * A plateau in the north-east. It is the inside of a very large circle, so its edge is a
  * long, gently curving escarpment; where it meets the lake it becomes the waterfall cliff.
  */
 export const CLIFF = { x: 95, z: -75, radius: 63, edge: 5, height: 13 };
+
+/**
+ * The waterfall. A stream crosses the plateau and leaves it at the `lip`; below, the
+ * cliff steps back into a steep rock alcove and the water lands at the `foot`, in a deep
+ * plunge pool that drains into the lake. Everything is measured along `dir`, the line
+ * from the plateau centre through PLACES.waterfall.
+ */
+export const FALLS = (() => {
+  const dx = PLACES.waterfall.x - CLIFF.x;
+  const dz = PLACES.waterfall.z - CLIFF.z;
+  const len = Math.hypot(dx, dz);
+  const dir = { x: dx / len, z: dz / len };
+  /** how far the cliff face steps back behind the falls (m) */
+  const recess = 2.5;
+  /** width of the cliff face at the falls (m); the rest of the escarpment uses CLIFF.edge */
+  const edge = 3;
+  const at = (r: number) => ({ x: CLIFF.x + dir.x * r, z: CLIFF.z + dir.z * r });
+  return {
+    dir,
+    /** perpendicular to dir, across the falls */
+    across: { x: -dir.z, z: dir.x },
+    recess,
+    edge,
+    /** half-width of the alcove around the fall line (m) */
+    alcoveHalfWidth: 6,
+    /** where the stream pours over the edge */
+    lip: at(CLIFF.radius - recess - edge),
+    /** where the falling water meets the pool, a few metres out from the face */
+    foot: at(CLIFF.radius - recess - edge + 3),
+    /** centre of the plunge pool; its edge meets the foot of the cliff face */
+    pool: at(CLIFF.radius - recess - edge + 1 + 6.6),
+  };
+})();
+
+/** The lake is the smooth union of these ellipses: main basin, lagoon and plunge pool. */
+export const LAKE_ELLIPSES: readonly Ellipse[] = [
+  { x: 28, z: -6, rx: 22, rz: 17, rot: 0.2 },
+  { x: 43, z: -24, rx: 10.5, rz: 8, rot: -0.4 },
+  {
+    x: FALLS.pool.x,
+    z: FALLS.pool.z,
+    rx: 6.6,
+    rz: 5.6,
+    rot: Math.atan2(FALLS.dir.z, FALLS.dir.x),
+  },
+];
+
+/**
+ * The stream on the plateau, from its spring in the hills to the waterfall lip
+ * (a coarse centre line; the terrain and the water mesh smooth it).
+ */
+export const RIVER: readonly Vec2[] = [
+  [61.5, -65],
+  [60.4, -59.5],
+  [60.8, -53.5],
+  [60.1, -47.8],
+  [58.3, -42.6],
+  [56.3, -38.2],
+  [FALLS.lip.x, FALLS.lip.z],
+];
 
 /** The pagoda stands on this round hill. */
 export const PAGODA_HILL = { x: -20, z: -50, radius: 30, plateau: 0.32, height: 10 };

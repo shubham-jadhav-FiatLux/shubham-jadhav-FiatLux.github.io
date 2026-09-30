@@ -38,6 +38,7 @@ float fbm(vec2 p) {
 export const TERRAIN_GLSL = /* glsl */ `
 uniform sampler2D uHeightMap;
 uniform sampler2D uMaskMap;
+uniform sampler2D uDetailMap;
 uniform vec3 uTerrain; // origin, size, resolution
 vec2 terrainGridUV(vec2 xz) {
   float cell = uTerrain.y / (uTerrain.z - 1.0);
@@ -48,6 +49,10 @@ float terrainHeightAt(vec2 xz) {
 }
 vec4 terrainMaskAt(vec2 xz) {
   return texture2D(uMaskMap, (xz - uTerrain.x) / uTerrain.y);
+}
+// r = lantern light, g = wet, b = leaf litter, a = gravel / stream bed
+vec4 terrainDetailAt(vec2 xz) {
+  return texture2D(uDetailMap, (xz - uTerrain.x) / uTerrain.y);
 }
 `;
 
