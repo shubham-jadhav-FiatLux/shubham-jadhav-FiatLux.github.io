@@ -71,8 +71,22 @@ async function step(name, fn, expect) {
 try {
   const anchors = await page.evaluate(() => window.__valley.architecture.anchors);
 
-  // Walking under the gate discovers the welcome scroll automatically.
-  await step('gate (auto)', () => place(anchors.gate.x, anchors.gate.z + 1.5, Math.PI), 'welcome');
+  // Walking under the gate discovers the welcome scroll automatically. Opening the map
+  // during the ceremony must keep the scroll from unrolling underneath it.
+  await place(anchors.gate.x, anchors.gate.z + 1.5, Math.PI);
+  await page.waitForFunction(() => window.__game.progress.has('welcome'), null, {
+    timeout: 90_000,
+  });
+  await page.keyboard.press('KeyM');
+  await page.waitForTimeout(2500);
+  const layered = await page.evaluate(() => ({
+    map: window.__game.map.isOpen,
+    scroll: window.__game.scroll.isOpen,
+    following: window.__valley.rig.isFollowing,
+  }));
+  if (!layered.map || layered.scroll) throw new Error('scroll opened under the map');
+  if (!layered.following) throw new Error('camera stayed in the discovery shot');
+  steps.push('gate (auto) + map during the ceremony: ok');
 
   // Tea pavilion: press E at the table.
   await step(
@@ -80,6 +94,9 @@ try {
     async () => {
       await place(anchors.pavilionTable.x - 1.4, anchors.pavilionTable.z + 1.2, 2.6);
       await waitPrompt('about');
+      // keyboard players see the key, not the touch hint
+      const key = await page.textContent('.hud__prompt kbd');
+      if (key !== 'E') throw new Error(`prompt shows "${key}" instead of E`);
       await page.keyboard.press('KeyE');
     },
     'about',
@@ -155,6 +172,8 @@ try {
 
   // Dragging on the canvas orbits the camera (the HUD layer must let it through).
   await closePanels();
+  await page.waitForFunction(() => !window.__valley.uiBlocking);
+  await page.waitForTimeout(500);
   const yaw0 = await page.evaluate(() => window.__valley.rig.targetYaw);
   await page.mouse.move(480, 300);
   await page.mouse.down();

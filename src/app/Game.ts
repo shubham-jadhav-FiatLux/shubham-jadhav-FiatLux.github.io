@@ -42,6 +42,8 @@ export class Game {
   /** seconds of actual play (no panel open), for gentle hints */
   private playTime = 0;
   private tips = { beacons: false, map: false };
+  /** gameplay timers (ceremony, bell, dummy); cancelled by quick travel and reset */
+  private pending = new Set<number>();
 
   constructor(
     private readonly app: App,
@@ -111,6 +113,20 @@ export class Game {
     }, 3200);
   }
 
+  /** setTimeout that quick travel and progress reset can cancel. */
+  private later(fn: () => void, ms: number): void {
+    const id = window.setTimeout(() => {
+      this.pending.delete(id);
+      fn();
+    }, ms);
+    this.pending.add(id);
+  }
+
+  private cancelPending(): void {
+    for (const id of this.pending) window.clearTimeout(id);
+    this.pending.clear();
+  }
+
   private get panelOpen(): boolean {
     return this.scroll.isOpen || this.map.isOpen || this.menu.isOpen || this.classic.isOpen;
   }
@@ -160,6 +176,7 @@ export class Game {
       app.animator.lookTarget = it ? { x: it.x, y: it.y + 0.8, z: it.z } : null;
     });
     this.zones.on('trigger', (it) => this.onTrigger(it));
+    this.zones.shouldAutoFire = (it) => !!it.section && !this.progress.has(it.section);
 
     this.hud.on('prompt', () => this.zones.interact('E'));
     this.hud.on('map', () => this.toggleMap());
@@ -168,7 +185,11 @@ export class Game {
       audio.setMusic(!audio.musicOn);
       this.hud.setMusic(audio.musicOn);
     });
-    this.hud.on('menu', () => this.menu.toggle());
+    this.hud.on('menu', () => {
+      this.scroll.close();
+      this.map.close();
+      this.menu.toggle();
+    });
     this.hud.on('seal', (id) => this.openSection(id));
 
     this.scroll.on('open', () => audio.sfx('open'));
@@ -188,9 +209,12 @@ export class Game {
     this.scroll.on('travel', (id) => this.travelTo(id));
     this.map.on('travel', (id) => this.travelTo(id));
     this.menu.on('quality', (q) => app.quality.set(q));
+    app.quality.on('change', (s) => this.menu.setQuality(s.level));
     this.menu.on('classic', () => this.classic.open());
     this.menu.on('help', () => this.openSection('welcome'));
     this.menu.on('reset', () => {
+      this.cancelPending(); // including a ceremony in progress: release its camera shot
+      app.rig.endShot();
       this.progress.reset();
       this.hud.toast('The scrolls are hidden again');
     });
@@ -249,13 +273,16 @@ export class Game {
         const index = it.focus ?? 0;
         if (now - this.lastStrikeHit < 450) return;
         this.lastStrikeHit = now;
-        window.setTimeout(() => {
+        this.later(() => {
           const p = app.controller.position;
           app.architecture.training.hit(index, p.x, p.z, 1);
           this.audio.sfx('thwack', { x: it.x, z: it.z });
           app.dustRing(tmp.set(it.x, it.y + 0.2, it.z), 0.5);
           if (!this.progress.has('skills')) {
-            window.setTimeout(() => this.discoverOrOpen('skills', index, it), 350);
+            this.later(() => {
+              if (this.panelOpen) this.discoverQuietly('skills');
+              else this.discoverOrOpen('skills', index, it);
+            }, 350);
           } else {
             const g = app.content.skills.groups[index];
             if (g) this.hud.toast(`${g.name}: ${g.items.map((x) => x.name).join(' · ')}`);
@@ -266,7 +293,7 @@ export class Game {
       case 'drum': {
         if (!fromStrike) app.animator.play('strike');
         // land the sound on the kick's impact frame
-        window.setTimeout(() => {
+        this.later(() => {
           this.audio.sfx('drum', { x: it.x, z: it.z });
           app.dustRing(tmp.set(it.x, it.y - 1, it.z), 0.9);
           globalUniforms.uShockwave.value.set(it.x, it.y - 1, it.z);
@@ -279,7 +306,10 @@ export class Game {
           this.audio.sfx('gong', { x: it.x, z: it.z });
           this.lanterns.release({ x: it.x, y: it.y + 1, z: it.z }, 14);
           app.rig.shake(0.35);
-          window.setTimeout(() => this.discoverOrOpen('contact', undefined, it), 1300);
+          this.later(() => {
+            if (this.panelOpen) this.discoverQuietly('contact');
+            else this.discoverOrOpen('contact', undefined, it);
+          }, 1300);
         });
         if (rang) this.busyUntil = now + 900;
         break;
@@ -299,21 +329,31 @@ export class Game {
       this.hud.stamp(section);
       app.renderer.pulseBloom(1.2);
       this.frameShot(at, 1.6);
-      window.setTimeout(() => {
-        this.scroll.open(section, focus);
-        this.hud.toast(
-          `New scroll: ${sectionMeta(section).label} (${this.progress.count}/${this.progress.total})`,
-        );
-        if (this.progress.count === this.progress.total) {
-          window.setTimeout(
-            () => this.hud.toast('Every scroll found. Thank you for visiting!'),
-            1600,
-          );
-        }
+      this.later(() => {
+        // If the visitor opened the map or menu meanwhile, the scroll waits in the tabs
+        // and the camera goes back to following the panda.
+        if (this.panelOpen) app.rig.endShot();
+        else this.scroll.open(section, focus);
+        this.announce(section);
       }, 1500);
     } else {
       this.frameShot(at, 1.1);
       this.scroll.open(section, focus);
+    }
+  }
+
+  /** A delayed discovery that lands while a panel is open: record it without the show. */
+  private discoverQuietly(section: SectionId): void {
+    if (!this.progress.discover(section)) return;
+    this.audio.sfx('discover');
+    this.announce(section);
+  }
+
+  private announce(section: SectionId): void {
+    const { count, total } = this.progress;
+    this.hud.toast(`New scroll: ${sectionMeta(section).label} (${count}/${total})`);
+    if (count === total) {
+      this.later(() => this.hud.toast('Every scroll found. Thank you for visiting!'), 1600);
     }
   }
 
@@ -343,6 +383,7 @@ export class Game {
   travelTo(id: SectionId): void {
     const app = this.app;
     const dest = TRAVEL_POINTS[id];
+    this.cancelPending();
     this.scroll.close();
     this.map.close();
     this.audio.sfx('travel');

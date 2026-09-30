@@ -3,6 +3,7 @@ import { SECTIONS, sectionMeta, type SectionId } from '../content/sections';
 import type { PortfolioContent } from '../content/types';
 import type { Progress } from '../zones/Progress';
 import { releaseFocus, trapFocus } from './focus';
+import { scrollWithin } from './scrolling';
 import { ICONS } from './icons';
 import { esc, renderSection, sectionTitle } from './render';
 
@@ -126,8 +127,7 @@ export class ScrollPanel extends Emitter<ScrollEvents> {
     }
     this.body.scrollTop = 0;
     const focused = this.body.querySelector('.card--focus, .timeline--focus');
-    if (focused)
-      window.setTimeout(() => focused.scrollIntoView({ block: 'center', behavior: 'smooth' }), 400);
+    if (focused) window.setTimeout(() => scrollWithin(this.body, focused, 'center'), 400);
   }
 
   private renderTabs(): void {

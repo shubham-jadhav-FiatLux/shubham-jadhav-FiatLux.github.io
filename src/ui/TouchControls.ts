@@ -11,6 +11,7 @@ export class TouchControls {
   private pointer: number | null = null;
   private origin = { x: 0, y: 0 };
   private visible = false;
+  private enabled = true;
 
   constructor(
     root: HTMLElement,
@@ -38,6 +39,7 @@ export class TouchControls {
     this.el.querySelectorAll<HTMLButtonElement>('[data-action]').forEach((b) => {
       b.addEventListener('pointerdown', (e) => {
         e.preventDefault();
+        if (e.pointerType !== 'mouse') this.input.usingTouch = true;
         b.classList.add('touch__btn--down');
         input.press(b.dataset.action as 'jump' | 'strike' | 'interact');
       });
@@ -61,7 +63,10 @@ export class TouchControls {
     this.el.classList.add('touch--visible');
   }
 
+  /** Called every frame; only acts when the state changes. */
   setEnabled(on: boolean): void {
+    if (on === this.enabled) return;
+    this.enabled = on;
     this.el.classList.toggle('touch--hidden', !on);
     if (!on) this.reset();
   }

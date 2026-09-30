@@ -86,7 +86,9 @@ export class Music {
   update(): void {
     if (!this.running) return;
     const now = this.core.now;
-    if (this.nextBlock < now - 1) this.nextBlock = now + 0.1; // resumed after a pause
+    // Fell behind (a stall or a suspended context): restart the grid instead of playing
+    // every overdue note at once.
+    if (this.nextBlock < now) this.nextBlock = now + 0.1;
     while (this.nextBlock < now + 0.6) {
       this.composeBlock(this.nextBlock);
       this.nextBlock += this.eighth * 16;

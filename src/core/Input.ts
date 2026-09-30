@@ -17,6 +17,17 @@ const KEY_ACTIONS: Record<string, Action> = {
   Escape: 'escape',
 };
 
+// Letter shortcuts also match the character typed, so "M" opens the map on AZERTY
+// (where that key reports the code `Semicolon`) as the on-screen hints promise.
+const LETTER_ACTIONS: Record<string, Action> = {
+  f: 'strike',
+  j: 'strike',
+  e: 'interact',
+  m: 'map',
+  n: 'mute',
+  h: 'help',
+};
+
 // KeyboardEvent.code is the physical key, so WASD also works on AZERTY/Dvorak layouts.
 const MOVE_KEYS = {
   forward: ['KeyW', 'ArrowUp'],
@@ -59,7 +70,8 @@ export class Input extends Emitter<{ action: Action; any: void }> {
   /** performance.now() of the last user input, used for idle behaviour */
   lastActivity = performance.now();
   usingGamepad = false;
-  usingTouch = false;
+  /** last input came from touch (phones start out true; a key press flips it back) */
+  usingTouch = window.matchMedia?.('(pointer: coarse)').matches ?? false;
 
   private keys = new Set<string>();
   private pressed = new Set<Action>();
@@ -68,6 +80,7 @@ export class Input extends Emitter<{ action: Action; any: void }> {
   private dragging: number | null = null;
   private lastPointer = new Vector2();
   private padPrev: boolean[] = [];
+  private gamepadsBlocked = false;
 
   constructor(readonly surface: HTMLElement) {
     super();
@@ -99,8 +112,10 @@ export class Input extends Emitter<{ action: Action; any: void }> {
   setTouchMove(x: number, y: number, run: boolean): void {
     this.touchMove.set(x, y);
     this.touchRun = run;
-    this.usingTouch = true;
-    if (x !== 0 || y !== 0) this.touch();
+    if (x !== 0 || y !== 0) {
+      this.usingTouch = true;
+      this.touch();
+    }
   }
 
   /** Poll gamepads and compose the movement vector. Call once per frame. */
@@ -149,15 +164,21 @@ export class Input extends Emitter<{ action: Action; any: void }> {
   private onKeyDown = (e: KeyboardEvent): void => {
     if (isTextInput(e.target)) return;
     this.usingGamepad = false;
-    const action = KEY_ACTIONS[e.code];
+    this.usingTouch = false;
     const isMove = Object.values(MOVE_KEYS).some((list) => list.includes(e.code));
+    const letter = !isMove && e.key.length === 1 ? LETTER_ACTIONS[e.key.toLowerCase()] : undefined;
+    const action = letter ?? KEY_ACTIONS[e.code];
     if (this.gameplayEnabled && (isMove || e.code === 'Space')) e.preventDefault();
     if (!e.repeat && action) {
       // Let focused, visible buttons handle Enter/Space themselves.
       const onButton =
         (e.target instanceof HTMLButtonElement || e.target instanceof HTMLAnchorElement) &&
-        e.target.checkVisibility?.({ visibilityProperty: true, checkVisibilityCSS: true }) !==
-          false;
+        e.target.checkVisibility?.({
+          visibilityProperty: true,
+          checkVisibilityCSS: true,
+          opacityProperty: true,
+          checkOpacity: true,
+        }) !== false;
       if (!(onButton && (e.code === 'Enter' || e.code === 'Space'))) {
         this.pressed.add(action);
         this.emit('action', action);
@@ -198,7 +219,15 @@ export class Input extends Emitter<{ action: Action; any: void }> {
   };
 
   private pollGamepad(apply: (x: number, y: number, run: boolean) => void): void {
-    const pads = navigator.getGamepads?.();
+    if (this.gamepadsBlocked) return;
+    let pads: (Gamepad | null)[] | undefined;
+    try {
+      pads = navigator.getGamepads?.();
+    } catch {
+      // Throws when a permissions policy blocks gamepads (e.g. inside an embedding iframe).
+      this.gamepadsBlocked = true;
+      return;
+    }
     if (!pads) return;
     for (const pad of pads) {
       if (!pad || !pad.connected) continue;

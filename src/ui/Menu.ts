@@ -104,6 +104,14 @@ export class Menu extends Emitter<MenuEvents> {
     trapFocus(this.el, () => this.isOpen);
   }
 
+  /** Reflects a quality change made elsewhere (e.g. the adaptive monitor). */
+  setQuality(level: QualityLevel): void {
+    this.quality = level;
+    this.el
+      .querySelectorAll<HTMLButtonElement>('[data-quality]')
+      .forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.quality === level)));
+  }
+
   private action(name: string, fn: () => void): void {
     this.el.querySelector(`[data-act="${name}"]`)?.addEventListener('click', fn);
   }

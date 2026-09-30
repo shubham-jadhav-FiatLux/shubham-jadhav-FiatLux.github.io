@@ -131,7 +131,11 @@ export function buildInteractables(a: Anchors, c: PortfolioContent): Interactabl
  */
 export class Zones extends Emitter<ZoneEvents> {
   active: Interactable | null = null;
-  private autoFired = new Set<string>();
+  /**
+   * Decides whether an `auto` spot fires on entry. The game only lets it fire while its
+   * scroll is still undiscovered, so returning visitors are not greeted by it every time.
+   */
+  shouldAutoFire: (it: Interactable) => boolean = () => true;
 
   constructor(readonly items: Interactable[]) {
     super();
@@ -170,10 +174,7 @@ export class Zones extends Emitter<ZoneEvents> {
     if (best !== this.active) {
       this.active = best;
       this.emit('focus', best);
-      if (best?.auto && !this.autoFired.has(best.id)) {
-        this.autoFired.add(best.id);
-        this.emit('trigger', best);
-      }
+      if (best?.auto && this.shouldAutoFire(best)) this.emit('trigger', best);
     }
   }
 

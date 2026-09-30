@@ -11,6 +11,7 @@ import type { Progress } from './Progress';
 import type { Zones } from './Zones';
 import { BRUSH_FONT } from '../world/architecture/textures';
 import { smoothstep } from '../utils/math';
+import { roundRectPath } from '../utils/canvas';
 
 function beaconTexture(glyph: string): CanvasTexture {
   const s = 256;
@@ -25,7 +26,7 @@ function beaconTexture(glyph: string): CanvasTexture {
   ctx.fillRect(0, 0, s, s);
   ctx.fillStyle = '#b8352b';
   ctx.beginPath();
-  ctx.roundRect(s * 0.28, s * 0.28, s * 0.44, s * 0.44, 18);
+  roundRectPath(ctx, s * 0.28, s * 0.28, s * 0.44, s * 0.44, 18);
   ctx.fill();
   ctx.strokeStyle = 'rgba(251, 238, 224, 0.85)';
   ctx.lineWidth = 6;
