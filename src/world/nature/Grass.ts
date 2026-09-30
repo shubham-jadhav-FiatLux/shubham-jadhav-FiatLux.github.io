@@ -67,6 +67,7 @@ export class Grass {
         uPlayerPos: globalUniforms.uPlayerPos,
         uShockwave: globalUniforms.uShockwave,
         uShockAge: globalUniforms.uShockAge,
+        uRipple: globalUniforms.uRipple,
         uHeightMap: globalUniforms.uHeightMap,
         uMaskMap: globalUniforms.uMaskMap,
         uTerrain: globalUniforms.uTerrain,
@@ -83,6 +84,7 @@ uniform float uSide;
 uniform vec3 uPlayerPos;
 uniform vec3 uShockwave;
 uniform float uShockAge;
+uniform vec4 uRipple;
 uniform vec3 uTip;
 uniform vec3 uSunDir;
 varying vec3 vGrassColor;
@@ -153,6 +155,13 @@ ${GRASS_COLOR_GLSL}
   tipCol = mix(tipCol, vec3(0.78, 0.72, 0.38), step(0.93, rnd) * 0.6);
   vGrassColor = mix(groundCol * 0.55, tipCol, smoothstep(0.0, 1.0, t));
   vGrassTrans = t * t;
+  {
+    // discovery ripple: blades light up gold as the ring passes
+    float age = uRipple.z;
+    float rr = length(worldXZ - uRipple.xy);
+    float glow = age < 3.0 ? exp(-pow((rr - age * 7.5) * 1.2, 2.0)) * exp(-age * 1.1) * uRipple.w : 0.0;
+    vGrassColor += vec3(1.2, 0.85, 0.3) * glow * t;
+  }
 
   vec3 objectNormal = vec3(0.0, 1.0, 0.0);
   #ifdef USE_TANGENT

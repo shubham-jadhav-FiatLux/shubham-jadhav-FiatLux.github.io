@@ -168,6 +168,7 @@ export class Terrain {
         uTime: globalUniforms.uTime,
         uMaskMap: globalUniforms.uMaskMap,
         uTerrain: globalUniforms.uTerrain,
+        uRipple: globalUniforms.uRipple,
       });
       for (const [k, v] of Object.entries(colors)) shader.uniforms[k] = { value: v };
 
@@ -190,9 +191,21 @@ varying vec3 vTerrainNormal;
 uniform float uTime;
 uniform sampler2D uMaskMap;
 uniform vec3 uTerrain;
+uniform vec4 uRipple;
 uniform vec3 uDirtA, uDirtB, uStoneA, uStoneB, uSand, uRock, uMoss, uUnderwater;
 ${NOISE_GLSL}
 ${GRASS_COLOR_GLSL}
+// Golden ink ring of a discovery, spreading over the ground.
+float inkRipple(vec2 xz) {
+  float age = uRipple.z;
+  if (age > 3.0) return 0.0;
+  float r = length(xz - uRipple.xy);
+  float front = age * 7.5;
+  float wobble = vnoise(xz * 1.7 + age) * 0.9;
+  float ring = exp(-pow((r - front + wobble) * 1.4, 2.0));
+  float inner = smoothstep(front, 0.0, r) * 0.25;
+  return (ring + inner) * exp(-age * 1.1) * uRipple.w;
+}
 // Irregular flagstones: Voronoi cells with dark grout.
 vec3 flagstones(vec2 p, float n) {
   vec2 g = floor(p);
@@ -283,6 +296,10 @@ vec3 terrainColor(vec3 wp, vec3 nrm) {
         .replace(
           '#include <color_fragment>',
           '#include <color_fragment>\ndiffuseColor.rgb = terrainColor(vTerrainPos, normalize(vTerrainNormal));',
+        )
+        .replace(
+          '#include <emissivemap_fragment>',
+          '#include <emissivemap_fragment>\ntotalEmissiveRadiance += vec3(1.6, 1.1, 0.45) * inkRipple(vTerrainPos.xz);',
         );
     };
     mat.customProgramCacheKey = () => 'terrain-v1';
