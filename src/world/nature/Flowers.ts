@@ -8,7 +8,7 @@ import {
   type Scene,
 } from 'three';
 import { globalUniforms } from '../../render/uniforms';
-import { NOISE_GLSL, TERRAIN_GLSL, WIND_GLSL } from '../../render/glsl';
+import { GROUND_WARP_GLSL, NOISE_GLSL, TERRAIN_GLSL, WIND_GLSL } from '../../render/glsl';
 
 /** Unit flower: a thin stem quad and a five-petal head (position.y = 1 at the head). */
 function createFlowerGeometry(): InstancedBufferGeometry {
@@ -95,6 +95,7 @@ uniform vec3 uPlayerPos;
 uniform vec3 uPalette[6];
 varying vec3 vFlowerColor;
 ${NOISE_GLSL}
+${GROUND_WARP_GLSL}
 ${TERRAIN_GLSL}
 ${WIND_GLSL}`,
         )
@@ -110,7 +111,8 @@ ${WIND_GLSL}`,
   float rnd2 = hash12(worldXZ * 9.71 - 4.2);
   float ground = terrainHeightAt(worldXZ);
   vec4 mask = terrainMaskAt(worldXZ);
-  float bare = max(max(max(mask.r, mask.g), mask.a), terrainDetailAt(worldXZ).a);
+  float pathW = terrainMaskAt(worldXZ + groundWarp(worldXZ)).r;
+  float bare = max(max(max(pathW, mask.g), mask.a), terrainDetailAt(worldXZ).a);
   float density = 1.0 - smoothstep(0.2, 0.5, bare);
   density *= smoothstep(0.3, 0.6, ground);
   // flowers grow in drifts
@@ -154,7 +156,7 @@ vec3 normal = normalize(vNormal);
 vec3 nonPerturbedNormal = normal;`,
         );
     };
-    material.customProgramCacheKey = () => 'flowers-v1';
+    material.customProgramCacheKey = () => 'flowers-v2';
     this.mesh = new Mesh(geometry, material);
     this.mesh.frustumCulled = false;
     this.mesh.receiveShadow = true;
