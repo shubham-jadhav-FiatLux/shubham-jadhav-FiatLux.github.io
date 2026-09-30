@@ -2,6 +2,7 @@ import { Emitter } from '../core/Emitter';
 import { SECTIONS, type SectionId } from '../content/sections';
 import type { Progress } from '../zones/Progress';
 import type { Terrain } from '../world/Terrain';
+import { releaseFocus, trapFocus } from './focus';
 import { ICONS } from './icons';
 import { esc } from './render';
 import { BRUSH_FONT } from '../world/architecture/textures';
@@ -194,7 +195,7 @@ export class MapPanel extends Emitter<{ travel: SectionId; close: void }> {
         <div class="map__canvas">
           <div class="map__panda" aria-hidden="true"></div>
         </div>
-        <p class="map__hint">Tap a seal to travel there. Faded seals are scrolls you have not found yet.</p>
+        <p class="map__hint">Choose a seal to travel there. Faded seals are scrolls you have not found yet.</p>
       </div>`;
     root.appendChild(this.el);
     const canvasWrap = this.el.querySelector('.map__canvas')! as HTMLElement;
@@ -220,6 +221,7 @@ export class MapPanel extends Emitter<{ travel: SectionId; close: void }> {
     this.el.addEventListener('pointerdown', (e) => {
       if (e.target === this.el) this.close();
     });
+    trapFocus(this.el, () => this.isOpen);
   }
 
   open(): void {
@@ -234,16 +236,16 @@ export class MapPanel extends Emitter<{ travel: SectionId; close: void }> {
     }
     this.isOpen = true;
     this.el.classList.add('overlay--open');
-    window.setTimeout(
-      () => (this.el.querySelector('.map__head .icon-btn') as HTMLElement)?.focus(),
-      50,
-    );
+    window.setTimeout(() => {
+      if (this.isOpen) (this.el.querySelector('.map__head .icon-btn') as HTMLElement)?.focus();
+    }, 50);
   }
 
   close(): void {
     if (!this.isOpen) return;
     this.isOpen = false;
     this.el.classList.remove('overlay--open');
+    releaseFocus(this.el);
     this.emit('close', undefined);
   }
 

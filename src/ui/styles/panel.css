@@ -8,6 +8,7 @@
   background: radial-gradient(ellipse at center, rgba(30, 18, 8, 0.15), rgba(30, 18, 8, 0.5));
   opacity: 0;
   visibility: hidden;
+  pointer-events: auto;
   transition:
     opacity 0.35s ease,
     visibility 0s linear 0.35s;
@@ -256,6 +257,21 @@
 .controls dd,
 .facts dd {
   margin: 0;
+}
+
+/* Show the controls for the device in hand. */
+.controls--touch {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .controls--keys,
+  .controls--keys-note {
+    display: none;
+  }
+  .controls--touch {
+    display: grid;
+  }
 }
 
 .grid {

@@ -23,6 +23,9 @@ export class Loader {
     this.classicBtn = el.querySelector('.loader__classic')!;
     el.querySelector('.loader__title')!.textContent = content.site.title;
     el.querySelector('.loader__tagline')!.textContent = content.site.tagline;
+    if (window.matchMedia?.('(pointer: coarse)').matches) {
+      this.hint.textContent = 'Sound on · Joystick to walk · Headphones recommended';
+    }
     const owner = el.querySelector('.loader__owner')!;
     owner.textContent = content.owner.name.includes('[')
       ? ''
@@ -38,8 +41,11 @@ export class Loader {
     this.status.textContent = `${label}…`;
   }
 
-  /** Reveal the valley and wait for the visitor to begin. */
-  ready(onBegin: () => void): void {
+  /**
+   * Reveal the valley and wait for the visitor to begin. `canBegin` lets the page veto
+   * the Enter/Space shortcut, e.g. while the page view is open on top of the loader.
+   */
+  ready(onBegin: () => void, canBegin: () => boolean = () => true): void {
     this.el.classList.add('loader--ready');
     this.beginBtn.hidden = false;
     this.hint.hidden = false;
@@ -54,6 +60,7 @@ export class Loader {
       onBegin();
     };
     const onKey = (e: KeyboardEvent) => {
+      if (!canBegin()) return;
       if (e.code === 'Enter' || e.code === 'Space') {
         e.preventDefault();
         begin();

@@ -20,7 +20,8 @@
     "test:watch": "vitest",
     "check": "npm run typecheck && npm run lint && npm run test && npm run build",
     "shots": "node scripts/screenshots.mjs",
-    "e2e": "node scripts/smoke.mjs"
+    "e2e": "node scripts/smoke.mjs",
+    "og-image": "node scripts/og-image.mjs"
   },
   "keywords": [
     "portfolio",

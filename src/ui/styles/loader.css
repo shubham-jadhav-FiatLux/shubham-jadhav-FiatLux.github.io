@@ -186,3 +186,24 @@
     transform: none;
   }
 }
+
+/* Landscape phones: tighten the title screen so everything fits above the fold. */
+@media (max-height: 520px) {
+  .loader__content {
+    gap: 6px;
+    margin-top: 0;
+  }
+  .loader .seal--lg {
+    font-size: 28px;
+  }
+  .loader__title {
+    margin-top: 4px;
+    font-size: clamp(30px, 6vw, 48px);
+  }
+  .loader__tagline {
+    font-size: 17px;
+  }
+  .loader__begin {
+    margin-top: 8px;
+  }
+}

@@ -47,6 +47,13 @@ export interface PortfolioContent {
     /** Chinese characters for the gate signboard (must be in the font subset) */
     gateGlyphs: string;
     tagline: string;
+    /**
+     * Public address of the site, e.g. "https://you.github.io/valley-of-whispering-bamboo/".
+     * Used for link previews (Open Graph). The deploy workflow fills it in automatically.
+     */
+    url?: string;
+    /** Link to the source code, shown in the menu credits */
+    sourceUrl?: string;
   };
   owner: {
     name: string;

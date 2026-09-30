@@ -153,9 +153,11 @@ export class Input extends Emitter<{ action: Action; any: void }> {
     const isMove = Object.values(MOVE_KEYS).some((list) => list.includes(e.code));
     if (this.gameplayEnabled && (isMove || e.code === 'Space')) e.preventDefault();
     if (!e.repeat && action) {
-      // Let focused buttons handle Enter/Space themselves.
+      // Let focused, visible buttons handle Enter/Space themselves.
       const onButton =
-        e.target instanceof HTMLButtonElement || e.target instanceof HTMLAnchorElement;
+        (e.target instanceof HTMLButtonElement || e.target instanceof HTMLAnchorElement) &&
+        e.target.checkVisibility?.({ visibilityProperty: true, checkVisibilityCSS: true }) !==
+          false;
       if (!(onButton && (e.code === 'Enter' || e.code === 'Space'))) {
         this.pressed.add(action);
         this.emit('action', action);

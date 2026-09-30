@@ -53,6 +53,13 @@
   color: var(--ink-soft);
 }
 
+.classic__note {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-style: italic;
+  color: var(--ink-faint);
+}
+
 .classic__nav {
   display: flex;
   flex-wrap: wrap;
