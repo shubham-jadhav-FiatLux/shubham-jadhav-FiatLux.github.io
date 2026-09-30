@@ -1,4 +1,4 @@
-import { Color, Fog, Scene, Vector3 } from 'three';
+import { Color, Fog, Scene, Vector3, type Texture } from 'three';
 import { Debug } from '../core/Debug';
 import { Emitter } from '../core/Emitter';
 import { Input } from '../core/Input';
@@ -7,6 +7,7 @@ import { Quality } from '../core/Quality';
 import { Renderer } from '../render/Renderer';
 import { installAtmosphericFog } from '../render/fog';
 import { ATMOSPHERE } from '../render/atmosphere';
+import { createSkyEnvironment } from '../render/environment';
 import { globalUniforms } from '../render/uniforms';
 import { CameraRig } from '../camera/CameraRig';
 import { CollisionWorld } from '../physics/CollisionWorld';
@@ -59,6 +60,8 @@ export class App extends Emitter<AppEvents> {
   water!: Water;
   architecture!: Architecture;
   lanterns!: LanternGlow;
+  /** prefiltered sky for reflections on glossy materials */
+  private environment: Texture | null = null;
   placement!: Placement;
   sky!: Sky;
   lighting!: Lighting;
@@ -161,6 +164,7 @@ export class App extends Emitter<AppEvents> {
       this.collision,
       this.placement,
       this.content,
+      this.environment,
     );
     this.lanterns = new LanternGlow(this.architecture.lights, 3);
     this.lanterns.applyQuality(this.quality.settings);
@@ -184,6 +188,11 @@ export class App extends Emitter<AppEvents> {
     this.sky.addTo(this.scene);
     new Mountains().addTo(this.scene);
     this.lighting = new Lighting(this.scene, this.quality.settings);
+    try {
+      this.environment = createSkyEnvironment(this.renderer.webgl);
+    } catch {
+      this.environment = null; // reflections are a nicety only
+    }
   }
 
   private buildPlayer(): void {

@@ -1,4 +1,4 @@
-import type { Mesh, Scene, Vector3 } from 'three';
+import type { Mesh, MeshStandardMaterial, Scene, Texture, Vector3 } from 'three';
 import { ArchBuilder, type LightSpot } from './Builder';
 import {
   buildBellTower,
@@ -21,6 +21,7 @@ import type { Placement } from '../placement';
 import type { CollisionWorld } from '../../physics/CollisionWorld';
 import type { PortfolioContent } from '../../content/types';
 import { easeOutCubic } from '../../utils/math';
+import { PierFoam } from '../water/PierFoam';
 
 export interface Point3 {
   x: number;
@@ -68,8 +69,10 @@ export class Architecture {
     col: CollisionWorld,
     placement: Placement,
     content: PortfolioContent,
+    environment: Texture | null = null,
   ) {
     const b = new ArchBuilder();
+    if (environment) b.setEnvironment(environment);
     const h = (x: number, z: number) => terrain.heightAt(x, z);
     const mask = terrain.mask;
 
@@ -128,6 +131,9 @@ export class Architecture {
 
     // Zig-zag bridge across the lake.
     const bridge = buildBridge(b, col, BRIDGE_POINTS, h);
+    const foam = new PierFoam(bridge.piers);
+    foam.addTo(scene);
+    this.meshes.push(foam.mesh);
 
     // Bell tower by the waterfall.
     const bellY = h(PLACES.bell.x, PLACES.bell.z);
@@ -138,6 +144,9 @@ export class Architecture {
       rot: this.bellRot,
     });
     scene.add(this.bell.bell, this.bell.striker);
+    const bronze = this.bell.bell.material as MeshStandardMaterial;
+    bronze.envMap = environment;
+    bronze.envMapIntensity = 1.1;
 
     // Training grounds: one dummy per skill group.
     this.training = new TrainingGround(b, col, PLACES.training, h, content.skills.groups.length);

@@ -163,45 +163,76 @@ export function createWillowTexture() {
   return toTexture(c);
 }
 
-/** Sprays of slim bamboo leaves hanging from twigs. */
+/**
+ * A hanging spray of bamboo leaves: thin twigs fan out from the top centre (where the card
+ * hangs from its branch), each carrying slender, pointed leaves that droop outwards. Leaves
+ * shade from a darker base to a lighter tip; a few turn their paler undersides.
+ */
 export function createBambooLeafTexture() {
   const size = 256;
   const [c, ctx] = canvas(size);
   const rand = new Random(21);
-  const greens = ['#6f9c3c', '#80ad46', '#92bb52', '#648f36', '#a2c55e'];
-  for (let spray = 0; spray < 13; spray++) {
-    const x0 = rand.range(40, 216);
-    const y0 = rand.range(20, 110);
-    const twigA = rand.range(0.3, 2.8);
-    const tx = x0 + Math.cos(twigA) * 30;
-    const ty = y0 + Math.abs(Math.sin(twigA)) * 30;
-    ctx.strokeStyle = '#6b7f3a';
-    ctx.lineWidth = 1.5;
+  const greens: [string, string][] = [
+    ['#5d8a33', '#86b04a'],
+    ['#6a9a3a', '#98c056'],
+    ['#557f2f', '#7fa845'],
+    ['#71a13f', '#a4c862'],
+    ['#4f772b', '#789f40'],
+  ];
+  const under: [string, string] = ['#8aa86c', '#b8cf94'];
+
+  const leaf = (x: number, y: number, angle: number, len: number, w: number) => {
+    const [base, tip] = rand.chance(0.18) ? under : rand.pick(greens);
+    const bend = rand.spread(len * 0.12);
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    const g = ctx.createLinearGradient(0, 0, 0, len);
+    g.addColorStop(0, base);
+    g.addColorStop(1, tip);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.bezierCurveTo(w * 0.95, len * 0.14, w * 0.75, len * 0.62, bend, len);
+    ctx.bezierCurveTo(-w * 0.55, len * 0.62, -w * 0.95, len * 0.14, 0, 0);
+    ctx.fill();
+    // midrib
+    ctx.strokeStyle = 'rgba(235, 245, 200, 0.35)';
+    ctx.lineWidth = 0.9;
+    ctx.beginPath();
+    ctx.moveTo(0, 2);
+    ctx.quadraticCurveTo(bend * 0.3, len * 0.5, bend * 0.9, len * 0.92);
+    ctx.stroke();
+    ctx.restore();
+  };
+
+  const twigs = rand.int(4, 5);
+  for (let t = 0; t < twigs; t++) {
+    // fan the twigs across the card, hanging from the top centre
+    const spread = (t / (twigs - 1)) * 2 - 1;
+    const x0 = size / 2 + rand.spread(10);
+    const y0 = rand.range(4, 14);
+    const x1 = size / 2 + spread * rand.range(60, 85);
+    const y1 = rand.range(70, 120);
+    const cx = (x0 + x1) / 2 + spread * 12;
+    const cy = y0 + rand.range(5, 25);
+    ctx.strokeStyle = '#6b7a38';
+    ctx.lineWidth = 1.6;
     ctx.beginPath();
     ctx.moveTo(x0, y0);
-    ctx.lineTo(tx, ty);
+    ctx.quadraticCurveTo(cx, cy, x1, y1);
     ctx.stroke();
-    const leaves = rand.int(4, 7);
+    const leaves = rand.int(4, 6);
     for (let l = 0; l < leaves; l++) {
-      const a = Math.PI / 2 + rand.spread(1.1);
-      const len = rand.range(42, 70);
-      const w = rand.range(5, 8);
-      ctx.save();
-      ctx.translate(tx, ty);
-      ctx.rotate(a - Math.PI / 2);
-      ctx.fillStyle = rand.pick(greens);
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.quadraticCurveTo(w, len * 0.35, 0, len);
-      ctx.quadraticCurveTo(-w, len * 0.35, 0, 0);
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(40, 60, 20, 0.35)';
-      ctx.lineWidth = 0.8;
-      ctx.beginPath();
-      ctx.moveTo(0, 2);
-      ctx.lineTo(0, len * 0.9);
-      ctx.stroke();
-      ctx.restore();
+      const f = 0.3 + (0.7 * l) / (leaves - 1);
+      // point on the twig (quadratic Bezier)
+      const u = 1 - f;
+      const px = u * u * x0 + 2 * u * f * cx + f * f * x1;
+      const py = u * u * y0 + 2 * u * f * cy + f * f * y1;
+      const side = l % 2 ? 1 : -1;
+      // droop: mostly downwards, splayed to alternate sides, more outward on outer twigs
+      const angle = -spread * 0.45 + side * rand.range(0.25, 0.7);
+      leaf(px, py, angle, rand.range(62, 100) * (1 - 0.15 * f), rand.range(7, 10.5));
     }
   }
   return toTexture(c);

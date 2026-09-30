@@ -1,6 +1,7 @@
 import {
   BoxGeometry,
   CircleGeometry,
+  ConeGeometry,
   CylinderGeometry,
   DoubleSide,
   LatheGeometry,
@@ -12,13 +13,13 @@ import {
   Vector2,
   Vector3,
   type BufferGeometry,
+  type Matrix4,
   type Texture,
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { mul, T, type ArchBuilder } from './Builder';
 import { box, post, tubeAlong } from './geometry';
 import {
-  addBalustrade,
   addBeam,
   addFinial,
   addHipRoof,
@@ -32,6 +33,7 @@ import { createSignboardTexture } from './textures';
 import type { CollisionWorld } from '../../physics/CollisionWorld';
 import type { HouseDef } from '../layout';
 import { WATER_LEVEL } from '../layout';
+import { Random } from '../../utils/random';
 
 export interface Placed {
   x: number;
@@ -523,9 +525,95 @@ export interface BridgeInfo {
   /** outer-corner positions of each bend (for milestone lanterns), shore to shore */
   milestones: { x: number; y: number; z: number }[];
   deckY: number;
+  /** everything standing in the water, for foam rings: centre, half size, corner radius, yaw */
+  piers: { x: number; z: number; hx: number; hz: number; round: number; rot: number }[];
 }
 
-/** Zig-zag stone bridge with balustrades, piers and landings at each bend. */
+const DECK_HALF = 1.1;
+const LANDING_HALF = 1.3;
+const PLANK = 0.27;
+const PLANK_GAP = 0.032;
+const PLANK_T = 0.07;
+const DECK_TONES = ['#9a7250', '#8f6a4a', '#a37a55', '#86664a', '#94704f'];
+
+/** Is the point (world xz) inside the square landing at `c` (rotated by `rot`)? */
+function inLanding(x: number, z: number, c: Vector3, rot: number, half: number): boolean {
+  const dx = x - c.x;
+  const dz = z - c.z;
+  const cs = Math.cos(rot);
+  const sn = Math.sin(rot);
+  const lx = dx * cs - dz * sn;
+  const lz = dx * sn + dz * cs;
+  return Math.abs(lx) < half && Math.abs(lz) < half;
+}
+
+/** Vermilion railing with gilded post caps, top, middle and bottom rails and balusters. */
+function addRailing(b: ArchBuilder, frame: Matrix4, x: number, s0: number, s1: number): void {
+  const len = s1 - s0;
+  const posts = Math.max(2, Math.round(len / 1.5) + 1);
+  for (let k = 0; k < posts; k++) {
+    const s = s0 + (len * k) / (posts - 1);
+    b.add('paint', box(0.16, 0.06, 0.16), PAL.wood, mul(frame, T(x, 0.03, s)));
+    b.add('paint', box(0.12, 0.8, 0.12), PAL.vermilion, mul(frame, T(x, 0.4, s)));
+    b.add(
+      'paint',
+      new CylinderGeometry(0.078, 0.078, 0.04, 10),
+      PAL.gold,
+      mul(frame, T(x, 0.82, s)),
+    );
+    b.add(
+      'paint',
+      new SphereGeometry(0.062, 10, 8).scale(1, 1.35, 1),
+      PAL.gold,
+      mul(frame, T(x, 0.9, s)),
+    );
+    b.add('paint', new ConeGeometry(0.022, 0.07, 6), PAL.gold, mul(frame, T(x, 1.0, s)));
+  }
+  const mid = (s0 + s1) / 2;
+  b.add('paint', box(0.085, 0.07, len), PAL.vermilion, mul(frame, T(x, 0.74, mid)));
+  b.add('paint', box(0.06, 0.05, len), PAL.vermilion, mul(frame, T(x, 0.47, mid)));
+  b.add('paint', box(0.065, 0.06, len), PAL.vermilion, mul(frame, T(x, 0.12, mid)));
+  const balusters = Math.floor(len / 0.19);
+  for (let k = 1; k < balusters; k++) {
+    const s = s0 + (len * k) / balusters;
+    b.add('paint', box(0.03, 0.3, 0.03), PAL.vermilionDark, mul(frame, T(x, 0.295, s)));
+  }
+}
+
+/** Stone pier in courses of masonry, from the lake bed up to `top` (local y = 0 at the bed). */
+function addMasonryPier(
+  b: ArchBuilder,
+  m: Matrix4,
+  half: number,
+  height: number,
+  rand: Random,
+): void {
+  const courses = Math.max(1, Math.round(height / 0.42));
+  const h = height / courses;
+  for (let k = 0; k < courses; k++) {
+    const inset = rand.range(-0.025, 0.02);
+    b.add(
+      'paint',
+      box((half + inset) * 2, h - 0.025, (half + rand.range(-0.025, 0.02)) * 2),
+      k % 2 ? PAL.stone : PAL.stoneDark,
+      mul(m, T(0, k * h + h / 2, 0, 0, rand.spread(0.015))),
+      'stone',
+    );
+  }
+  // mortar core behind the joints
+  b.add(
+    'paint',
+    box(half * 2 - 0.05, height, half * 2 - 0.05),
+    '#6d6558',
+    mul(m, T(0, height / 2, 0)),
+    'stone',
+  );
+}
+
+/**
+ * Zig-zag bridge: wooden plank decks on timber pile bents, stone landings on masonry
+ * piers at every bend, vermilion railings with gilded caps, stone abutments at the shores.
+ */
 export function buildBridge(
   b: ArchBuilder,
   col: CollisionWorld,
@@ -533,108 +621,226 @@ export function buildBridge(
   ground: (x: number, z: number) => number,
 ): BridgeInfo {
   const deckY = WATER_LEVEL + 0.62;
-  const halfW = 1.1;
-  const id = T();
+  const landingTop = deckY + 0.03;
+  const rand = new Random(77);
   const pts = points.map(([x, z]) => new Vector3(x, deckY, z));
+  const last = pts.length - 2;
   const milestones: BridgeInfo['milestones'] = [];
-  for (let i = 0; i < pts.length - 1; i++) {
+  const piers: BridgeInfo['piers'] = [];
+  const landingRot = (i: number) =>
+    Math.atan2(pts[i + 1]!.x - pts[i]!.x, pts[i + 1]!.z - pts[i]!.z);
+
+  for (let i = 0; i <= last; i++) {
     const a = pts[i]!;
     const c = pts[i + 1]!;
     const dir = new Vector3().subVectors(c, a);
     const len = dir.length();
     dir.normalize();
     const yaw = Math.atan2(dir.x, dir.z);
-    const mid = new Vector3().lerpVectors(a, c, 0.5);
-    b.add(
-      'paint',
-      box(halfW * 2, 0.32, len + 0.4),
-      PAL.stone,
-      mul(id, T(mid.x, deckY - 0.16, mid.z, 0, yaw)),
-    );
-    // slab joints
-    const slabs = Math.max(2, Math.round(len / 1.2));
-    for (let k = 1; k < slabs; k++) {
-      const p = new Vector3().lerpVectors(a, c, k / slabs);
+    // segment frame: x across the deck, y up from the deck surface, z along from `a`
+    const frame = T(a.x, deckY, a.z, 0, yaw);
+    const side = new Vector3(dir.z, 0, -dir.x);
+    const at = (x: number, s: number) =>
+      new Vector3(a.x + side.x * x + dir.x * s, deckY, a.z + side.z * x + dir.z * s);
+
+    // Deck planks, skipping those hidden inside a landing.
+    const sStart = i === 0 ? -0.5 : 0.6;
+    const sEnd = i === last ? len + 0.5 : len - 0.6;
+    for (let s = sStart + PLANK / 2; s < sEnd; s += PLANK + PLANK_GAP) {
+      const corners = [
+        at(-DECK_HALF, s - PLANK / 2),
+        at(DECK_HALF, s - PLANK / 2),
+        at(-DECK_HALF, s + PLANK / 2),
+        at(DECK_HALF, s + PLANK / 2),
+      ];
+      const hidden = (k: number) =>
+        k > 0 &&
+        k < pts.length - 1 &&
+        corners.every((p) => inLanding(p.x, p.z, pts[k]!, landingRot(k), LANDING_HALF - 0.04));
+      if (hidden(i) || hidden(i + 1)) continue;
       b.add(
         'paint',
-        box(halfW * 2 + 0.02, 0.02, 0.05),
-        PAL.stoneDark,
-        mul(id, T(p.x, deckY + 0.002, p.z, 0, yaw)),
+        box(DECK_HALF * 2 + rand.range(-0.05, 0.04), PLANK_T, PLANK + rand.range(-0.01, 0.01)),
+        rand.pick(DECK_TONES),
+        mul(
+          frame,
+          T(
+            rand.range(-0.025, 0.025),
+            -PLANK_T / 2 + rand.range(-0.004, 0.002),
+            s,
+            0,
+            rand.spread(0.012),
+          ),
+        ),
+        'wood',
+      );
+    }
+    // Stringers under the planks and vermilion fascia boards along both edges.
+    const spanFrom = i === 0 ? -0.5 : 0.9;
+    const spanTo = i === last ? len + 0.5 : len - 0.9;
+    const spanMid = (spanFrom + spanTo) / 2;
+    const spanLen = spanTo - spanFrom;
+    for (const sx of [-1, 1]) {
+      b.add(
+        'paint',
+        box(0.14, 0.22, spanLen),
+        '#4a2a1b',
+        mul(frame, T(sx * (DECK_HALF - 0.2), -PLANK_T - 0.11, spanMid)),
+      );
+      b.add(
+        'paint',
+        box(0.05, 0.2, spanLen),
+        PAL.vermilion,
+        mul(frame, T(sx * (DECK_HALF + 0.025), -0.08, spanMid)),
       );
     }
     col.addPlatform({
-      shape: { type: 'box', x: mid.x, z: mid.z, hx: halfW, hz: len / 2 + 0.2, rot: yaw },
+      shape: {
+        type: 'box',
+        x: (a.x + c.x) / 2,
+        z: (a.z + c.z) / 2,
+        hx: DECK_HALF + 0.05,
+        hz: len / 2 + 0.2,
+        rot: yaw,
+      },
       top: deckY,
       bottom: deckY - 0.45,
-      surface: 'stone',
+      surface: 'wood',
     });
-    // balustrades (left and right), leaving the bends open
-    const side = new Vector3(dir.z, 0, -dir.x);
-    for (const s of [-1, 1]) {
-      const from = a
-        .clone()
-        .addScaledVector(dir, i === 0 ? 1.0 : 1.35)
-        .addScaledVector(side, s * (halfW - 0.08));
-      const to = c
-        .clone()
-        .addScaledVector(dir, i === pts.length - 2 ? -1.0 : -1.35)
-        .addScaledVector(side, s * (halfW - 0.08));
-      if (from.distanceTo(a) < len - 0.5) {
-        addBalustrade(b, id, from, to, 0.55);
-        const rm = new Vector3().lerpVectors(from, to, 0.5);
-        col.box(rm.x, rm.z, 0.08, from.distanceTo(to) / 2, yaw, deckY + 0.05, deckY + 0.6, 'rail');
-      }
-    }
-    // piers
-    const piers = Math.max(1, Math.round(len / 4));
-    for (let k = 0; k <= piers; k++) {
-      const p = new Vector3().lerpVectors(a, c, k / piers);
-      const bottom = Math.min(ground(p.x, p.z), -0.3);
-      const hgt = deckY - 0.3 - bottom;
-      if (hgt > 0.2)
+
+    // Timber pile bents between the landings.
+    const bentFrom = i === 0 ? 0.6 : LANDING_HALF + 0.9;
+    const bentTo = i === last ? len - 0.6 : len - LANDING_HALF - 0.9;
+    const bents = Math.max(1, Math.ceil((bentTo - bentFrom) / 3.2));
+    for (let k = 0; k <= bents; k++) {
+      const s = bentFrom + ((bentTo - bentFrom) * k) / bents;
+      const capY = -PLANK_T - 0.22 - 0.07;
+      b.add('paint', box(DECK_HALF * 2 - 0.04, 0.14, 0.2), '#4a2a1b', mul(frame, T(0, capY, s)));
+      for (const sx of [-1, 1]) {
+        const p = at(sx * (DECK_HALF - 0.2), s);
+        const bed = Math.min(ground(p.x, p.z), WATER_LEVEL - 0.2) - 0.3;
+        const hgt = deckY + capY - bed;
         b.add(
           'paint',
-          new CylinderGeometry(0.42, 0.5, hgt, 10).translate(0, hgt / 2, 0),
-          PAL.stoneDark,
-          mul(id, T(p.x, bottom, p.z)),
+          new CylinderGeometry(0.1, 0.115, hgt, 8).translate(0, hgt / 2, 0),
+          '#5b3a22',
+          T(p.x, bed, p.z, 0, rand.range(0, 3)),
         );
+        if (ground(p.x, p.z) < WATER_LEVEL - 0.05)
+          piers.push({ x: p.x, z: p.z, hx: 0.11, hz: 0.11, round: 0.11, rot: 0 });
+      }
+    }
+
+    // Railings, left and right, leaving the bends open.
+    const railFrom = i === 0 ? 0.9 : 1.45;
+    const railTo = i === last ? len - 0.9 : len - 1.45;
+    if (railTo - railFrom > 0.8) {
+      for (const sx of [-1, 1]) {
+        addRailing(b, frame, sx * (DECK_HALF - 0.07), railFrom, railTo);
+        const from = at(sx * (DECK_HALF - 0.07), railFrom);
+        const to = at(sx * (DECK_HALF - 0.07), railTo);
+        const rm = new Vector3().lerpVectors(from, to, 0.5);
+        col.box(rm.x, rm.z, 0.08, from.distanceTo(to) / 2, yaw, deckY + 0.05, deckY + 0.85, 'rail');
+      }
     }
   }
-  // landings and milestone corners at every bend
+
+  // Stone landings on masonry piers at every bend.
   for (let i = 1; i < pts.length - 1; i++) {
     const p = pts[i]!;
-    const prev = pts[i - 1]!;
-    const next = pts[i + 1]!;
+    const rot = landingRot(i);
+    const m = T(p.x, 0, p.z, 0, rot);
+    const bed = Math.min(ground(p.x, p.z), WATER_LEVEL - 0.3) - 0.2;
+    // paving: four slabs over a darker bed, so the joints read
     b.add(
       'paint',
-      box(2.5, 0.34, 2.5),
-      PAL.stone,
-      mul(id, T(p.x, deckY - 0.17, p.z, 0, Math.atan2(next.x - p.x, next.z - p.z))),
+      box(LANDING_HALF * 2 - 0.04, 0.28, LANDING_HALF * 2 - 0.04),
+      '#6d6558',
+      mul(m, T(0, landingTop - 0.18, 0)),
+      'stone',
     );
+    for (const [qx, qz] of [
+      [-1, -1],
+      [1, -1],
+      [-1, 1],
+      [1, 1],
+    ] as const) {
+      b.add(
+        'paint',
+        box(LANDING_HALF - 0.025, 0.3, LANDING_HALF - 0.025),
+        rand.chance(0.5) ? PAL.stone : '#aa9f8a',
+        mul(m, T(qx * LANDING_HALF * 0.5, landingTop - 0.15, qz * LANDING_HALF * 0.5)),
+        'stone',
+      );
+    }
+    // cornice under the paving, then the pier itself
+    b.add(
+      'paint',
+      box(2.36, 0.1, 2.36),
+      PAL.stoneDark,
+      mul(m, T(0, landingTop - 0.35, 0)),
+      'stone',
+    );
+    addMasonryPier(b, mul(m, T(0, bed, 0)), 1.02, landingTop - 0.4 - bed, rand);
+    piers.push({ x: p.x, z: p.z, hx: 1.04, hz: 1.04, round: 0.08, rot });
     col.addPlatform({
       shape: { type: 'circle', x: p.x, z: p.z, r: 1.35 },
-      top: deckY,
+      top: landingTop,
       bottom: deckY - 0.45,
       surface: 'stone',
     });
     // outer corner of the bend: opposite the average of the two segment directions
-    const d1 = new Vector3().subVectors(prev, p).normalize();
-    const d2 = new Vector3().subVectors(next, p).normalize();
+    const d1 = new Vector3().subVectors(pts[i - 1]!, p).normalize();
+    const d2 = new Vector3().subVectors(pts[i + 1]!, p).normalize();
     const outer = d1.add(d2).multiplyScalar(-1);
     if (outer.lengthSq() < 1e-4) outer.set(1, 0, 0);
     outer.normalize();
-    milestones.push({ x: p.x + outer.x * 1.05, y: deckY, z: p.z + outer.z * 1.05 });
+    milestones.push({ x: p.x + outer.x * 1.05, y: landingTop, z: p.z + outer.z * 1.05 });
   }
+
+  // Stone abutments where the bridge meets each shore.
+  for (const [end, next] of [
+    [pts[0]!, pts[1]!],
+    [pts[pts.length - 1]!, pts[pts.length - 2]!],
+  ] as const) {
+    const out = new Vector3().subVectors(end, next).normalize();
+    const yaw = Math.atan2(out.x, out.z);
+    const cx = end.x + out.x * 0.35;
+    const cz = end.z + out.z * 0.35;
+    const g = ground(cx, cz);
+    const depth = landingTop - Math.min(g, deckY) + 0.5;
+    b.add(
+      'paint',
+      box(DECK_HALF * 2 + 0.5, depth, 1.5),
+      PAL.stone,
+      T(cx, landingTop - depth / 2, cz, 0, yaw),
+      'stone',
+    );
+    b.add(
+      'paint',
+      box(DECK_HALF * 2 + 0.62, 0.08, 1.58),
+      PAL.stoneDark,
+      T(cx, landingTop - 0.26, cz, 0, yaw),
+      'stone',
+    );
+    col.addPlatform({
+      shape: { type: 'box', x: cx, z: cz, hx: DECK_HALF + 0.25, hz: 0.75, rot: yaw },
+      top: landingTop,
+      bottom: landingTop - 1,
+      surface: 'stone',
+    });
+  }
+
   // shore ends also get a milestone
   const first = pts[0]!;
-  const last = pts[pts.length - 1]!;
+  const lastPt = pts[pts.length - 1]!;
   milestones.unshift({ x: first.x + 1.5, y: deckY, z: first.z + 0.4 });
-  milestones.push({ x: last.x - 1.5, y: deckY, z: last.z - 0.4 });
+  milestones.push({ x: lastPt.x - 1.5, y: deckY, z: lastPt.z - 0.4 });
   for (const ms of milestones) {
     addStoneLantern(b, T(ms.x, ms.y, ms.z), 0.75);
     col.circle(ms.x, ms.z, 0.32, ms.y - 0.2, ms.y + 1.6, 'milestone');
   }
-  return { milestones, deckY };
+  return { milestones, deckY, piers };
 }
 
 /* ------------------------------------------------------------ Bell tower */
