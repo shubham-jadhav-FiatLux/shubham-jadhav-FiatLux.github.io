@@ -172,7 +172,8 @@ function tube(m: Mesher, rings: Ring[], radial: number, axis: Vector3, stripe = 
     for (let k = 0; k < radial; k++) {
       const a = first + j * (radial + 1) + k;
       const b = a + radial + 1;
-      m.idx.push(a, b, a + 1, a + 1, b, b + 1);
+      // counter-clockwise seen from outside, so faces (and normals) point outwards
+      m.idx.push(a, a + 1, b, a + 1, b + 1, b);
     }
   }
 }
@@ -230,16 +231,16 @@ function createStalk(
 
   // Papery sheaths still wrapped around the lowest nodes.
   if (rand.chance(look.sheaths)) {
-    const sheathCol = new Color('#b39866');
-    const sheathDark = new Color('#7d6441');
-    for (let n = 1; n <= 3; n++) {
+    const sheathCol = new Color('#c4ad7e');
+    const sheathDark = new Color('#94794f');
+    for (let n = 1; n <= 2; n++) {
       const y0 = n * seg;
-      const len = seg * rand.range(0.55, 0.85);
+      const len = seg * rand.range(0.35, 0.55);
       tube(
         culm,
         [0, 1].map((f) => ({
           c: centre(y0 + f * len),
-          r: radius(y0) * (1.22 - 0.1 * f) + 0.004,
+          r: radius(y0) * (1.1 - 0.06 * f) + 0.003,
           color: (th: number) =>
             tmp
               .copy(sheathCol)

@@ -168,8 +168,7 @@ export class App extends Emitter<AppEvents> {
       this.content,
       this.environment,
     );
-    this.lanterns = new LanternGlow(this.architecture.lights, 3);
-    this.lanterns.applyQuality(this.quality.settings);
+    this.lanterns = new LanternGlow(this.architecture.lights, this.quality.settings);
     this.lanterns.addTo(this.scene);
   }
 
