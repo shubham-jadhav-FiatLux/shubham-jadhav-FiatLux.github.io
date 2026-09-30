@@ -44,6 +44,8 @@ const SHOTS = [
   { name: 'banners', x: -4, z: 4, yaw: Math.PI, cam: { yaw: 0.1, pitch: 0.28, distance: 12 } },
   // Close-ups for art direction
   { name: 'bamboo', x: -3.5, z: 51, yaw: -1.3, cam: { yaw: 1.2, pitch: 0.18, distance: 7 } },
+  { name: 'grove', x: -24, z: 36, yaw: -1.6, cam: { yaw: 1.3, pitch: 0.12, distance: 6 } },
+  { name: 'black-bamboo', x: 13.5, z: 31, yaw: 0.8, cam: { yaw: -2.2, pitch: 0.15, distance: 6 } },
   { name: 'lantern', x: 0, z: 54.5, yaw: Math.PI, cam: { yaw: 0.35, pitch: 0.12, distance: 6.5 } },
   { name: 'rocks', x: 4.2, z: 10.5, yaw: 2.6, cam: { yaw: 0.2, pitch: 0.2, distance: 6 } },
   { name: 'cliff-rocks', x: 40, z: -33, yaw: 2.36, cam: { yaw: -0.6, pitch: 0.15, distance: 7 } },
