@@ -86,7 +86,10 @@ export class Hud extends Emitter<HudEvents> {
         b.blur();
       }),
     );
-    this.prompt.addEventListener('click', () => this.emit('prompt', undefined));
+    this.prompt.addEventListener('click', () => {
+      this.emit('prompt', undefined);
+      this.prompt.blur(); // so Space goes back to jumping once the prompt fades
+    });
     this.refreshProgress();
     progress.on('discover', (id) => {
       this.refreshProgress();
