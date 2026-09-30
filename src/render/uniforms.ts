@@ -1,4 +1,4 @@
-import { Vector2, Vector3, type Texture } from 'three';
+import { Vector2, Vector3, Vector4, type Texture } from 'three';
 import { SUN_DIRECTION } from './atmosphere';
 import { TERRAIN_ORIGIN, TERRAIN_RES, TERRAIN_SIZE } from '../world/layout';
 
@@ -16,6 +16,8 @@ export const globalUniforms = {
   /** expanding shock-wave from the kung-fu strike: xyz = centre, w = age in seconds */
   uShockwave: { value: new Vector3(0, -1000, 0) },
   uShockAge: { value: 99 },
+  /** golden ink ripple of a discovery: x, z, age (s), strength */
+  uRipple: { value: new Vector4(0, 0, 99, 0) },
   uSunDir: { value: SUN_DIRECTION.clone() },
   uHeightMap: { value: null as Texture | null },
   uMaskMap: { value: null as Texture | null },

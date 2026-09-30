@@ -222,11 +222,8 @@ export class FarForest {
       tintGeometry(trunk(), '#5a4332'),
     ])!;
     const ballGeo = mergeGeometries([
-      tintGeometry(new IcosahedronGeometry(2.2, 1).translate(0, 3.5, 0).toNonIndexed(), '#557f3c'),
-      tintGeometry(
-        new IcosahedronGeometry(1.5, 1).translate(1, 4.6, 0.4).toNonIndexed(),
-        '#618a44',
-      ),
+      tintGeometry(new IcosahedronGeometry(2.2, 1).translate(0, 3.5, 0), '#557f3c'),
+      tintGeometry(new IcosahedronGeometry(1.5, 1).translate(1, 4.6, 0.4), '#618a44'),
       tintGeometry(trunk(), '#5a4332'),
     ])!;
     const mat = new MeshStandardMaterial({ vertexColors: true, roughness: 1, flatShading: true });

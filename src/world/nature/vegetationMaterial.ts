@@ -34,8 +34,8 @@ export function createVegetationMaterial(o: VegetationOptions): MeshStandardMate
     roughness: o.roughness ?? 0.85,
     metalness: 0,
     vertexColors: true,
-    side: o.doubleSided === false ? undefined : DoubleSide,
   });
+  if (o.doubleSided !== false) mat.side = DoubleSide;
   const uniforms = {
     uSway: { value: o.sway ?? 0.3 },
     uFlutter: { value: o.flutter ?? 0 },

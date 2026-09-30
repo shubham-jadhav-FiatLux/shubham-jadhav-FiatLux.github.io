@@ -38,6 +38,8 @@ export class Renderer {
   private pixelRatio = 1;
   private settings: QualitySettings;
   private renderScale = 1;
+  private bloomBoost = 0;
+  private readonly bloomBase = 0.75;
 
   constructor(
     readonly canvas: HTMLCanvasElement,
@@ -65,7 +67,7 @@ export class Renderer {
       mipmapBlur: true,
       luminanceThreshold: 0.92,
       luminanceSmoothing: 0.25,
-      intensity: 0.75,
+      intensity: this.bloomBase,
       radius: 0.72,
     });
 
@@ -135,7 +137,16 @@ export class Renderer {
     this.camera.updateProjectionMatrix();
   }
 
+  /** Briefly intensifies the bloom (discoveries, the bell). */
+  pulseBloom(amount: number): void {
+    this.bloomBoost = Math.max(this.bloomBoost, amount);
+  }
+
   render(dt: number): void {
+    if (this.bloomBoost > 0) {
+      this.bloomBoost = Math.max(0, this.bloomBoost - dt * 0.9);
+      this.bloom.intensity = this.bloomBase * (1 + this.bloomBoost);
+    }
     this.webgl.info.reset();
     this.composer.render(dt);
   }

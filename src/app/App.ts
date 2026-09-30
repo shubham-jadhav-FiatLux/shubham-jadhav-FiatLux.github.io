@@ -69,6 +69,10 @@ export class App extends Emitter<AppEvents> {
   started = false;
   /** true while a UI panel (scroll, map, menu) has focus */
   uiBlocking = false;
+  /** skip rendering entirely (e.g. while the full-screen page view covers the canvas) */
+  renderPaused = false;
+  /** extra per-frame systems (the gameplay layer registers itself here) */
+  readonly updaters: ((dt: number, elapsed: number) => void)[] = [];
   private reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
   constructor(
@@ -312,8 +316,6 @@ export class App extends Emitter<AppEvents> {
     const playing = this.started && !this.uiBlocking;
     this.input.gameplayEnabled = playing;
     const jump = playing && this.input.consume('jump');
-    const strike = playing && this.input.consume('strike');
-    if (strike && !this.controller.swimming) this.animator.play('strike');
 
     this.controller.locked = !playing;
     this.controller.update(dt, this.input.move, this.rig.yaw, this.input.run, jump);
@@ -341,9 +343,10 @@ export class App extends Emitter<AppEvents> {
     this.lighting.update(tmp);
     this.water.update(dt, elapsed, this.controller, this.quality.settings.particles);
     this.architecture.update(dt, this.controller.position);
+    for (const u of this.updaters) u(dt, elapsed);
     this.particles.update(dt, elapsed);
 
-    this.renderer.render(dt);
+    if (!this.renderPaused) this.renderer.render(dt);
     this.debug.update(frameTime, this.renderer.info);
     this.input.endFrame();
   };

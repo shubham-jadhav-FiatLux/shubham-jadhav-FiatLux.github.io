@@ -21,7 +21,7 @@ from fontTools import subset
 
 LATIN = "".join(chr(c) for c in range(0x20, 0x7F)) + "·—–’‘“”…•×"
 # Decorative characters used by the UI (seals, signboards, numbering).
-CJK = "竹语谷迎我技路作信悟山水风卷一二三四五六七八九十欢静心道福禅荣光桥塔亭钟门"
+CJK = "竹语谷迎我技路作信悟山水风卷一二三四五六七八九十欢静心道福禅荣光桥塔亭钟门拳"
 
 def main() -> None:
     if len(sys.argv) < 2:

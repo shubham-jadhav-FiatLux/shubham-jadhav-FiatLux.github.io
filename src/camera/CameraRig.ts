@@ -35,6 +35,7 @@ export class CameraRig {
   private fovKick = 0;
   private lookAt = new Vector3();
   reducedMotion = false;
+  private trauma = 0;
 
   constructor(
     aspect: number,
@@ -46,6 +47,22 @@ export class CameraRig {
 
   get isFollowing(): boolean {
     return this.mode === 'follow';
+  }
+
+  /** Adds camera shake (0..1), decaying over time. */
+  shake(amount: number): void {
+    if (this.reducedMotion) return;
+    this.trauma = Math.min(1, this.trauma + amount);
+  }
+
+  private applyShake(dt: number): void {
+    if (this.trauma <= 0) return;
+    this.trauma = Math.max(0, this.trauma - dt * 1.4);
+    const s = this.trauma * this.trauma * 0.35;
+    const t = performance.now() / 1000;
+    this.camera.position.x += Math.sin(t * 47.3) * s;
+    this.camera.position.y += Math.sin(t * 53.1 + 1.3) * s;
+    this.camera.position.z += Math.sin(t * 41.7 + 2.1) * s;
   }
 
   /** Orbit around the valley (title screen). */
@@ -141,6 +158,7 @@ export class CameraRig {
       const k = easeInOutCubic(this.shotT);
       this.camera.position.lerpVectors(this.shotFrom.position, this.shotTo.position, k);
       this.lookAt.lerpVectors(this.shotFrom.target, this.shotTo.target, k);
+      this.applyShake(dt);
       this.camera.lookAt(this.lookAt);
       return;
     }
@@ -157,6 +175,7 @@ export class CameraRig {
       this.camera.position.copy(desiredPos);
       this.lookAt.copy(this.focus);
     }
+    this.applyShake(dt);
     this.camera.lookAt(this.lookAt);
   }
 }

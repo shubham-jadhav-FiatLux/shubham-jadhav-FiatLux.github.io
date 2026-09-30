@@ -241,3 +241,13 @@ export const RESERVED: readonly Circle[] = [
   { x: 37, z: -35, r: 5.5 },
   ...HOUSES.map((h) => ({ x: h.x, z: h.z, r: Math.hypot(h.width, h.depth) / 2 + 2 })),
 ];
+
+/** Where quick travel drops the panda for each section, and which way it faces. */
+export const TRAVEL_POINTS = {
+  welcome: { x: 0, z: 56.5, yaw: Math.PI },
+  about: { x: 8.2, z: 8, yaw: 2.6 },
+  skills: { x: -29.5, z: 16.5, yaw: -2.3 },
+  journey: { x: 32.4, z: 14.8, yaw: Math.PI },
+  projects: { x: -2.2, z: 10.5, yaw: Math.PI + 0.25 },
+  contact: { x: 33.6, z: -31.2, yaw: 2.45 },
+} as const;

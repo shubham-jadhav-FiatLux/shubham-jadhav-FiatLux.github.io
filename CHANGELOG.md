@@ -6,6 +6,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Six portfolio scrolls tied to landmarks: Welcome (gate), About (tea pavilion), Skills
+  (training dummies), Journey (bridge milestones), Projects (banners and pagoda) and
+  Contact (bell tower). Walk up and press `E`, or strike a dummy with `F`.
+- The discovery moment: the panda bows, a golden ink ring spreads over the ground and
+  through the grass, petals burst, bloom swells, the camera frames the landmark, a seal
+  is stamped on screen and the scroll unrolls. Progress is remembered between visits.
+- Ringing the bell releases sky lanterns and shakes the camera.
+- Scroll panel with tabs, hints and quick travel for scrolls not found yet, a project
+  pager and copy-to-clipboard for the email address.
+- Ink-wash map (`M`) painted from the terrain, with landmarks, found seals, the panda's
+  position and quick travel.
+- HUD: title, map, sound, music and menu buttons, interaction prompt, progress seals,
+  controls hint and toasts. Menu with graphics quality, progress reset and credits.
+- "Read as a page": the whole portfolio as a plain, accessible page, also used when
+  WebGL 2 is unavailable.
+- Touch controls: virtual joystick, jump, strike and interact buttons.
+- Floating beacons over landmarks that still hide a scroll.
+- Procedural audio (Web Audio API, no audio files): generative pentatonic music with
+  zither, flute and bells; footsteps per surface, jumps, splashes, strikes, drum, bell and
+  the discovery cue; wind, birds, lake and a positional waterfall.
+
+### Changed
+
+- The kung-fu strike is handled by the gameplay layer, so it can hit dummies, the drum
+  and the bell.
+
 ## [0.3.0] - 2026-09-30
 
 ### Added

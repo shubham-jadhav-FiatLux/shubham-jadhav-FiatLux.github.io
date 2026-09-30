@@ -1,0 +1,88 @@
+.menu {
+  width: min(420px, 100%);
+  max-height: 90vh;
+  overflow: auto;
+  padding: 20px 22px;
+  border-radius: 18px;
+  background: var(--paper);
+  box-shadow: 0 24px 60px rgba(30, 15, 5, 0.45);
+  transform: translateY(14px) scale(0.98);
+  transition: transform 0.4s var(--ease-out);
+}
+
+.overlay--open .menu {
+  transform: none;
+}
+
+.menu__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.menu h2 {
+  margin: 0;
+  font-family: var(--font-brush);
+  font-weight: 400;
+  font-size: 32px;
+}
+
+.menu h3 {
+  margin: 16px 0 8px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--ink-soft);
+}
+
+.menu__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pill {
+  appearance: none;
+  padding: 7px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(30, 26, 24, 0.07);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.pill[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.pill:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.menu__actions {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.menu__actions .btn {
+  width: 100%;
+  font-size: 1rem;
+  padding: 0.75em 1em;
+}
+
+.menu__credits {
+  margin: 16px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+.menu__version {
+  opacity: 0.7;
+}
