@@ -68,6 +68,7 @@ export class Input extends Emitter<{ action: Action; any: void }> {
   private dragging: number | null = null;
   private lastPointer = new Vector2();
   private padPrev: boolean[] = [];
+  private gamepadsBlocked = false;
 
   constructor(readonly surface: HTMLElement) {
     super();
@@ -198,7 +199,15 @@ export class Input extends Emitter<{ action: Action; any: void }> {
   };
 
   private pollGamepad(apply: (x: number, y: number, run: boolean) => void): void {
-    const pads = navigator.getGamepads?.();
+    if (this.gamepadsBlocked) return;
+    let pads: (Gamepad | null)[] | undefined;
+    try {
+      pads = navigator.getGamepads?.();
+    } catch {
+      // Throws when a permissions policy blocks gamepads (e.g. inside an embedding iframe).
+      this.gamepadsBlocked = true;
+      return;
+    }
     if (!pads) return;
     for (const pad of pads) {
       if (!pad || !pad.connected) continue;
