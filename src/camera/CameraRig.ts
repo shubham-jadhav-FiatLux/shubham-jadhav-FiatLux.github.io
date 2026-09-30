@@ -16,14 +16,29 @@ const desiredPos = new Vector3();
  * avoidance, plus cinematic "shots" (framing a landmark while a scroll is read) and an
  * aerial orbit used behind the title screen.
  */
+/**
+ * Default framing of the follow camera: high and far enough to show the valley around
+ * the panda, looking at a point above its head so the panda sits in the lower third.
+ */
+export const FOLLOW_FRAMING = {
+  distance: 12,
+  pitch: 0.32,
+  fov: 50,
+  /** height of the look-at point above the panda's feet (m) */
+  lift: 1.9,
+};
+
 export class CameraRig {
   readonly camera: PerspectiveCamera;
+  readonly framing = { ...FOLLOW_FRAMING };
   yaw = 0;
-  pitch = 0.4;
-  distance = 9.5;
-  private targetDistance = 9.5;
+  pitch = FOLLOW_FRAMING.pitch;
+  distance = FOLLOW_FRAMING.distance;
+  private targetDistance = FOLLOW_FRAMING.distance;
   private targetYaw = 0;
-  private targetPitch = 0.4;
+  private targetPitch = FOLLOW_FRAMING.pitch;
+  /** seconds since the visitor last orbited or zoomed by hand */
+  private sinceManual = 0;
   readonly focus = new Vector3();
   private mode: Mode = 'orbit';
   private shotFrom = { position: new Vector3(), target: new Vector3() };
@@ -31,7 +46,6 @@ export class CameraRig {
   private shotT = 0;
   private shotDuration = 1.4;
   private orbitAngle = 0.4;
-  private baseFov = 45;
   private fovKick = 0;
   private lookAt = new Vector3();
   reducedMotion = false;
@@ -41,7 +55,7 @@ export class CameraRig {
     aspect: number,
     private readonly groundHeight: (x: number, z: number) => number,
   ) {
-    this.camera = new PerspectiveCamera(this.baseFov, aspect, 0.2, 2600);
+    this.camera = new PerspectiveCamera(FOLLOW_FRAMING.fov, aspect, 0.2, 2600);
     this.camera.position.set(0, 60, 140);
   }
 
@@ -73,7 +87,7 @@ export class CameraRig {
   /** Blend from wherever we are into the follow camera. */
   startFollow(target: Vector3, facingYaw: number, duration = 2.4): void {
     this.targetYaw = this.yaw = facingYaw + Math.PI;
-    this.focus.copy(target).y += 1.1;
+    this.focus.copy(target).y += this.framing.lift;
     this.shotFrom.position.copy(this.camera.position);
     this.shotFrom.target.copy(this.lookAt);
     this.shotTo = null;
@@ -119,16 +133,25 @@ export class CameraRig {
     }
 
     // Orbit input.
+    const manual = look.x !== 0 || look.y !== 0 || zoom !== 0;
+    this.sinceManual = manual ? 0 : this.sinceManual + dt;
     this.targetYaw -= look.x * 0.0052;
     this.targetPitch = clamp(this.targetPitch + look.y * 0.0038, 0.08, 1.25);
-    this.targetDistance = clamp(this.targetDistance + zoom * 0.012, 4.5, 20);
+    this.targetDistance = clamp(this.targetDistance + zoom * 0.012, 4.5, 22);
+    // Once the panda walks on, ease back to the default framing a while after the
+    // visitor last adjusted the view (standing still keeps whatever they chose).
+    const speed = Math.hypot(player.velocity.x, player.velocity.z);
+    if (this.sinceManual > 2.5 && speed > 1) {
+      this.targetPitch = damp(this.targetPitch, this.framing.pitch, 0.8, dt);
+      this.targetDistance = damp(this.targetDistance, this.framing.distance, 0.8, dt);
+    }
     this.yaw = dampAngle(this.yaw, this.targetYaw, 14, dt);
     this.pitch = damp(this.pitch, this.targetPitch, 14, dt);
     this.distance = damp(this.distance, this.targetDistance, 8, dt);
 
     // Follow target with a little look-ahead in the direction of travel.
     tmp.copy(player.position);
-    tmp.y += 1.1;
+    tmp.y += this.framing.lift;
     tmp.x += player.velocity.x * 0.28;
     tmp.z += player.velocity.z * 0.28;
     this.focus.x = damp(this.focus.x, tmp.x, 7, dt);
@@ -147,7 +170,7 @@ export class CameraRig {
 
     // Speed feel: widen the lens a touch while running.
     this.fovKick = damp(this.fovKick, player.running ? 5 : 0, 3, dt);
-    const fov = this.baseFov + this.fovKick;
+    const fov = this.framing.fov + this.fovKick;
     if (Math.abs(this.camera.fov - fov) > 0.01) {
       this.camera.fov = fov;
       this.camera.updateProjectionMatrix();
