@@ -1,0 +1,134 @@
+.map {
+  width: min(640px, 100%);
+  max-height: 94vh;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px 14px;
+  border-radius: 18px;
+  background: var(--paper);
+  box-shadow: 0 24px 60px rgba(30, 15, 5, 0.45);
+  transform: translateY(14px) scale(0.98);
+  transition: transform 0.4s var(--ease-out);
+}
+
+.overlay--open .map {
+  transform: none;
+}
+
+.map__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.map__title {
+  margin: 0;
+  font-family: var(--font-brush);
+  font-weight: 400;
+  font-size: clamp(24px, 4.5vw, 34px);
+}
+
+.map__canvas {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  max-height: calc(94vh - 130px);
+  margin: 0 auto;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(30, 26, 24, 0.15);
+}
+
+.map__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.map__marker {
+  appearance: none;
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  opacity: 0.55;
+  filter: grayscale(0.7);
+  transition:
+    transform 0.2s var(--ease-out),
+    opacity 0.2s;
+}
+
+.map__marker .seal {
+  font-size: 15px;
+}
+
+.map__marker--found {
+  opacity: 1;
+  filter: none;
+}
+
+.map__marker:hover,
+.map__marker:focus-visible {
+  transform: translate(-50%, -50%) scale(1.15);
+  opacity: 1;
+  outline: none;
+}
+
+.map__label {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(243, 234, 214, 0.9);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 12px;
+  white-space: nowrap;
+  color: var(--ink);
+}
+
+.map__panda {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #fffaf0;
+  box-shadow:
+    0 0 0 3px var(--ink),
+    0 4px 10px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+
+.map__panda::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -9px;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-bottom: 9px solid var(--ink);
+}
+
+.map__panda::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: var(--ink);
+  box-shadow:
+    -5px -5px 0 -2px var(--ink),
+    5px -5px 0 -2px var(--ink);
+}
+
+.map__hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-soft);
+  text-align: center;
+}
