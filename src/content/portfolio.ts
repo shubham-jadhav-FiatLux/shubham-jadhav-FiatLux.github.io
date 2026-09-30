@@ -19,6 +19,8 @@ export const portfolio: PortfolioContent = {
     title: 'Valley of Whispering Bamboo',
     gateGlyphs: '竹语谷',
     tagline: 'A portfolio you can walk through',
+    // url: 'https://[you].github.io/valley-of-whispering-bamboo/', // set by the deploy workflow
+    sourceUrl: '', // TODO: e.g. 'https://github.com/[you]/valley-of-whispering-bamboo'
   },
 
   owner: {
@@ -33,8 +35,8 @@ export const portfolio: PortfolioContent = {
     heading: 'Welcome, traveller',
     paragraphs: [
       'This valley is my portfolio. Every landmark holds a scroll with a piece of my story: who I am, what I can do, what I have built and where to find me.',
-      'Walk with WASD or the arrow keys, run with Shift, jump with Space and try a kung-fu strike with F. When a scroll glows nearby, press E to read it.',
-      'In a hurry? Open the map (M) to travel instantly, or switch to the classic page from the menu.',
+      'Explore at your own pace. When a scroll glows nearby, step closer to read it, and do try a kung-fu strike on the training dummies.',
+      'In a hurry? Open the map to travel instantly, or read everything as a classic page from the menu.',
     ],
   },
 

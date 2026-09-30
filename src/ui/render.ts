@@ -37,21 +37,36 @@ function levelSeals(level = 0): string {
 }
 
 export const CONTROLS: [string, string][] = [
-  ['W A S D / ← ↑ → ↓', 'Walk'],
+  ['WASD / arrows', 'Walk'],
   ['Shift', 'Run'],
   ['Space', 'Jump'],
   ['F', 'Kung-fu strike'],
   ['E / Enter', 'Read a scroll, ring the bell'],
   ['M', 'Map and quick travel'],
   ['N', 'Mute sound'],
+  ['H', 'This help'],
+  ['Esc', 'Close / menu'],
   ['Drag / wheel', 'Look around / zoom'],
 ];
+
+export const TOUCH_CONTROLS: [string, string][] = [
+  ['Left thumb', 'Joystick: walk, push fully to run'],
+  ['Right side', 'Drag to look around'],
+  ['⤒', 'Jump'],
+  ['拳', 'Kung-fu strike'],
+  ['E', 'Read a scroll, ring the bell'],
+  ['Map button', 'Map and quick travel'],
+];
+
+function controlList(list: [string, string][], cls: string): string {
+  return `<dl class="controls ${cls}">${list.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>`;
+}
 
 function renderWelcome(c: PortfolioContent): string {
   return `${paragraphs(c.welcome.paragraphs)}
   <h3 class="sub">How to play</h3>
-  <dl class="controls">${CONTROLS.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
-  <p class="muted">On a phone: use the joystick on the left and the buttons on the right.</p>`;
+  ${controlList(CONTROLS, 'controls--keys')}${controlList(TOUCH_CONTROLS, 'controls--touch')}
+  <p class="muted controls--keys-note">A gamepad works too: left stick to walk, A to jump, X to strike, Y to read.</p>`;
 }
 
 function renderAbout(c: PortfolioContent): string {

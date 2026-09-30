@@ -375,6 +375,13 @@
   }
 }
 
+/* Phones and tablets have no keyboard to hint at. */
+@media (pointer: coarse) {
+  .hud__hints {
+    display: none;
+  }
+}
+
 @media (max-width: 640px) {
   .hud__title {
     font-size: 18px;
@@ -406,5 +413,12 @@
   .hud__prompt {
     bottom: calc(150px + var(--safe-bottom));
     font-size: 16px;
+  }
+}
+
+/* Narrow phones: the seal alone carries the brand, leaving room for the buttons. */
+@media (max-width: 480px) {
+  .hud__brand > div {
+    display: none;
   }
 }

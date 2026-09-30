@@ -2,6 +2,7 @@ import { Emitter } from '../core/Emitter';
 import { SECTIONS, sectionMeta, type SectionId } from '../content/sections';
 import type { PortfolioContent } from '../content/types';
 import type { Progress } from '../zones/Progress';
+import { releaseFocus, trapFocus } from './focus';
 import { ICONS } from './icons';
 import { esc, renderSection, sectionTitle } from './render';
 
@@ -26,7 +27,6 @@ export class ScrollPanel extends Emitter<ScrollEvents> {
   private glyph: HTMLElement;
   private tabs: HTMLElement;
   private body: HTMLElement;
-  private returnFocus: Element | null = null;
 
   constructor(
     root: HTMLElement,
@@ -68,6 +68,7 @@ export class ScrollPanel extends Emitter<ScrollEvents> {
       }
     });
     this.body.addEventListener('click', (e) => this.onBodyClick(e));
+    trapFocus(this.el, () => this.isOpen);
     progress.on('discover', () => this.isOpen && this.renderTabs());
   }
 
@@ -76,13 +77,11 @@ export class ScrollPanel extends Emitter<ScrollEvents> {
     this.focus = focus;
     this.render();
     if (!this.isOpen) {
-      this.returnFocus = document.activeElement;
       this.isOpen = true;
       this.el.classList.add('overlay--open');
-      window.setTimeout(
-        () => (this.el.querySelector('.scroll__close') as HTMLElement)?.focus(),
-        60,
-      );
+      window.setTimeout(() => {
+        if (this.isOpen) (this.el.querySelector('.scroll__close') as HTMLElement)?.focus();
+      }, 60);
     }
     this.emit('open', section);
   }
@@ -91,7 +90,7 @@ export class ScrollPanel extends Emitter<ScrollEvents> {
     if (!this.isOpen) return;
     this.isOpen = false;
     this.el.classList.remove('overlay--open');
-    (this.returnFocus as HTMLElement | null)?.blur?.();
+    releaseFocus(this.el);
     this.emit('close', undefined);
   }
 
