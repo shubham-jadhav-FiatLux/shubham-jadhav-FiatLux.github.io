@@ -20,6 +20,15 @@ export default defineConfig({
   build: {
     target: 'es2022',
     chunkSizeWarningLimit: 1600,
+    rolldownOptions: {
+      output: {
+        // three.js and postprocessing change rarely: a separate chunk stays cached
+        // across deploys of the game code.
+        codeSplitting: {
+          groups: [{ name: 'three', test: /node_modules[\\/](three|postprocessing)[\\/]/ }],
+        },
+      },
+    },
   },
   test: {
     environment: 'node',
