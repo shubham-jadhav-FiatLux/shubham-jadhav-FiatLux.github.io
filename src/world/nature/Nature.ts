@@ -16,7 +16,7 @@ import type { CollisionWorld } from '../../physics/CollisionWorld';
 import type { QualitySettings } from '../../core/Quality';
 import { Placement } from '../placement';
 import { Trees, FarForest, type TreeInstance, type FarTree } from './Trees';
-import { Bamboo, type BambooStalk } from './Bamboo';
+import { Bamboo, type BambooShoot, type BambooSpecies, type BambooStalk } from './Bamboo';
 import { Rocks, type RockInstance } from './Rocks';
 import { Flowers } from './Flowers';
 import { Ambient } from './Ambient';
@@ -55,10 +55,12 @@ export class Nature {
       collision.circle(t.x, t.z, trunkR, t.y - 1, t.y + 4, `tree:${t.kind}`);
       terrain.mask.blob('shade', t.x, t.z, crown * 0.95, t.kind === 'pine' ? 0.4 : 0.55);
       terrain.mask.circle('nograss', t.x, t.z, trunkR + 0.35, 0.8);
+      if (t.kind === 'broadleaf' || t.kind === 'pine')
+        terrain.mask.blob('litter', t.x, t.z, crown * 0.85, t.kind === 'pine' ? 0.7 : 0.55);
     });
 
-    const stalks = this.planBamboo(detail);
-    this.bamboo = new Bamboo(stalks);
+    const grove = this.planBamboo(detail);
+    this.bamboo = new Bamboo(grove.stalks, grove.shoots);
     const rocks = this.planRocks();
     this.rocks = new Rocks(rocks);
     this.flowers = new Flowers(Math.round(7000 * detail));
@@ -174,13 +176,14 @@ export class Nature {
     return out;
   }
 
-  private planBamboo(detail: number): BambooStalk[] {
+  private planBamboo(detail: number): { stalks: BambooStalk[]; shoots: BambooShoot[] } {
     const rand = new Random(88);
     const p = this.placement;
     const stalks: BambooStalk[] = [];
-    const centres: { x: number; z: number; n: number }[] = [];
+    const shoots: BambooShoot[] = [];
+    const centres: { x: number; z: number; n: number; species: BambooSpecies }[] = [];
     const avoid = this.treeSpots.map((t) => ({ x: t.x, z: t.z, r: 2.5 }));
-    // West grove around the training grounds.
+    // West grove around the training grounds: mostly green, with stands of golden bamboo.
     for (const c of p.scatter({
       bounds: [-74, -28, -22, 46],
       count: 34,
@@ -191,7 +194,8 @@ export class Nature {
       avoid,
       density: (x, z) => (noise.fbm2(x * 0.05 + 3, z * 0.05, 2) > -0.1 ? 1 : 0.2),
     })) {
-      centres.push({ x: c.x, z: c.z, n: rand.int(7, 13) });
+      const golden = noise.fbm2(c.x * 0.06 - 7, c.z * 0.06 + 2, 2) > 0.22;
+      centres.push({ x: c.x, z: c.z, n: rand.int(7, 13), species: golden ? 'golden' : 'green' });
     }
     // North-west grove behind the pagoda hill.
     for (const c of p.scatter({
@@ -204,19 +208,19 @@ export class Nature {
       avoid,
       maxSlope: 0.6,
     })) {
-      centres.push({ x: c.x, z: c.z, n: rand.int(6, 11) });
+      centres.push({ x: c.x, z: c.z, n: rand.int(6, 11), species: 'green' });
     }
-    // Framing the entrance gate and a few clumps by the village.
-    for (const [x, z] of [
-      [-8.5, 49],
-      [8.5, 49.5],
-      [-7, 55.5],
-      [7.5, 56],
-      [16, 33],
-      [48, 34],
-      [18, 50],
+    // Golden bamboo framing the entrance gate; ornamental black bamboo by the village.
+    for (const [x, z, species] of [
+      [-8.5, 49, 'golden'],
+      [8.5, 49.5, 'golden'],
+      [-7, 55.5, 'green'],
+      [7.5, 56, 'green'],
+      [16, 33, 'black'],
+      [48, 34, 'black'],
+      [18, 50, 'green'],
     ] as const) {
-      centres.push({ x, z, n: rand.int(6, 10) });
+      centres.push({ x, z, n: rand.int(6, 10), species });
     }
 
     for (const c of centres) {
@@ -231,21 +235,40 @@ export class Nature {
         if (p.distanceToPaths(x, z) < 1.1 || lakeSdf(x, z) < 1) continue;
         placed.push({ x, z });
         const y = this.h(x, z);
+        // culms fan out from the middle of the clump
         stalks.push({
           x,
           y,
           z,
-          scale: rand.range(0.8, 1.2),
-          rot: rand.range(0, Math.PI * 2),
-          lean: rand.range(-0.08, 0.08),
+          scale: rand.range(0.8, 1.2) * (1 - 0.12 * (r / 1.7)),
+          rot: Math.atan2(x - c.x, z - c.z) + rand.spread(0.35),
+          lean: 0.015 + 0.075 * (r / 1.7) + rand.range(0, 0.03),
+          species: c.species,
         });
         this.collision.circle(x, z, 0.09, y - 1, y + 6, 'bamboo');
       }
+      // a few young shoots around the edge
+      for (let k = rand.int(1, 3); k > 0; k--) {
+        const ang = rand.range(0, Math.PI * 2);
+        const r = rand.range(1.5, 2.3);
+        const x = c.x + Math.cos(ang) * r;
+        const z = c.z + Math.sin(ang) * r;
+        if (p.distanceToPaths(x, z) < 1.3 || lakeSdf(x, z) < 1.5) continue;
+        shoots.push({
+          x,
+          y: this.h(x, z),
+          z,
+          scale: rand.range(0.25, 0.65),
+          rot: rand.range(0, 6.3),
+        });
+      }
       this.terrain.mask.blob('shade', c.x, c.z, 2.8, 0.4);
       this.terrain.mask.circle('nograss', c.x, c.z, 1.6, 0.75);
-      this.terrain.mask.blob('dirt', c.x, c.z, 2.2, 0.55);
+      this.terrain.mask.blob('dirt', c.x, c.z, 2.2, 0.35);
+      // a carpet of fallen leaves, spilling a little beyond the clump
+      this.terrain.mask.blob('litter', c.x, c.z, 3.4, 1);
     }
-    return stalks;
+    return { stalks, shoots };
   }
 
   private planRocks(): RockInstance[] {
