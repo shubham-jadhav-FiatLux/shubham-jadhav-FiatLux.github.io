@@ -82,8 +82,10 @@ try {
   const layered = await page.evaluate(() => ({
     map: window.__game.map.isOpen,
     scroll: window.__game.scroll.isOpen,
+    following: window.__valley.rig.isFollowing,
   }));
   if (!layered.map || layered.scroll) throw new Error('scroll opened under the map');
+  if (!layered.following) throw new Error('camera stayed in the discovery shot');
   steps.push('gate (auto) + map during the ceremony: ok');
 
   // Tea pavilion: press E at the table.
