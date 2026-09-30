@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-30
+
 ### Added
 
 - Six portfolio scrolls tied to landmarks: Welcome (gate), About (tea pavilion), Skills
@@ -33,6 +35,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The kung-fu strike is handled by the gameplay layer, so it can hit dummies, the drum
   and the bell.
+- `lil-gui` (the `?debug` tweak panel) is a runtime dependency.
+
+### Fixed
+
+- three.js console warnings from vegetation materials and the far forest.
 
 ## [0.3.0] - 2026-09-30
 
@@ -96,7 +103,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Follow camera with orbit, zoom, look-ahead and cinematic shots.
 - Title screen, screenshot script and unit tests.
 
-[Unreleased]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/OWNER/valley-of-whispering-bamboo/releases/tag/v0.1.0
