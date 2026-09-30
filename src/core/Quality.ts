@@ -77,8 +77,8 @@ export class Quality extends Emitter<{ change: QualitySettings; scale: number }>
   settings: QualitySettings;
   /** dynamic resolution multiplier applied on top of the pixel ratio */
   renderScale = 1;
-  /** true when the visitor picked a preset explicitly */
-  readonly userChosen: boolean;
+  /** the visitor picked a preset (URL, menu or an earlier visit): never auto-lower it */
+  userChosen: boolean;
   adaptive: boolean;
 
   private frames = 0;
@@ -98,16 +98,25 @@ export class Quality extends Emitter<{ change: QualitySettings; scale: number }>
     this.adaptive = params.get('adaptive') !== '0';
   }
 
+  /** `persist` marks a choice made by the visitor: it is saved and never auto-lowered. */
   set(level: QualityLevel, persist = true): void {
-    if (persist) storage.set('quality', level);
+    if (persist) {
+      storage.set('quality', level);
+      this.userChosen = true;
+    }
     this.settings = { ...QUALITY_PRESETS[level] };
-    this.renderScale = 1;
     this.emit('change', this.settings);
+    if (this.renderScale !== 1) {
+      this.renderScale = 1;
+      this.emit('scale', 1);
+    }
   }
 
   /** Called once per frame with the real (unclamped) frame time in seconds. */
   monitor(frameTime: number): void {
     if (!this.adaptive || this.userChosen) return;
+    // A long frame is a stall (tab switch, hidden iframe, GC), not a slow GPU.
+    if (frameTime > 0.25) return;
     if (this.warmup > 0) {
       this.warmup -= frameTime;
       return;
