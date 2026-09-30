@@ -1,5 +1,6 @@
 import type { PortfolioContent } from '../content/types';
 import { classicHtml } from './classicHtml';
+import { scrollWithin } from './scrolling';
 
 /**
  * The whole portfolio as a plain, accessible web page: for recruiters in a hurry,
@@ -31,7 +32,8 @@ export class ClassicView {
       const a = (e.target as HTMLElement).closest<HTMLAnchorElement>('a[href^="#classic-"]');
       if (!a) return;
       e.preventDefault();
-      this.el.querySelector(a.getAttribute('href')!)?.scrollIntoView({ behavior: 'smooth' });
+      const target = this.el.querySelector(a.getAttribute('href')!);
+      if (target) scrollWithin(this.el, target, 'start', 16);
     });
     // On the document (it bubbles before window), so the game never also reads this
     // Escape as "open the menu".
