@@ -18,7 +18,9 @@ export default defineConfig({
   },
   server: { host: true },
   build: {
-    target: 'es2022',
+    // Safari 15 cannot parse class static blocks (used by three.js); lowering them keeps
+    // older iPhones on the page instead of stuck on the title screen.
+    target: ['es2022', 'safari15'],
     chunkSizeWarningLimit: 1600,
     rolldownOptions: {
       output: {

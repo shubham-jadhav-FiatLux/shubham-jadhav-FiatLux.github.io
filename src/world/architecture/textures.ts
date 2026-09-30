@@ -1,4 +1,5 @@
 import { CanvasTexture, SRGBColorSpace } from 'three';
+import { roundRectPath } from '../../utils/canvas';
 
 export const BRUSH_FONT = "'Brush', 'Ma Shan Zheng', 'KaiTi', serif";
 export const SERIF_FONT = "'Cormorant Garamond', Georgia, serif";
@@ -165,7 +166,7 @@ export function createLabelTexture(title: string, subtitle?: string): CanvasText
   ctx.fillStyle = 'rgba(243, 234, 214, 0.92)';
   const r = 26;
   ctx.beginPath();
-  ctx.roundRect(8, 8, c.width - 16, c.height - 16, r);
+  roundRectPath(ctx, 8, 8, c.width - 16, c.height - 16, r);
   ctx.fill();
   ctx.strokeStyle = '#b8352b';
   ctx.lineWidth = 5;
