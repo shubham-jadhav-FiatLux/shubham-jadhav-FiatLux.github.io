@@ -82,6 +82,7 @@ export class Quality extends Emitter<{ change: QualitySettings; scale: number }>
   adaptive: boolean;
 
   private frames = 0;
+  private lastFrameTime = 0;
   private accum = 0;
   private warmup = 4;
   private cooldown = 0;
@@ -96,6 +97,12 @@ export class Quality extends Emitter<{ change: QualitySettings; scale: number }>
     const level: QualityLevel = chosen ?? (isLikelyMobile() ? 'low' : 'medium');
     this.settings = { ...QUALITY_PRESETS[level] };
     this.adaptive = params.get('adaptive') !== '0';
+    // Frames measured before the tab was hidden say nothing about the ones after it.
+    document.addEventListener('visibilitychange', () => {
+      this.frames = 0;
+      this.accum = 0;
+      this.lastFrameTime = 0;
+    });
   }
 
   /** `persist` marks a choice made by the visitor: it is saved and never auto-lowered. */
@@ -115,8 +122,11 @@ export class Quality extends Emitter<{ change: QualitySettings; scale: number }>
   /** Called once per frame with the real (unclamped) frame time in seconds. */
   monitor(frameTime: number): void {
     if (!this.adaptive || this.userChosen) return;
-    // A long frame is a stall (tab switch, hidden iframe, GC), not a slow GPU.
-    if (frameTime > 0.25) return;
+    // One long frame after quick ones is a stall (tab switch, hidden iframe, GC), not a
+    // slow GPU; a GPU that is slow every frame still gets measured.
+    const stall = frameTime > 0.25 && this.lastFrameTime < 0.1;
+    this.lastFrameTime = frameTime;
+    if (stall) return;
     if (this.warmup > 0) {
       this.warmup -= frameTime;
       return;
