@@ -8,28 +8,9 @@ import {
 } from 'three';
 import { box, hipRoof, polygonRoof, post, tubeAlong, type RoofOptions } from './geometry';
 import { mul, T, type ArchBuilder } from './Builder';
+import { PAL } from './palette';
 
-/** Architectural palette. */
-export const PAL = {
-  vermilion: '#a8352a',
-  vermilionDark: '#7d2620',
-  beamTeal: '#2f6f72',
-  beamBlue: '#2f4f7a',
-  gold: '#d0a445',
-  plaster: '#efe4cf',
-  wood: '#5a3a28',
-  woodLight: '#8a5f3f',
-  stone: '#b3a893',
-  stoneDark: '#8e8574',
-  tileSlate: '#4a5561',
-  tileTeal: '#2f7a6e',
-  tileGreen: '#4d7a4a',
-  tileGold: '#c99a3a',
-  underside: '#6e3326',
-  lanternRed: '#e0412b',
-  paperWarm: '#ffd9a0',
-  bronze: '#6f7f5c',
-};
+export { PAL };
 
 export interface RoofColors {
   tile: string;
@@ -202,46 +183,4 @@ export function addStoneLantern(b: ArchBuilder, m: Matrix4, scale = 1): void {
     mul(s, T(0, 1.58, 0)),
   );
   b.add('paint', new SphereGeometry(0.08, 6, 5), PAL.stoneDark, mul(s, T(0, 1.8, 0)));
-}
-
-/** Low stone balustrade between two points (local y = 0 is the walking surface). */
-export function addBalustrade(
-  b: ArchBuilder,
-  m: Matrix4,
-  from: Vector3,
-  to: Vector3,
-  height = 0.55,
-): void {
-  const d = new Vector3().subVectors(to, from);
-  const len = d.length();
-  const yaw = Math.atan2(d.x, d.z);
-  const posts = Math.max(2, Math.round(len / 1.3) + 1);
-  for (let i = 0; i < posts; i++) {
-    const p = new Vector3().lerpVectors(from, to, i / (posts - 1));
-    b.add(
-      'paint',
-      box(0.14, height, 0.14),
-      PAL.stone,
-      mul(m, T(p.x, p.y + height / 2, p.z, 0, yaw)),
-    );
-    b.add(
-      'paint',
-      new SphereGeometry(0.08, 6, 4),
-      PAL.stone,
-      mul(m, T(p.x, p.y + height + 0.04, p.z)),
-    );
-  }
-  const mid = new Vector3().lerpVectors(from, to, 0.5);
-  b.add(
-    'paint',
-    box(0.1, 0.1, len),
-    PAL.stone,
-    mul(m, T(mid.x, mid.y + height - 0.08, mid.z, 0, yaw)),
-  );
-  b.add(
-    'paint',
-    box(0.06, 0.06, len),
-    PAL.stoneDark,
-    mul(m, T(mid.x, mid.y + height * 0.35, mid.z, 0, yaw)),
-  );
 }

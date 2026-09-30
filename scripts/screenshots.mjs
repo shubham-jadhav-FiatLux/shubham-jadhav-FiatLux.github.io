@@ -49,6 +49,7 @@ const SHOTS = [
   { name: 'cliff-rocks', x: 40, z: -33, yaw: 2.36, cam: { yaw: -0.6, pitch: 0.15, distance: 7 } },
   { name: 'path-edge', x: 1, z: 36, yaw: Math.PI, cam: { yaw: 0.25, pitch: 0.28, distance: 7 } },
   { name: 'bridge-deck', x: 31.2, z: 9, yaw: Math.PI, cam: { yaw: 0.4, pitch: 0.3, distance: 8 } },
+  { name: 'bridge-side', x: 31, z: -3, yaw: 0, cam: { yaw: 1.75, pitch: 0.1, distance: 9 } },
   { name: 'falls-pool', x: 40, z: -19, yaw: 2.4, cam: { yaw: -0.8, pitch: 0.16, distance: 16 } },
   { name: 'falls-high', x: 36, z: -14, yaw: 2.4, cam: { yaw: -0.6, pitch: 0.62, distance: 20 } },
   { name: 'falls-full', x: 40, z: -19, yaw: 2.4, cam: { yaw: -0.78, pitch: 0.2, distance: 22 } },
