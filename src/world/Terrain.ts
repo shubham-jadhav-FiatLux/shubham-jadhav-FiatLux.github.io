@@ -25,6 +25,7 @@ import {
 import { TerrainMask } from './TerrainMask';
 import { globalUniforms } from '../render/uniforms';
 import { BUMP_GLSL, NOISE_GLSL } from '../render/glsl';
+import { ATMOSPHERE } from '../render/atmosphere';
 import { smoothstep } from '../utils/math';
 import { GRASS_COLORS, GRASS_COLOR_GLSL } from './palette';
 
@@ -243,7 +244,7 @@ export class Terrain {
       uLitterA: new Color('#a7803f'),
       uLitterB: new Color('#7b5a33'),
       // warm glow that lanterns cast on the ground (emissive, HDR)
-      uLampLight: new Color('#ff9a45').multiplyScalar(0.55),
+      uLampLight: ATMOSPHERE.lampLight,
     };
     mat.onBeforeCompile = (shader) => {
       Object.assign(shader.uniforms, {

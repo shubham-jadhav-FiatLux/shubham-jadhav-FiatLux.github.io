@@ -24,6 +24,7 @@ import { Grass } from '../world/nature/Grass';
 import { Nature } from '../world/nature/Nature';
 import { Water } from '../world/water/Water';
 import { Architecture } from '../world/architecture/Architecture';
+import { LanternGlow } from '../world/architecture/LanternGlow';
 import { Placement } from '../world/placement';
 import { portfolio } from '../content/portfolio';
 import type { PortfolioContent } from '../content/types';
@@ -57,6 +58,7 @@ export class App extends Emitter<AppEvents> {
   nature!: Nature;
   water!: Water;
   architecture!: Architecture;
+  lanterns!: LanternGlow;
   placement!: Placement;
   sky!: Sky;
   lighting!: Lighting;
@@ -93,6 +95,7 @@ export class App extends Emitter<AppEvents> {
     this.quality.on('change', (s) => {
       this.renderer.applyQuality(s);
       this.lighting?.applyQuality(s);
+      this.lanterns?.applyQuality(s);
       this.grass?.applyQuality(s);
       this.onResize();
     });
@@ -159,6 +162,9 @@ export class App extends Emitter<AppEvents> {
       this.placement,
       this.content,
     );
+    this.lanterns = new LanternGlow(this.architecture.lights, 3);
+    this.lanterns.applyQuality(this.quality.settings);
+    this.lanterns.addTo(this.scene);
   }
 
   private buildNature(): void {
@@ -305,6 +311,7 @@ export class App extends Emitter<AppEvents> {
     const px = h * this.renderer.webgl.getPixelRatio();
     this.particles?.setViewport(px, this.rig.camera.fov);
     this.nature?.ambient.setViewport(px, this.rig.camera.fov);
+    this.lanterns?.setViewport(px, this.rig.camera.fov);
   };
 
   private tick = (dt: number, elapsed: number, frameTime: number): void => {
@@ -343,6 +350,7 @@ export class App extends Emitter<AppEvents> {
     this.lighting.update(tmp);
     this.water.update(dt, elapsed, this.controller, this.quality.settings.particles);
     this.architecture.update(dt, this.controller.position);
+    this.lanterns.update(dt, elapsed, this.controller.position);
     for (const u of this.updaters) u(dt, elapsed);
     this.particles.update(dt, elapsed);
 

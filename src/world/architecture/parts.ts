@@ -137,11 +137,25 @@ export function addBeam(
   b.add('paint', box(length * 0.3, height * 0.4, depth + 0.04), PAL.gold, m);
 }
 
+const lightPos = new Vector3();
+
 /** Red paper lantern (glowing) with dark caps and a tassel. */
 export function addLantern(b: ArchBuilder, m: Matrix4, size = 0.32, color = PAL.lanternRed): void {
-  const body = new SphereGeometry(size, 12, 10);
+  const body = new SphereGeometry(size, 14, 12);
   body.scale(1, 1.12, 1);
   b.add('glow', body, color, m);
+  lightPos.setFromMatrixPosition(m);
+  b.light({ x: lightPos.x, y: lightPos.y, z: lightPos.z, size, kind: 'paper' });
+  // thin ribs of the bamboo frame
+  for (const y of [-0.55, 0, 0.55]) {
+    const r = size * Math.sqrt(1 - y * y) * 1.01;
+    b.add(
+      'paint',
+      new TorusGeometry(r, 0.008 + size * 0.015, 4, 18).rotateX(Math.PI / 2),
+      '#3a2416',
+      mul(m, T(0, y * size * 1.12, 0)),
+    );
+  }
   b.add(
     'paint',
     new CylinderGeometry(size * 0.45, size * 0.45, size * 0.18, 10),
@@ -169,7 +183,10 @@ export function addStoneLantern(b: ArchBuilder, m: Matrix4, scale = 1): void {
   b.add('paint', box(0.7, 0.2, 0.7).translate(0, 0.1, 0), PAL.stoneDark, s);
   b.add('paint', post(0.13, 0.75, 8), PAL.stone, mul(s, T(0, 0.2, 0)));
   b.add('paint', box(0.55, 0.12, 0.55), PAL.stone, mul(s, T(0, 1.0, 0)));
-  b.add('glow', box(0.34, 0.34, 0.34), PAL.paperWarm, mul(s, T(0, 1.23, 0)));
+  const window = mul(s, T(0, 1.23, 0));
+  b.add('glow', box(0.34, 0.34, 0.34), PAL.paperWarm, window);
+  lightPos.setFromMatrixPosition(window);
+  b.light({ x: lightPos.x, y: lightPos.y, z: lightPos.z, size: 0.34 * scale, kind: 'stone' });
   for (const [x, z] of [
     [-0.19, -0.19],
     [0.19, -0.19],

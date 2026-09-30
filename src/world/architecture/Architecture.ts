@@ -1,5 +1,5 @@
 import type { Mesh, Scene, Vector3 } from 'three';
-import { ArchBuilder } from './Builder';
+import { ArchBuilder, type LightSpot } from './Builder';
 import {
   buildBellTower,
   buildBridge,
@@ -53,6 +53,8 @@ export class Architecture {
   readonly banners: Banners;
   readonly bell: BellParts;
   readonly labels = new Labels();
+  /** every lantern and glowing altar, for halos and lights */
+  readonly lights: LightSpot[];
   private meshes: Mesh[] = [];
   private bellT = -1;
   private bellSwing = 0;
@@ -181,6 +183,14 @@ export class Architecture {
     // Merge everything static into a handful of meshes.
     this.meshes.push(...b.build());
     for (const m of this.meshes) scene.add(m);
+
+    // Warm pools of lantern light on the ground (wider and softer for lanterns hung high).
+    this.lights = b.lights;
+    for (const s of b.lights) {
+      const above = Math.max(0.3, s.y - h(s.x, s.z));
+      const strength = s.kind === 'stone' ? 0.85 : s.kind === 'paper' ? 0.8 : 0.5;
+      mask.blob('light', s.x, s.z, 1.5 + above * 0.6, strength / (1 + above * 0.2));
+    }
 
     // Floating captions: skill groups over the dummies, milestones along the bridge.
     content.skills.groups.slice(0, this.training.dummies.length).forEach((g, i) => {

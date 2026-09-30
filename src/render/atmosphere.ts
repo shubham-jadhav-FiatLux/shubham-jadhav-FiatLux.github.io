@@ -31,4 +31,6 @@ export const ATMOSPHERE = {
   fogFalloff: 0.018,
   /** fraction of distance fog kept high above the valley */
   fogHeightMin: 0.42,
+  /** warm light the lanterns cast on ground, grass and water (emissive, HDR) */
+  lampLight: new Color('#ff9a45').multiplyScalar(0.55),
 } as const;

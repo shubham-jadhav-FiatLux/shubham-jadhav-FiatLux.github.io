@@ -75,6 +75,7 @@ export class Grass {
         uTip: { value: tipColor },
         uSunColor: { value: sunColor },
         uSunDir: globalUniforms.uSunDir,
+        uLampLight: { value: ATMOSPHERE.lampLight },
       });
       shader.vertexShader = shader.vertexShader
         .replace(
@@ -90,6 +91,7 @@ uniform vec3 uTip;
 uniform vec3 uSunDir;
 varying vec3 vGrassColor;
 varying float vGrassTrans;
+varying float vGrassLamp;
 ${NOISE_GLSL}
 ${TERRAIN_GLSL}
 ${WIND_GLSL}
@@ -113,7 +115,9 @@ ${GRASS_COLOR_GLSL}
 
   // Density: none on paths, paving, gravel, steep ground, under buildings or in water.
   // Ragged, noisy edges; blades get shorter and sparser towards them.
-  float bare = max(max(max(mask.r, mask.g), mask.a), terrainDetailAt(worldXZ).a);
+  vec4 detail = terrainDetailAt(worldXZ);
+  vGrassLamp = detail.r;
+  float bare = max(max(max(mask.r, mask.g), mask.a), detail.a);
   bare += (vnoise(worldXZ * 1.9) - 0.5) * 0.22;
   float density = 1.0 - smoothstep(0.25, 0.6, bare);
   density *= smoothstep(0.12, 0.45, ground);
@@ -182,8 +186,10 @@ ${GRASS_COLOR_GLSL}
           /* glsl */ `#include <common>
 uniform vec3 uSunColor;
 uniform vec3 uSunDir;
+uniform vec3 uLampLight;
 varying vec3 vGrassColor;
-varying float vGrassTrans;`,
+varying float vGrassTrans;
+varying float vGrassLamp;`,
         )
         .replace('#include <color_fragment>', 'diffuseColor.rgb = vGrassColor;')
         .replace(
@@ -202,11 +208,13 @@ vec3 nonPerturbedNormal = normal;`,
     vec3 camToFrag = -(inverseTransformDirection(viewDirW, viewMatrix));
     float back = pow(max(dot(camToFrag, uSunDir), 0.0), 3.0);
     outgoingLight += uSunColor * vGrassColor * back * vGrassTrans * 1.6;
+    // warm lantern light on the blades around each lantern
+    outgoingLight += uLampLight * vGrassLamp * (0.35 + 0.65 * vGrassTrans);
   }
   #include <opaque_fragment>`,
         );
     };
-    material.customProgramCacheKey = () => 'grass-v1';
+    material.customProgramCacheKey = () => 'grass-v2';
     this.mesh = new Mesh(geometry, material);
     this.mesh.name = 'grass';
     this.mesh.frustumCulled = false;
