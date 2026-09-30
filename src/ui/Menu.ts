@@ -8,6 +8,7 @@ declare const __APP_VERSION__: string;
 
 export type MenuEvents = {
   quality: QualityLevel;
+  tour: void;
   classic: void;
   help: void;
   reset: void;
@@ -53,7 +54,8 @@ export class Menu extends Emitter<MenuEvents> {
         </div>
         <p class="menu__note">Lower it if the valley feels sluggish; it also saves battery.</p>
         <div class="menu__actions">
-          <button type="button" class="btn btn--seal" data-act="classic">${ICONS.book}Read as a page</button>
+          <button type="button" class="btn btn--seal" data-act="tour">${ICONS.film}Watch the tour</button>
+          <button type="button" class="btn btn--ghost" data-act="classic">${ICONS.book}Read as a page</button>
           <div class="menu__pair">
             <button type="button" class="btn btn--ghost" data-act="help">How to play</button>
             ${canFullscreen ? '<button type="button" class="btn btn--ghost" data-act="fullscreen">Fullscreen</button>' : ''}
@@ -79,6 +81,10 @@ export class Menu extends Emitter<MenuEvents> {
         this.emit('quality', this.quality);
       }),
     );
+    this.action('tour', () => {
+      this.close();
+      this.emit('tour', undefined);
+    });
     this.action('classic', () => {
       this.close();
       this.emit('classic', undefined);

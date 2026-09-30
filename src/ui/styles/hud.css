@@ -422,3 +422,13 @@
     display: none;
   }
 }
+
+/* During the tour the film frame replaces the HUD (toasts stay). */
+.hud--touring > :not(.toasts) {
+  opacity: 0 !important;
+  visibility: hidden;
+  pointer-events: none !important;
+  transition:
+    opacity 0.6s ease,
+    visibility 0s linear 0.6s;
+}

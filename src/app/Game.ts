@@ -16,6 +16,7 @@ import { SECTIONS, sectionMeta, type SectionId } from '../content/sections';
 import type { GameAudio } from '../audio/GameAudio';
 import { globalUniforms } from '../render/uniforms';
 import { HOUSES, PLACES, TRAVEL_POINTS } from '../world/layout';
+import { Tour, type TourHost } from '../tour/Tour';
 
 const CLOUD = new Color('#fdf8ef');
 const tmp = new Vector3();
@@ -33,6 +34,8 @@ export class Game {
   readonly menu: Menu;
   readonly classic: ClassicView;
   readonly touch: TouchControls;
+  /** "Watch the tour": the valley as a short film */
+  readonly tour: Tour;
   private beacons: Beacons;
   private discovery: DiscoveryFx;
   private lanterns: SkyLanterns;
@@ -98,19 +101,68 @@ export class Game {
     });
     this.classic = classic;
     this.touch = new TouchControls(ui, app.input);
+    this.tour = new Tour(app, this.tourHost(), ui);
 
     this.wire();
     app.updaters.push((dt, t) => this.update(dt, t));
   }
 
-  /** Called when the visitor presses Begin. */
-  start(): void {
+  /** Called when the visitor presses Begin (or Watch the tour). */
+  start(o: { tour?: boolean } = {}): void {
     this.hud.show();
     this.hud.setSound(!this.audio.muted);
     this.hud.setMusic(this.audio.musicOn);
+    if (o.tour) {
+      this.tour.start();
+      return;
+    }
     window.setTimeout(() => {
-      if (!this.progress.has('welcome')) this.hud.toast('Walk through the gate to begin');
+      if (!this.progress.has('welcome') && !this.tour.running)
+        this.hud.toast('Walk through the gate to begin');
     }, 3200);
+  }
+
+  /** What the tour may do with the game. */
+  private tourHost(): TourHost {
+    return {
+      scrollOpen: () => this.scroll.isOpen,
+      openScroll: (section, focus) => {
+        this.map.close();
+        this.menu.close();
+        this.scroll.open(section, focus);
+      },
+      closeScroll: () => this.scroll.close(),
+      scrollBody: () => (this.scroll.isOpen ? this.scroll.bodyEl : null),
+      ceremony: (section) => {
+        this.progress.discover(section);
+        this.celebrate(section);
+      },
+      strikeDummy: (i) => this.strikeDummy(i),
+      beatDrum: () => this.beatDrum(),
+      ringBell: (onGong) => this.ringBell(onGong),
+      closePanels: () => {
+        this.scroll.close();
+        this.map.close();
+        this.menu.close();
+      },
+      setTouring: (on) => {
+        this.cancelPending();
+        this.app.rig.endShot();
+        this.hud.setTouring(on);
+        this.scroll.setFilm(on);
+        if (on) {
+          this.scroll.close();
+          this.map.close();
+          this.menu.close();
+          // Whatever button started the film must not keep Space and Enter.
+          const active = document.activeElement;
+          if (active instanceof HTMLElement) active.blur();
+        }
+      },
+      toast: (text) => this.hud.toast(text, true),
+      sound: (name) => this.audio.sfx(name),
+      openClassic: () => this.classic.open(),
+    };
   }
 
   /** setTimeout that quick travel and progress reset can cancel. */
@@ -138,6 +190,11 @@ export class Game {
 
     input.on('action', (a) => {
       if (!app.started) return;
+      if (this.tour.running) {
+        if (a === 'mute') this.toggleSound();
+        else if (!this.classic.isOpen) this.tour.onAction(a);
+        return;
+      }
       if (a === 'escape') {
         if (this.scroll.isOpen) this.scroll.close();
         else if (this.map.isOpen) this.map.close();
@@ -206,11 +263,12 @@ export class Game {
     });
     this.scroll.on('switch', () => audio.sfx('ui'));
     this.scroll.on('project', () => audio.sfx('ui'));
-    this.scroll.on('travel', (id) => this.travelTo(id));
+    this.scroll.on('travel', (id) => !this.tour.running && this.travelTo(id));
     this.map.on('travel', (id) => this.travelTo(id));
     this.menu.on('quality', (q) => app.quality.set(q));
     app.quality.on('change', (s) => this.menu.setQuality(s.level));
     this.menu.on('classic', () => this.classic.open());
+    this.menu.on('tour', () => this.tour.start());
     this.menu.on('help', () => this.openSection('welcome'));
     this.menu.on('reset', () => {
       this.cancelPending(); // including a ceremony in progress: release its camera shot
@@ -302,10 +360,7 @@ export class Game {
         break;
       }
       case 'bell': {
-        const rang = app.architecture.ringBell(() => {
-          this.audio.sfx('gong', { x: it.x, z: it.z });
-          this.lanterns.release({ x: it.x, y: it.y + 1, z: it.z }, 14);
-          app.rig.shake(0.35);
+        const rang = this.ringBell(() => {
           this.later(() => {
             if (this.panelOpen) this.discoverQuietly('contact');
             else this.discoverOrOpen('contact', undefined, it);
@@ -317,17 +372,63 @@ export class Game {
     }
   }
 
+  /** Swings the striker into the bell: gong, sky lanterns, a shudder. */
+  private ringBell(onGong?: () => void): boolean {
+    const app = this.app;
+    const bell = this.zones.find('bell')!;
+    return app.architecture.ringBell(() => {
+      this.audio.sfx('gong', { x: bell.x, z: bell.z });
+      this.lanterns.release({ x: bell.x, y: bell.y + 1, z: bell.z }, 14);
+      app.rig.shake(0.35);
+      onGong?.();
+    });
+  }
+
+  /** A spin-kick that lands on training dummy `index` (the tour's strikes). */
+  private strikeDummy(index: number): void {
+    const app = this.app;
+    const d = app.architecture.training.dummies[index];
+    if (!d || !app.animator.play('strike')) return;
+    const off = app.animator.on('strikeImpact', () => {
+      off();
+      const p = app.controller.position;
+      app.architecture.training.hit(index, p.x, p.z, 1);
+      this.audio.sfx('thwack', { x: d.x, z: d.z });
+      app.dustRing(tmp.set(d.x, d.y + 0.2, d.z), 0.5);
+    });
+  }
+
+  /** A kick on the big drum: boom and a shock-wave through the grass. */
+  private beatDrum(): void {
+    const app = this.app;
+    const drum = app.architecture.anchors.drum;
+    if (!app.animator.play('strike')) return;
+    const off = app.animator.on('strikeImpact', () => {
+      off();
+      this.audio.sfx('drum', { x: drum.x, z: drum.z });
+      app.dustRing(tmp.set(drum.x, drum.y - 1, drum.z), 0.9);
+      globalUniforms.uShockwave.value.set(drum.x, drum.y - 1, drum.z);
+      globalUniforms.uShockAge.value = 0;
+    });
+  }
+
+  /** The discovery moment itself: bow, light, golden ink, seal, bloom. */
+  private celebrate(section: SectionId): void {
+    const app = this.app;
+    app.controller.velocity.set(0, 0, 0);
+    app.animator.play('bow');
+    this.discovery.play(app.controller.position, 1);
+    this.audio.sfx('discover');
+    this.hud.stamp(section);
+    app.renderer.pulseBloom(1.2);
+  }
+
   /** First visit: the discovery ceremony. Later: straight to the scroll. */
   private discoverOrOpen(section: SectionId, focus: number | undefined, at?: Interactable): void {
     const app = this.app;
     if (this.progress.discover(section)) {
       this.busyUntil = performance.now() + 1900;
-      app.controller.velocity.set(0, 0, 0);
-      app.animator.play('bow');
-      this.discovery.play(app.controller.position, 1);
-      this.audio.sfx('discover');
-      this.hud.stamp(section);
-      app.renderer.pulseBloom(1.2);
+      this.celebrate(section);
       this.frameShot(at, 1.6);
       this.later(() => {
         // If the visitor opened the map or menu meanwhile, the scroll waits in the tabs
@@ -417,7 +518,9 @@ export class Game {
 
   update(dt: number, time: number): void {
     const app = this.app;
-    if (app.started && !this.panelOpen) this.playTime += dt;
+    const touring = this.tour.running;
+    this.tour.update(dt);
+    if (app.started && !this.panelOpen && !touring) this.playTime += dt;
     if (!this.tips.map && this.playTime > 75 && this.progress.count < 3) {
       this.tips.map = true;
       this.hud.toast(
@@ -428,10 +531,13 @@ export class Game {
     }
     app.uiBlocking = this.panelOpen;
     app.renderPaused = this.classic.isOpen;
-    this.touch.setEnabled(!this.panelOpen && app.started);
+    this.touch.setEnabled(!this.panelOpen && app.started && !touring);
     const p = app.controller.position;
-    this.zones.update(p, app.started && !this.panelOpen && performance.now() > this.busyUntil);
-    this.beacons.update(time, p);
+    this.zones.update(
+      p,
+      app.started && !this.panelOpen && !touring && performance.now() > this.busyUntil,
+    );
+    this.beacons.update(time, p, touring);
     this.discovery.update(dt);
     this.lanterns.update(dt, globalUniforms.uWindDir.value);
     this.map.update(p.x, p.z, app.controller.yaw);

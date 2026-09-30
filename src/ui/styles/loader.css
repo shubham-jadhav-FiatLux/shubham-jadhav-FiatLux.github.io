@@ -115,9 +115,21 @@
   font-style: italic;
 }
 
-.loader__begin {
+.loader__choices {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 12px;
   margin-top: 18px;
+}
+
+.loader__begin,
+.loader__tour {
   animation: rise 0.9s var(--ease-out) both;
+}
+
+.loader__tour {
+  animation-delay: 0.08s;
 }
 
 .loader__hint {
@@ -203,7 +215,7 @@
   .loader__tagline {
     font-size: 17px;
   }
-  .loader__begin {
+  .loader__choices {
     margin-top: 8px;
   }
 }

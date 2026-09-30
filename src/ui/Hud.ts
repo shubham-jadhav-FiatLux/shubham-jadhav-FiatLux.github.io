@@ -29,6 +29,7 @@ export class Hud extends Emitter<HudEvents> {
   private toasts: HTMLElement;
   private soundBtn: HTMLButtonElement;
   private musicBtn: HTMLButtonElement;
+  private touring = false;
 
   constructor(
     root: HTMLElement,
@@ -105,6 +106,12 @@ export class Hud extends Emitter<HudEvents> {
     this.el.classList.add('hud--visible');
   }
 
+  /** The tour draws its own frame: the HUD steps aside (and keeps its toasts). */
+  setTouring(on: boolean): void {
+    this.touring = on;
+    this.el.classList.toggle('hud--touring', on);
+  }
+
   private refreshProgress(): void {
     for (const s of SECTIONS) {
       const b = this.seals.get(s.id)!;
@@ -140,7 +147,9 @@ export class Hud extends Emitter<HudEvents> {
     this.hints.classList.add('hud__hints--faded');
   }
 
-  toast(text: string): void {
+  /** A short message; during the tour only when `force` is set. */
+  toast(text: string, force = false): void {
+    if (this.touring && !force) return;
     const t = document.createElement('div');
     t.className = 'toast';
     t.textContent = text;

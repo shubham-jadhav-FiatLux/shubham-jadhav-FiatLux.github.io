@@ -89,12 +89,13 @@ export class Beacons {
     }
   }
 
-  update(time: number, player: Vector3): void {
+  update(time: number, player: Vector3, hidden = false): void {
     for (const b of this.beacons) {
       const found = this.progress.has(b.id);
       const d = Math.hypot(b.sprite.position.x - player.x, b.sprite.position.z - player.z);
-      // Fade out when found, when very close (the prompt takes over) and very far away.
-      const target = found ? 0 : smoothstep(3, 7, d) * (1 - smoothstep(110, 150, d));
+      // Fade out when found, when very close (the prompt takes over), very far away and
+      // during the tour.
+      const target = found || hidden ? 0 : smoothstep(3, 7, d) * (1 - smoothstep(110, 150, d));
       b.material.opacity += (target - b.material.opacity) * 0.08;
       b.sprite.visible = b.material.opacity > 0.01;
       b.sprite.position.y = b.baseY + Math.sin(time * 1.6 + b.baseY) * 0.25;
