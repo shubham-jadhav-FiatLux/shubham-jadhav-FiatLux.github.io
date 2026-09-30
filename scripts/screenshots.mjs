@@ -56,6 +56,23 @@ const SHOTS = [
   { name: 'falls-high', x: 36, z: -14, yaw: 2.4, cam: { yaw: -0.6, pitch: 0.62, distance: 20 } },
   { name: 'falls-full', x: 40, z: -19, yaw: 2.4, cam: { yaw: -0.78, pitch: 0.2, distance: 22 } },
   { name: 'falls-lip', x: 60, z: -47, yaw: -0.46, cam: { yaw: 2.68, pitch: 0.38, distance: 12 } },
+  {
+    // butterflies gathered in front of the camera (they normally roam 6-22 m away)
+    name: 'butterflies',
+    x: -6,
+    z: 36,
+    yaw: 0,
+    cam: { yaw: 0.2, pitch: 0.12, distance: 5 },
+    action: `const w = window.__valley.wildlife;
+      const p = window.__valley.controller.position;
+      w.butterflies.forEach((b, i) => {
+        b.alive = true;
+        b.age = 5;
+        b.home.set(p.x + ((i % 6) - 2.5) * 0.9, p.y, p.z - 1.5 - Math.floor(i / 6) * 1.2);
+        b.pos.copy(b.home).setY(p.y + 0.9);
+      });`,
+    settle: 1200,
+  },
   // UI states (the `action` runs in the page after placing the panda)
   { name: 'hud', x: 0, z: 58, yaw: Math.PI, cam: { yaw: 0.25, pitch: 0.32, distance: 10 } },
   {
