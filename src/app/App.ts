@@ -1,4 +1,4 @@
-import { Color, Fog, Scene, Vector3, type Texture } from 'three';
+import { Color, Fog, Scene, Vector3, type Texture, type Vector2 } from 'three';
 import { Debug } from '../core/Debug';
 import { Emitter } from '../core/Emitter';
 import { Input } from '../core/Input';
@@ -35,6 +35,15 @@ export type AppEvents = {
   ready: void;
   started: void;
 };
+
+/** Something that drives the panda instead of the visitor (the tour's autopilot). */
+export interface PandaDriver {
+  steer(dt: number): { move: Vector2; run: boolean };
+  /** idle time handed to the animator */
+  idleSeconds: number;
+}
+
+const NO_LOOK = { x: 0, y: 0 };
 
 const nextFrame = () => new Promise<void>((r) => requestAnimationFrame(() => r()));
 
@@ -80,6 +89,10 @@ export class App extends Emitter<AppEvents> {
   renderPaused = false;
   /** extra per-frame systems (the gameplay layer registers itself here) */
   readonly updaters: ((dt: number, elapsed: number) => void)[] = [];
+  /** per-frame systems that place the camera (run after the panda moves, before the rig) */
+  readonly beforeCamera: ((dt: number) => void)[] = [];
+  /** when set, drives the panda instead of the visitor's input */
+  driver: PandaDriver | null = null;
   private reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
   constructor(
@@ -97,6 +110,8 @@ export class App extends Emitter<AppEvents> {
     this.rig.reducedMotion = this.reducedMotion;
     this.renderer = new Renderer(canvas, this.scene, this.rig.camera, this.quality.settings);
     this.loop = new Loop(this.tick);
+    const sim = Number(new URLSearchParams(window.location.search).get('sim'));
+    if (sim > 1) this.loop.substeps = Math.min(16, Math.round(sim));
     this.quality.on('change', (s) => {
       this.renderer.applyQuality(s);
       this.lighting?.applyQuality(s);
@@ -302,8 +317,8 @@ export class App extends Emitter<AppEvents> {
     }
   }
 
-  /** Called when the visitor presses "Begin". */
-  begin(): void {
+  /** Called when the visitor presses "Begin" (`quiet`: the tour takes it from here). */
+  begin(o: { quiet?: boolean } = {}): void {
     if (this.started) return;
     this.started = true;
     this.rig.startFollow(
@@ -312,7 +327,8 @@ export class App extends Emitter<AppEvents> {
       this.reducedMotion ? 0.01 : 2.6,
     );
     this.input.lastActivity = performance.now();
-    window.setTimeout(() => this.animator.play('wave'), this.reducedMotion ? 100 : 2300);
+    if (!o.quiet)
+      window.setTimeout(() => this.animator.play('wave'), this.reducedMotion ? 100 : 2300);
     this.emit('started', undefined);
   }
 
@@ -326,21 +342,27 @@ export class App extends Emitter<AppEvents> {
     this.lanterns?.setViewport(px, this.rig.camera.fov);
   };
 
-  private tick = (dt: number, elapsed: number, frameTime: number): void => {
+  private tick = (dt: number, elapsed: number, frameTime: number, render = true): void => {
     globalUniforms.uTime.value = elapsed;
     globalUniforms.uShockAge.value += dt;
-    this.quality.monitor(frameTime);
+    if (render) this.quality.monitor(frameTime);
     this.input.update();
 
+    const driver = this.driver;
     const playing = this.started && !this.uiBlocking;
     this.input.gameplayEnabled = playing;
-    const jump = playing && this.input.consume('jump');
-
     this.controller.locked = !playing;
-    this.controller.update(dt, this.input.move, this.rig.yaw, this.input.run, jump);
+    if (driver) {
+      // The tour walks the panda; visitor input is only watched (to hand control back).
+      const d = driver.steer(dt);
+      this.controller.update(dt, d.move, 0, d.run, false);
+    } else {
+      const jump = playing && this.input.consume('jump');
+      this.controller.update(dt, this.input.move, this.rig.yaw, this.input.run, jump);
+    }
     this.panda.root.position.copy(this.controller.position);
     this.panda.root.rotation.y = this.controller.yaw;
-    this.animator.update(dt, playing ? this.input.idleSeconds : 0);
+    this.animator.update(dt, driver ? driver.idleSeconds : playing ? this.input.idleSeconds : 0);
     globalUniforms.uPlayerPos.value.copy(this.controller.position);
     this.scarf.update(
       dt,
@@ -349,11 +371,13 @@ export class App extends Emitter<AppEvents> {
       elapsed,
     );
 
+    for (const f of this.beforeCamera) f(dt);
+    const manual = this.started && !driver;
     this.rig.update(
       dt,
       this.controller,
-      this.started ? this.input.look : { x: 0, y: 0 },
-      this.started ? this.input.zoom : 0,
+      manual ? this.input.look : NO_LOOK,
+      manual ? this.input.zoom : 0,
     );
     const cam = this.rig.camera;
     this.sky.update(cam.position);
@@ -367,6 +391,7 @@ export class App extends Emitter<AppEvents> {
     for (const u of this.updaters) u(dt, elapsed);
     this.particles.update(dt, elapsed);
 
+    if (!render) return;
     if (!this.renderPaused) this.renderer.render(dt);
     this.debug.update(frameTime, this.renderer.info);
     this.input.endFrame();

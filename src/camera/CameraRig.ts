@@ -6,7 +6,7 @@ export interface Shot {
   target: Vector3;
 }
 
-type Mode = 'follow' | 'shot' | 'orbit';
+type Mode = 'follow' | 'shot' | 'orbit' | 'directed';
 
 const tmp = new Vector3();
 const desiredPos = new Vector3();
@@ -50,6 +50,9 @@ export class CameraRig {
   private lookAt = new Vector3();
   reducedMotion = false;
   private trauma = 0;
+  private directedPos = new Vector3();
+  private directedTarget = new Vector3();
+  private directedFov = FOLLOW_FRAMING.fov;
 
   constructor(
     aspect: number,
@@ -61,6 +64,22 @@ export class CameraRig {
 
   get isFollowing(): boolean {
     return this.mode === 'follow';
+  }
+
+  /** The point the camera is looking at. */
+  get lookTarget(): Vector3 {
+    return this.lookAt;
+  }
+
+  /**
+   * Hands the camera to a director for this frame (the tour): the pose is applied as is,
+   * with shake. Call `startFollow` to hand it back.
+   */
+  direct(position: Vector3, target: Vector3, fov: number): void {
+    this.mode = 'directed';
+    this.directedPos.copy(position);
+    this.directedTarget.copy(target);
+    this.directedFov = fov;
   }
 
   /** Adds camera shake (0..1), decaying over time. */
@@ -122,6 +141,17 @@ export class CameraRig {
     look: { x: number; y: number },
     zoom: number,
   ): void {
+    if (this.mode === 'directed') {
+      this.camera.position.copy(this.directedPos);
+      this.lookAt.copy(this.directedTarget);
+      if (Math.abs(this.camera.fov - this.directedFov) > 0.01) {
+        this.camera.fov = this.directedFov;
+        this.camera.updateProjectionMatrix();
+      }
+      this.applyShake(dt);
+      this.camera.lookAt(this.lookAt);
+      return;
+    }
     if (this.mode === 'orbit') {
       this.orbitAngle += dt * 0.035;
       const r = 118;
