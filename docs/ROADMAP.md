@@ -11,7 +11,7 @@ Versions follow [Semantic Versioning](https://semver.org). While the project is 
 | 0.2.0   | Living nature: grass, bamboo, blossom trees, rocks, lake, waterfall                      | ✅ released  |
 | 0.3.0   | Architecture and landmarks: gate, pagoda, pavilion, village, bridge, bell, training yard | ✅ released  |
 | 0.4.0   | Portfolio zones and scrolls, discovery moments, map with quick travel, procedural audio  | ✅ released  |
-| 0.5.0   | Polish: accessibility, reduced motion, SEO and sharing, performance, mobile              | 🚧 next      |
+| 0.5.0   | Polish: accessibility, reduced motion, SEO and sharing, performance, mobile              | ✅ released  |
 | 1.0.0   | Real content filled in, tested on phones, custom domain                                  | ⏳ your turn |
 
 ## Ideas for later

@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-09-30
+
 ### Added
 
 - Link previews: Open Graph and Twitter card tags with a rendered 1200×630 image
@@ -131,7 +133,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Follow camera with orbit, zoom, look-ahead and cinematic shots.
 - Title screen, screenshot script and unit tests.
 
-[Unreleased]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.1.0...v0.2.0
