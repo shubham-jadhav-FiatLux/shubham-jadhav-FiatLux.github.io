@@ -288,8 +288,9 @@ export class Nature {
         ...pt,
         size: rand.range(1, 2.4),
         rot: rand.range(0, 6.28),
-        style: 'boulder',
+        style: rand.chance(0.45) ? 'cliff' : 'boulder',
         sink: 0.35,
+        tilt: rand.spread(0.15),
       });
     }
     // Pebbles and stones along the shore.
@@ -329,7 +330,7 @@ export class Nature {
         z,
         size: rand.range(2.2, 3.8),
         rot: rand.range(0, 6.28),
-        style: rand.chance(0.25) ? 'tall' : 'boulder',
+        style: rand.chance(0.2) ? 'boulder' : 'cliff',
         sink: 0.3,
         tilt: rand.spread(0.2),
       });
