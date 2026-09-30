@@ -33,8 +33,10 @@ saturated but gentle colours, and rounded, friendly shapes.
 | Grass        | base `#3f6b2a` → mid `#6f9a3a` → sunlit tip `#b7c95a`                                                        |
 | Paths        | dirt `#b89468`, shore sand `#cdb58c`                                                                         |
 | Blossoms     | `#f6b7c8`, `#f19bb4`, `#fbd3dd`, bark `#5b3d2e`                                                              |
-| Bamboo       | `#7ea449`, `#5d8a3a`, nodes `#4a6b2c`                                                                        |
+| Bamboo       | green `#62883a` → `#9fbd5a`, golden `#c4a64c` with green grooves `#6c9340`, black `#2e2a2c`, nodes darker    |
 | Architecture | vermilion pillars `#b0322a`, slate tiles `#3d4a57`, glazed teal `#2f7d74`, gold `#d8a93b`, plaster `#efe4cf` |
+| Wood / stone | deck planks `#9a7250`, dark timber `#5a3a28`, dressed stone `#b3a893`, masonry `#8e8574`                     |
+| Lamp light   | paper lanterns `#e0412b` glowing orange, stone lantern windows `#ffd9a0`, light pools `#ff9a45`              |
 | Water        | shallow `#6fc3b8` → deep `#1f5d6b`, foam `#f4f1e6`                                                           |
 | UI           | rice paper `#f3ead6`, ink `#1e1a18`, seal red `#b8352b`                                                      |
 
@@ -43,6 +45,41 @@ Typography: **Ma Shan Zheng** (brush, subset to the glyphs we use) for titles an
 
 All geometry, textures and audio are generated in code. There are no downloaded models,
 images or sound files, which keeps the build tiny and the licensing simple.
+
+### Surfaces and light
+
+- **Finishes.** Every building part is merged into one mesh per material, so the parts
+  carry a per-vertex _finish_: lacquer (soft sheen, brush marks), wood (grain along the
+  part's longest axis), stone (grain, speckles, moss on top) or gilding. The finish is
+  implied by the palette colour (`architecture/palette.ts`) or named explicitly. All parts
+  darken where they meet the ground and grow an algae line just above the lake.
+- **Reflections.** A golden-hour sky is rendered once into a prefiltered environment map
+  (`render/environment.ts`) for lacquer, glazed tiles, gold and the bronze bell only; the
+  rest of the valley keeps its hand-tuned hemisphere light.
+- **Stone.** Rocks are soft convex hulls cut by random planes (bevelled facets), with
+  grooves, strata and moss in their vertex colours and grain, lichen, cracks and wet bases
+  in the rock material. Cliffs are shaded in the terrain shader: strata, ledges, joints,
+  seep stains and derivative bump mapping.
+- **Edges between materials.** Paths and yards are looked up in the splat map with a
+  meandering offset (`GROUND_WARP_GLSL`) shared by the ground, the grass and the flowers,
+  so their ragged edges agree. Verges are trampled and dry; paths have a darker tread and
+  pebbly margins; paving is laid stone by stone and frays at its edge; grass thins out
+  onto the beach.
+- **Lantern light.** Lanterns glow in their own colour with a flicker, halos are one
+  additive point cloud, light pools are painted into the terrain's detail map (and read
+  by the grass and the lake), and on High three real point lights follow the lanterns
+  nearest the panda. The number of lights is fixed at start so a preset change never
+  recompiles shaders.
+- **Bamboo.** Culms are light tubes; node rings, the waxy bloom and the striped grooves of
+  golden bamboo are drawn in the shader from an internode coordinate, so detail costs no
+  triangles.
+
+### Life
+
+Koi and lotus in the lake, petals drifting from the blossom trees, golden motes in the
+light, butterflies over the meadows near the panda (they flee when it comes close),
+dragonflies over the water and a flock of birds circling high above. All of it is
+instanced and animated in shaders, driven by a few dozen transforms per frame.
 
 ## 3. The valley (world layout)
 
@@ -77,6 +114,13 @@ panda looking north. Water level is `y = 0`.
 
 The world is **content driven**: the number of project banners, skill dummies and bridge
 milestones follows `src/content/portfolio.ts`.
+
+**Water.** A stream rises in a spring pool in the north-east hills and crosses the plateau
+in a bed carved into the heightfield (it only ever runs downhill; a unit test checks it),
+then pours over a notch in the cliff. The cliff steps back into a rock alcove there and
+drops straight into a deep plunge pool joined to the lake, so the falls have a visible
+source and land in water. The bridge crosses the lake on timber pile bents and stone
+piers, each ringed with foam.
 
 ## 4. The panda
 
@@ -175,10 +219,10 @@ Target 60 fps on a mid-range laptop (integrated GPU) at the _Medium_ preset.
 | Medium | ≤ 1.5       | 1024²   | 36k          | 2×   | + bloom                         |
 | High   | ≤ 2.0       | 2048²   | 70k          | 4×   | + bloom                         |
 
-The whole valley renders in roughly 170 draw calls: static architecture is merged per
-material, vegetation is instanced and the grass is a single instanced draw.
+The whole valley renders in roughly 200 draw calls: static architecture is merged per
+material, vegetation and wildlife are instanced and the grass is a single instanced draw.
 
-The preset is chosen automatically (mobile → Low, otherwise Medium) and adapts down if
+The preset is chosen automatically (phones → Medium, otherwise High) and adapts down if
 the frame rate stays low. Visitors can override it from the settings menu.
 
 ## 10. Accessibility and reach

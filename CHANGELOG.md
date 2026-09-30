@@ -6,6 +6,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-30
+
+A visual update: a waterfall with a real source, richer stone, wood and bamboo, warm
+lantern light, softer edges between materials and a little more life in the valley.
+
+### Added
+
+- A stream crosses the plateau from a spring pool in the hills and pours over a notch in
+  the cliff into a deep plunge pool: glassy at the lip, aerated lower down, with a veil of
+  spray, churning white water, foam trails, mist, wet dark rock and hand-placed boulders.
+- Warm lantern light: paper and stone lanterns glow in their own colour with a candle
+  flicker and a soft halo, light pools warm the ground, grass and water around them, and
+  on High a few real lights follow the lanterns nearest the panda.
+- Material finishes for all architecture: lacquer with a soft sheen, wood grain, stone
+  grain with moss, worn gilding, grime where parts meet the ground and an algae line at
+  the water; glazed roof tiles vary tile by tile. A prefiltered golden-hour sky gives
+  glossy surfaces something to reflect.
+- The zig-zag bridge rebuilt in timber: plank decks on pile bents, stone landings on
+  masonry piers, vermilion railings with gilded finials, and foam rings around every post
+  and pier in the water.
+- Bamboo with node rings, a waxy bloom under each node, branches with drooping leaf
+  sprays, papery sheaths, young shoots and fallen leaves; golden bamboo with green
+  grooves frames the gate and black bamboo grows in the village.
+- Butterflies over the meadows (they flutter off when the panda comes close),
+  dragonflies darting over the lake and a flock of birds wheeling above the valley.
+- The map shows the stream, the falls and the bridge.
+- Screenshot angles for close-ups of bamboo, lanterns, rocks, path edges, the bridge,
+  the falls and the butterflies.
+
+### Changed
+
+- High quality is the default on desktop (phones start at Medium); adaptive quality still
+  steps down on slower devices.
+- The follow camera starts higher and farther back with a wider lens, so the panda walks
+  in the lower third with the valley opening up behind it; after the visitor orbits or
+  zooms, it eases back to that framing once the panda walks on.
+- Rocks are chiselled, faceted stones with bevelled edges, strata, moss, lichen, cracks
+  and wet glossy bases instead of smooth noisy blobs; cliffs show layered strata, ledges,
+  joints and seep stains.
+- Paths and yards have meandering, ragged edges with grass growing right up to them, a
+  trampled verge, a compacted tread and scattered pebbles; paving frays stone by stone
+  with moss in the joints; grass thins and dries out down onto the beach.
+
+### Fixed
+
+- Bridge landings could be walked through at their corners.
+
 ## [0.5.1] - 2026-09-30
 
 ### Fixed
@@ -158,7 +205,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Follow camera with orbit, zoom, look-ahead and cinematic shots.
 - Title screen, screenshot script and unit tests.
 
-[Unreleased]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.3.0...v0.4.0
