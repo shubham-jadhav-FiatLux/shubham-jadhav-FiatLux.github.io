@@ -2,11 +2,20 @@ import { describe, expect, it } from 'vitest';
 import {
   buildHeightGrid,
   lakeSdf,
+  riverCourse,
   sampleGrid,
   terrainHeight,
   CELL,
+  FALLS_TOP,
 } from '../src/world/heightfield';
-import { FLAT_ZONES, PLACES, TERRAIN_ORIGIN, TERRAIN_RES, WATER_LEVEL } from '../src/world/layout';
+import {
+  FALLS,
+  FLAT_ZONES,
+  PLACES,
+  TERRAIN_ORIGIN,
+  TERRAIN_RES,
+  WATER_LEVEL,
+} from '../src/world/layout';
 
 const grid = buildHeightGrid();
 
@@ -72,5 +81,23 @@ describe('heightfield', () => {
       worst = Math.max(worst, Math.abs(a - b));
     }
     expect(worst).toBeLessThan(0.05);
+  });
+
+  it('runs the stream downhill all the way to the waterfall lip', () => {
+    const pts = riverCourse.points;
+    for (let i = 1; i < pts.length; i++) {
+      expect(pts[i]!.bed).toBeLessThanOrEqual(pts[i - 1]!.bed);
+    }
+    const lip = pts[pts.length - 1]!;
+    expect(Math.hypot(lip.x - FALLS.lip.x, lip.z - FALLS.lip.z)).toBeLessThan(0.01);
+    expect(FALLS_TOP).toBeGreaterThan(10);
+  });
+
+  it('drops the waterfall into a deep plunge pool, not onto a beach', () => {
+    expect(terrainHeight(FALLS.foot.x, FALLS.foot.z)).toBeLessThan(-1.5);
+    expect(lakeSdf(FALLS.foot.x, FALLS.foot.z)).toBeLessThan(-1.5);
+    // one metre back from the lip the ground is still up on the plateau
+    const back = { x: FALLS.lip.x - FALLS.dir.x, z: FALLS.lip.z - FALLS.dir.z };
+    expect(terrainHeight(back.x, back.z)).toBeGreaterThan(FALLS_TOP - 1.5);
   });
 });

@@ -51,6 +51,8 @@ const SHOTS = [
   { name: 'bridge-deck', x: 31.2, z: 9, yaw: Math.PI, cam: { yaw: 0.4, pitch: 0.3, distance: 8 } },
   { name: 'falls-pool', x: 40, z: -19, yaw: 2.4, cam: { yaw: -0.8, pitch: 0.16, distance: 16 } },
   { name: 'falls-high', x: 36, z: -14, yaw: 2.4, cam: { yaw: -0.6, pitch: 0.62, distance: 20 } },
+  { name: 'falls-full', x: 40, z: -19, yaw: 2.4, cam: { yaw: -0.78, pitch: 0.2, distance: 22 } },
+  { name: 'falls-lip', x: 60, z: -47, yaw: -0.46, cam: { yaw: 2.68, pitch: 0.38, distance: 12 } },
   // UI states (the `action` runs in the page after placing the panda)
   { name: 'hud', x: 0, z: 58, yaw: Math.PI, cam: { yaw: 0.25, pitch: 0.32, distance: 10 } },
   {

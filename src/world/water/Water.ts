@@ -2,12 +2,13 @@ import type { Scene, Vector3 } from 'three';
 import { Random } from '../../utils/random';
 import { distToPolyline } from '../../utils/math';
 import { lakeSdf } from '../heightfield';
-import { BRIDGE_POINTS, CLIFF, PLACES, WATER_LEVEL } from '../layout';
+import { BRIDGE_POINTS, PLACES, WATER_LEVEL } from '../layout';
 import type { Terrain } from '../Terrain';
 import type { Particles } from '../../effects/Particles';
 import type { QualitySettings } from '../../core/Quality';
 import { Lake } from './Lake';
 import { Waterfall } from './Waterfall';
+import { River } from './River';
 import { Koi } from './Koi';
 import { Lotus } from './Lotus';
 
@@ -15,6 +16,7 @@ import { Lotus } from './Lotus';
 export class Water {
   readonly lake: Lake;
   readonly waterfall: Waterfall;
+  readonly river: River;
   readonly koi: Koi;
   readonly lotus: Lotus;
   private rippleTimer = 0;
@@ -26,7 +28,8 @@ export class Water {
     onSplash: (x: number, z: number, strength: number) => void,
   ) {
     this.lake = new Lake({ x0: 0, z0: -40, x1: 62, z1: 18 });
-    this.waterfall = new Waterfall(terrain, PLACES.waterfall, CLIFF);
+    this.waterfall = new Waterfall();
+    this.river = new River();
     this.koi = new Koi(terrain, Math.round(14 * Math.max(0.6, settings.detail)), (x, z, s) => {
       this.lake.ripple(x, z, s * 1.4);
       onSplash(x, z, s);
@@ -73,6 +76,7 @@ export class Water {
 
   addTo(scene: Scene): void {
     this.lake.addTo(scene);
+    this.river.addTo(scene);
     this.waterfall.addTo(scene);
     this.koi.addTo(scene);
     this.lotus.addTo(scene);

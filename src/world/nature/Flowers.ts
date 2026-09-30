@@ -80,6 +80,7 @@ export class Flowers {
         uPlayerPos: globalUniforms.uPlayerPos,
         uHeightMap: globalUniforms.uHeightMap,
         uMaskMap: globalUniforms.uMaskMap,
+        uDetailMap: globalUniforms.uDetailMap,
         uTerrain: globalUniforms.uTerrain,
         uPalette: { value: palette },
       });
@@ -109,7 +110,8 @@ ${WIND_GLSL}`,
   float rnd2 = hash12(worldXZ * 9.71 - 4.2);
   float ground = terrainHeightAt(worldXZ);
   vec4 mask = terrainMaskAt(worldXZ);
-  float density = 1.0 - smoothstep(0.2, 0.5, max(max(mask.r, mask.g), mask.a));
+  float bare = max(max(max(mask.r, mask.g), mask.a), terrainDetailAt(worldXZ).a);
+  float density = 1.0 - smoothstep(0.2, 0.5, bare);
   density *= smoothstep(0.3, 0.6, ground);
   // flowers grow in drifts
   float drift = smoothstep(0.52, 0.72, fbm(worldXZ * 0.07 + 13.0));

@@ -6,14 +6,18 @@ import { clamp01, smin, smoothstep, lerp } from '../utils/math';
 import { SimplexNoise } from '../utils/noise';
 import {
   CLIFF,
+  FALLS,
   FLAT_ZONES,
   LAKE_ELLIPSES,
   PAGODA_HILL,
   RIM,
+  RIVER,
   TERRAIN_ORIGIN,
   TERRAIN_RES,
   TERRAIN_SIZE,
+  WATER_LEVEL,
   type Ellipse,
+  type Vec2,
 } from './layout';
 
 const noise = new SimplexNoise(20260929);
@@ -38,8 +42,9 @@ export function lakeSdf(x: number, z: number): number {
   for (let i = 1; i < LAKE_ELLIPSES.length; i++) {
     d = smin(d, ellipseSdf(x, z, LAKE_ELLIPSES[i]!), 6);
   }
-  // Organic, wobbly shoreline.
-  return d + noise.noise2(x * 0.08, z * 0.08) * 1.6;
+  // Organic, wobbly shoreline (held steady at the foot of the falls).
+  const calm = 1 - smoothstep(6, 12, Math.hypot(x - FALLS.foot.x, z - FALLS.foot.z));
+  return d + noise.noise2(x * 0.08, z * 0.08) * 1.6 * (1 - 0.85 * calm);
 }
 
 /** Rolling valley floor with the rim, the pagoda hill and the waterfall cliff. */
@@ -63,37 +68,199 @@ function landHeight(x: number, z: number): number {
     h += PAGODA_HILL.height * (1 - smoothstep(PAGODA_HILL.plateau, 1, ph));
   }
 
-  // North-east plateau whose edge becomes the waterfall cliff.
+  // North-east plateau whose edge becomes the waterfall cliff. Around the falls the cliff
+  // steps back into a steep alcove.
   const cd = Math.hypot(x - CLIFF.x, z - CLIFF.z);
   if (cd < CLIFF.radius + 1) {
-    // inside the escarpment
-    const t = smoothstep(CLIFF.radius, CLIFF.radius - CLIFF.edge, cd);
-    const rough = noise.fbm2(x * 0.12, z * 0.12, 2) * 1.2;
+    const alcove = fallsAlcove(x, z);
+    const radius = CLIFF.radius - FALLS.recess * alcove;
+    const edge = lerp(CLIFF.edge, FALLS.edge, alcove);
+    const t = smoothstep(radius, radius - edge, cd);
+    const rough = noise.fbm2(x * 0.12, z * 0.12, 2) * 1.2 * (1 - alcove * 0.6);
     h += t * (CLIFF.height + rough);
   }
 
   return h;
 }
 
-/** Carves the lake basin: a shallow sandy shelf dropping to ~3 m deep. */
+/** 1 on the fall line, fading to 0 at the sides of the alcove. */
+function fallsAlcove(x: number, z: number): number {
+  const across = Math.abs((x - CLIFF.x) * FALLS.across.x + (z - CLIFF.z) * FALLS.across.z);
+  const wobble = noise.noise2(x * 0.35, z * 0.35) * 0.8;
+  return 1 - smoothstep(FALLS.alcoveHalfWidth * 0.4, FALLS.alcoveHalfWidth, across + wobble);
+}
+
+/* ------------------------------------------------------------------ River */
+
+/** Chaikin corner cutting; keeps the end points. */
+function smoothLine(pts: readonly Vec2[], iterations: number): Vec2[] {
+  let out = pts.slice();
+  for (let k = 0; k < iterations; k++) {
+    const next: Vec2[] = [out[0]!];
+    for (let i = 0; i < out.length - 1; i++) {
+      const a = out[i]!;
+      const b = out[i + 1]!;
+      next.push([a[0] * 0.75 + b[0] * 0.25, a[1] * 0.75 + b[1] * 0.25]);
+      next.push([a[0] * 0.25 + b[0] * 0.75, a[1] * 0.25 + b[1] * 0.75]);
+    }
+    next.push(out[out.length - 1]!);
+    out = next;
+  }
+  return out;
+}
+
+export interface RiverPoint {
+  x: number;
+  z: number;
+  /** distance along the stream from the spring (m) */
+  s: number;
+  /** height of the stream bed (m) */
+  bed: number;
+  /** half-width of the flat bed (m) */
+  halfWidth: number;
+}
+
+/** Depth of the water in the stream (m). */
+export const RIVER_DEPTH = 0.42;
+const RIVER_BANK = 2.4;
+const SPRING_RADIUS = 3.2;
+
+/**
+ * The stream, densely sampled: its bed only ever runs downhill (a running minimum of the
+ * ground along the course), so the water surface never climbs.
+ */
+export const riverCourse: { points: RiverPoint[]; length: number } = (() => {
+  const line = smoothLine(RIVER, 3);
+  // resample evenly every ~0.6 m
+  const dense: Vec2[] = [];
+  for (let i = 0; i < line.length - 1; i++) {
+    const a = line[i]!;
+    const b = line[i + 1]!;
+    const n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / 0.6));
+    for (let k = 0; k < n; k++) {
+      const t = k / n;
+      dense.push([lerp(a[0], b[0], t), lerp(a[1], b[1], t)]);
+    }
+  }
+  dense.push(line[line.length - 1]!);
+  const points: RiverPoint[] = [];
+  let s = 0;
+  let bed = Infinity;
+  dense.forEach(([x, z], i) => {
+    if (i > 0) s += Math.hypot(x - dense[i - 1]![0], z - dense[i - 1]![1]);
+    points.push({ x, z, s, bed: 0, halfWidth: 0 });
+  });
+  const length = s;
+  for (const p of points) {
+    const f = p.s / length;
+    p.halfWidth = lerp(0.95, 1.75, smoothstep(0, 0.7, f));
+    const depth = lerp(0.9, 1.25, f);
+    bed = Math.min(bed, landHeight(p.x, p.z) - depth);
+    p.bed = bed;
+  }
+  return { points, length };
+})();
+
+const riverBox = (() => {
+  const m = RIVER_BANK + 3 + SPRING_RADIUS;
+  let x0 = Infinity;
+  let z0 = Infinity;
+  let x1 = -Infinity;
+  let z1 = -Infinity;
+  for (const p of riverCourse.points) {
+    x0 = Math.min(x0, p.x - m);
+    z0 = Math.min(z0, p.z - m);
+    x1 = Math.max(x1, p.x + m);
+    z1 = Math.max(z1, p.z + m);
+  }
+  return { x0, z0, x1, z1 };
+})();
+
+/** Closest point of the stream's centre line: distance, bed height and half-width there. */
+export function riverAt(
+  x: number,
+  z: number,
+): { dist: number; bed: number; halfWidth: number; s: number } | null {
+  if (x < riverBox.x0 || x > riverBox.x1 || z < riverBox.z0 || z > riverBox.z1) return null;
+  const pts = riverCourse.points;
+  let best = Infinity;
+  let bi = 0;
+  let bt = 0;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const a = pts[i]!;
+    const b = pts[i + 1]!;
+    const abx = b.x - a.x;
+    const abz = b.z - a.z;
+    const len2 = abx * abx + abz * abz;
+    const t = len2 > 0 ? clamp01(((x - a.x) * abx + (z - a.z) * abz) / len2) : 0;
+    const dx = x - (a.x + abx * t);
+    const dz = z - (a.z + abz * t);
+    const d2 = dx * dx + dz * dz;
+    if (d2 < best) {
+      best = d2;
+      bi = i;
+      bt = t;
+    }
+  }
+  const a = pts[bi]!;
+  const b = pts[bi + 1]!;
+  return {
+    dist: Math.sqrt(best),
+    bed: lerp(a.bed, b.bed, bt),
+    halfWidth: lerp(a.halfWidth, b.halfWidth, bt),
+    s: lerp(a.s, b.s, bt),
+  };
+}
+
+/** Cuts the stream bed (with gently sloping banks) and the spring pool into the ground. */
+function applyRiver(x: number, z: number, h: number): number {
+  const r = riverAt(x, z);
+  if (!r) return h;
+  let target = lerp(r.bed, h, smoothstep(r.halfWidth, r.halfWidth + RIVER_BANK, r.dist));
+  const spring = riverCourse.points[0]!;
+  const ds = Math.hypot(x - spring.x, z - spring.z);
+  if (ds < SPRING_RADIUS + RIVER_BANK) {
+    const bowl = lerp(spring.bed - 0.35, h, smoothstep(SPRING_RADIUS - 1, SPRING_RADIUS + 1.6, ds));
+    target = Math.min(target, bowl);
+  }
+  return Math.min(h, target);
+}
+
+/**
+ * Carves the lake basin: a shallow sandy shelf dropping to ~3 m deep. At the waterfall
+ * the cliff drops straight into a deep plunge pool instead of a beach.
+ */
 function applyLake(x: number, z: number, h: number): number {
   const sd = lakeSdf(x, z);
   if (sd > 7) return h;
+  const toFoot = Math.hypot(x - FALLS.foot.x, z - FALLS.foot.z);
+  const nearFalls = 1 - smoothstep(9, 17, toFoot);
   let profile: number;
   if (sd < 0) {
-    const depth = smoothstep(0, 11, -sd);
+    const depth = smoothstep(0, lerp(11, 4, nearFalls), -sd);
     profile = 0.25 - 3.3 * depth + noise.noise2(x * 0.15, z * 0.15) * 0.25 * depth;
+    // the plunge pool is scoured deeper right under the falls
+    profile -= 1.6 * (1 - smoothstep(1, 6.5, toFoot));
   } else {
     profile = 0.25 + sd * 0.18;
   }
-  const w = 1 - smoothstep(0, 7, sd);
+  const w = 1 - smoothstep(0, lerp(7, 1.2, nearFalls), sd);
   return lerp(h, Math.min(h, profile), w);
 }
 
 /** Terrain height before flattening. */
 function rawHeight(x: number, z: number): number {
-  return applyLake(x, z, landHeight(x, z));
+  return applyLake(x, z, applyRiver(x, z, landHeight(x, z)));
 }
+
+/** Height of the stream's water surface at the lip, where the waterfall starts. */
+export const FALLS_TOP = (() => {
+  const pts = riverCourse.points;
+  return pts[pts.length - 1]!.bed + RIVER_DEPTH;
+})();
+
+/** Water level at the foot of the falls. */
+export const FALLS_BOTTOM = WATER_LEVEL;
 
 const flatTargets = FLAT_ZONES.map((f) => rawHeight(f.x, f.z));
 

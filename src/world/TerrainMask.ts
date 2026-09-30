@@ -7,25 +7,43 @@ import {
 } from 'three';
 import { TERRAIN_ORIGIN, TERRAIN_SIZE, type Vec2 } from './layout';
 
-type Channel = 'dirt' | 'stone' | 'shade' | 'nograss';
+/**
+ * Paintable layers of the ground. The first four pack into the main splat map, the
+ * others into a second "detail" map:
+ *   main:   R = dirt paths, G = stone paving, B = soft shade, A = grass suppression
+ *   detail: R = warm lantern light, G = wet ground, B = leaf litter, A = gravel / stream bed
+ */
+export type Channel =
+  'dirt' | 'stone' | 'shade' | 'nograss' | 'light' | 'wet' | 'litter' | 'gravel';
+
+const MAIN: readonly Channel[] = ['dirt', 'stone', 'shade', 'nograss'];
+const DETAIL: readonly Channel[] = ['light', 'wet', 'litter', 'gravel'];
+const BLUR: Record<Channel, number> = {
+  dirt: 2,
+  stone: 2,
+  shade: 3,
+  nograss: 2,
+  light: 4,
+  wet: 4,
+  litter: 3,
+  gravel: 2,
+};
 
 /**
- * A painted "splat map" covering the terrain, drawn with Canvas 2D and packed into one
- * RGBA texture:
- *   R = dirt paths, G = stone paving, B = soft shade (baked contact shadows),
- *   A = extra grass suppression (under buildings, rocks...).
- * Each channel is drawn on its own canvas (alpha stays 255) to avoid premultiplication.
+ * Splat maps covering the terrain, drawn with Canvas 2D (one canvas per channel, so alpha
+ * stays 255 and nothing is premultiplied) and packed into two RGBA textures.
  */
 export class TerrainMask {
   readonly resolution: number;
   readonly data: Uint8Array;
   readonly texture: DataTexture;
+  readonly detailData: Uint8Array;
+  readonly detailTexture: DataTexture;
   private canvases = new Map<Channel, CanvasRenderingContext2D>();
 
   constructor(resolution = 1024) {
     this.resolution = resolution;
-    this.data = new Uint8Array(resolution * resolution * 4);
-    for (const ch of ['dirt', 'stone', 'shade', 'nograss'] as Channel[]) {
+    for (const ch of [...MAIN, ...DETAIL]) {
       const canvas = document.createElement('canvas');
       canvas.width = canvas.height = resolution;
       const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
@@ -33,11 +51,20 @@ export class TerrainMask {
       ctx.fillRect(0, 0, resolution, resolution);
       this.canvases.set(ch, ctx);
     }
-    this.texture = new DataTexture(this.data, resolution, resolution, RGBAFormat, UnsignedByteType);
-    this.texture.magFilter = LinearFilter;
-    this.texture.minFilter = LinearMipmapLinearFilter;
-    this.texture.generateMipmaps = true;
-    this.texture.anisotropy = 4;
+    this.data = new Uint8Array(resolution * resolution * 4);
+    this.texture = this.makeTexture(this.data);
+    this.detailData = new Uint8Array(resolution * resolution * 4);
+    this.detailTexture = this.makeTexture(this.detailData);
+  }
+
+  private makeTexture(data: Uint8Array): DataTexture {
+    const n = this.resolution;
+    const tex = new DataTexture(data, n, n, RGBAFormat, UnsignedByteType);
+    tex.magFilter = LinearFilter;
+    tex.minFilter = LinearMipmapLinearFilter;
+    tex.generateMipmaps = true;
+    tex.anisotropy = 4;
+    return tex;
   }
 
   private px(v: number): number {
@@ -119,31 +146,82 @@ export class TerrainMask {
     ctx.restore();
   }
 
-  /** Packs all channels into the texture (with a light blur for soft edges). */
+  /**
+   * Paints a value computed per texel (0..1) inside a world-space box, keeping the
+   * larger of old and new, e.g. grass suppression on steep ground.
+   */
+  field(
+    channel: Channel,
+    box: { x0: number; z0: number; x1: number; z1: number },
+    value: (x: number, z: number) => number,
+  ): void {
+    const ctx = this.canvases.get(channel)!;
+    const n = this.resolution;
+    const i0 = Math.max(0, Math.floor(this.px(box.x0)));
+    const j0 = Math.max(0, Math.floor(this.px(box.z0)));
+    const i1 = Math.min(n, Math.ceil(this.px(box.x1)));
+    const j1 = Math.min(n, Math.ceil(this.px(box.z1)));
+    if (i1 <= i0 || j1 <= j0) return;
+    const img = ctx.getImageData(i0, j0, i1 - i0, j1 - j0);
+    const texel = TERRAIN_SIZE / n;
+    for (let j = j0; j < j1; j++) {
+      const z = TERRAIN_ORIGIN + (j + 0.5) * texel;
+      for (let i = i0; i < i1; i++) {
+        const x = TERRAIN_ORIGIN + (i + 0.5) * texel;
+        const v = Math.round(Math.min(1, Math.max(0, value(x, z))) * 255);
+        const o = ((j - j0) * (i1 - i0) + (i - i0)) * 4;
+        if (v > img.data[o]!) img.data[o] = img.data[o + 1] = img.data[o + 2] = v;
+      }
+    }
+    ctx.putImageData(img, i0, j0);
+  }
+
+  /** Packs all channels into the textures (with a light blur for soft edges). */
   commit(): void {
     const n = this.resolution;
-    const order: Channel[] = ['dirt', 'stone', 'shade', 'nograss'];
-    order.forEach((ch, c) => {
-      const img = this.canvases.get(ch)!.getImageData(0, 0, n, n).data;
-      const plane = new Uint8Array(n * n);
-      for (let i = 0; i < n * n; i++) plane[i] = img[i * 4]!;
-      boxBlur(plane, n, ch === 'shade' ? 3 : 2);
-      for (let i = 0; i < n * n; i++) this.data[i * 4 + c] = plane[i]!;
-    });
+    const pack = (order: readonly Channel[], out: Uint8Array) => {
+      order.forEach((ch, c) => {
+        const img = this.canvases.get(ch)!.getImageData(0, 0, n, n).data;
+        const plane = new Uint8Array(n * n);
+        for (let i = 0; i < n * n; i++) plane[i] = img[i * 4]!;
+        boxBlur(plane, n, BLUR[ch]);
+        for (let i = 0; i < n * n; i++) out[i * 4 + c] = plane[i]!;
+      });
+    };
+    pack(MAIN, this.data);
+    pack(DETAIL, this.detailData);
     this.texture.needsUpdate = true;
+    this.detailTexture.needsUpdate = true;
+  }
+
+  private index(x: number, z: number): number {
+    const n = this.resolution;
+    const i = Math.min(n - 1, Math.max(0, Math.floor(this.px(x))));
+    const j = Math.min(n - 1, Math.max(0, Math.floor(this.px(z))));
+    return (j * n + i) * 4;
   }
 
   /** CPU lookup (nearest texel) used for footstep surfaces and placement rules. */
   sample(x: number, z: number): { dirt: number; stone: number; shade: number; nograss: number } {
-    const n = this.resolution;
-    const i = Math.min(n - 1, Math.max(0, Math.floor(this.px(x))));
-    const j = Math.min(n - 1, Math.max(0, Math.floor(this.px(z))));
-    const o = (j * n + i) * 4;
+    const o = this.index(x, z);
     return {
       dirt: this.data[o]! / 255,
       stone: this.data[o + 1]! / 255,
       shade: this.data[o + 2]! / 255,
       nograss: this.data[o + 3]! / 255,
+    };
+  }
+
+  sampleDetail(
+    x: number,
+    z: number,
+  ): { light: number; wet: number; litter: number; gravel: number } {
+    const o = this.index(x, z);
+    return {
+      light: this.detailData[o]! / 255,
+      wet: this.detailData[o + 1]! / 255,
+      litter: this.detailData[o + 2]! / 255,
+      gravel: this.detailData[o + 3]! / 255,
     };
   }
 }

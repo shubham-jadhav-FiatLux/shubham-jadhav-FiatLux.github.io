@@ -21,6 +21,8 @@ export const globalUniforms = {
   uSunDir: { value: SUN_DIRECTION.clone() },
   uHeightMap: { value: null as Texture | null },
   uMaskMap: { value: null as Texture | null },
+  /** second splat map: lantern light, wet ground, leaf litter, gravel */
+  uDetailMap: { value: null as Texture | null },
   /** terrain mapping: x = origin, y = size, z = grid resolution */
   uTerrain: { value: new Vector3(TERRAIN_ORIGIN, TERRAIN_SIZE, TERRAIN_RES) },
 };
