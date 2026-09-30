@@ -23,6 +23,7 @@ import { ScarfTails } from '../player/ScarfTails';
 import { Particles, SPRITE } from '../effects/Particles';
 import { Grass } from '../world/nature/Grass';
 import { Nature } from '../world/nature/Nature';
+import { Wildlife } from '../world/nature/Wildlife';
 import { Water } from '../world/water/Water';
 import { Architecture } from '../world/architecture/Architecture';
 import { LanternGlow } from '../world/architecture/LanternGlow';
@@ -60,6 +61,7 @@ export class App extends Emitter<AppEvents> {
   water!: Water;
   architecture!: Architecture;
   lanterns!: LanternGlow;
+  wildlife!: Wildlife;
   /** prefiltered sky for reflections on glossy materials */
   private environment: Texture | null = null;
   placement!: Placement;
@@ -174,6 +176,8 @@ export class App extends Emitter<AppEvents> {
   private buildNature(): void {
     this.nature = new Nature(this.terrain, this.collision, this.quality.settings, this.placement);
     this.nature.addTo(this.scene);
+    this.wildlife = new Wildlife(this.terrain, this.quality.settings.particles);
+    this.wildlife.addTo(this.scene);
   }
 
   private buildWater(): void {
@@ -360,6 +364,7 @@ export class App extends Emitter<AppEvents> {
     this.water.update(dt, elapsed, this.controller, this.quality.settings.particles);
     this.architecture.update(dt, this.controller.position);
     this.lanterns.update(dt, elapsed, this.controller.position);
+    this.wildlife.update(dt, elapsed, this.controller.position);
     for (const u of this.updaters) u(dt, elapsed);
     this.particles.update(dt, elapsed);
 

@@ -8,7 +8,7 @@ import {
   type Scene,
 } from 'three';
 import { globalUniforms } from '../../render/uniforms';
-import { NOISE_GLSL, TERRAIN_GLSL, WIND_GLSL } from '../../render/glsl';
+import { GROUND_WARP_GLSL, NOISE_GLSL, TERRAIN_GLSL, WIND_GLSL } from '../../render/glsl';
 import { GRASS_COLORS, GRASS_COLOR_GLSL } from '../palette';
 import { ATMOSPHERE } from '../../render/atmosphere';
 import type { QualitySettings } from '../../core/Quality';
@@ -93,6 +93,7 @@ varying vec3 vGrassColor;
 varying float vGrassTrans;
 varying float vGrassLamp;
 ${NOISE_GLSL}
+${GROUND_WARP_GLSL}
 ${TERRAIN_GLSL}
 ${WIND_GLSL}
 ${GRASS_COLOR_GLSL}
@@ -117,10 +118,12 @@ ${GRASS_COLOR_GLSL}
   // Ragged, noisy edges; blades get shorter and sparser towards them.
   vec4 detail = terrainDetailAt(worldXZ);
   vGrassLamp = detail.r;
-  float bare = max(max(max(mask.r, mask.g), mask.a), detail.a);
-  bare += (vnoise(worldXZ * 1.9) - 0.5) * 0.22;
+  float pathW = terrainMaskAt(worldXZ + groundWarp(worldXZ)).r;
+  float bare = max(max(max(pathW, mask.g), mask.a), detail.a);
+  // ragged edges: broad bays plus small tufts poking out onto paths and paving
+  bare += (vnoise(worldXZ * 1.9) - 0.5) * 0.22 + (vnoise(worldXZ * 5.3) - 0.5) * 0.16;
   float density = 1.0 - smoothstep(0.25, 0.6, bare);
-  density *= smoothstep(0.12, 0.45, ground);
+  density *= smoothstep(0.12, 0.45, ground + (vnoise(worldXZ * 0.8) - 0.5) * 0.25);
   float meadow = fbm(worldXZ * 0.06);
   density *= 0.55 + 0.6 * smoothstep(0.2, 0.6, meadow);
 
@@ -130,6 +133,9 @@ ${GRASS_COLOR_GLSL}
 
   float height = mix(0.26, 0.66, rnd) * (0.7 + 0.6 * meadow) * fade;
   height *= 1.0 - 0.62 * smoothstep(0.02, 0.5, bare);
+  // thinner, shorter, drier grass running down onto the beach
+  float beach = 1.0 - smoothstep(0.3, 0.95, ground + (vnoise(worldXZ * 1.3) - 0.5) * 0.3);
+  height *= 1.0 - 0.5 * beach;
   if (rnd2 > density) height = 0.0;
   float width = mix(0.045, 0.085, rnd2) * (height > 0.0 ? 1.0 : 0.0);
 
@@ -162,6 +168,8 @@ ${GRASS_COLOR_GLSL}
   vec3 groundCol = grassGroundColor(worldXZ);
   vec3 tipCol = mix(uTip, groundCol * 1.35, 0.35 + 0.4 * rnd2);
   tipCol = mix(tipCol, vec3(0.78, 0.72, 0.38), step(0.93, rnd) * 0.6);
+  // trampled, sun-dried tips along paths and yards
+  tipCol = mix(tipCol, uGrassDry * 1.15, max(smoothstep(0.08, 0.45, pathW), beach) * 0.45);
   vGrassColor = mix(groundCol * 0.55, tipCol, smoothstep(0.0, 1.0, t));
   vGrassTrans = t * t;
   {
@@ -214,7 +222,7 @@ vec3 nonPerturbedNormal = normal;`,
   #include <opaque_fragment>`,
         );
     };
-    material.customProgramCacheKey = () => 'grass-v2';
+    material.customProgramCacheKey = () => 'grass-v4';
     this.mesh = new Mesh(geometry, material);
     this.mesh.name = 'grass';
     this.mesh.frustumCulled = false;

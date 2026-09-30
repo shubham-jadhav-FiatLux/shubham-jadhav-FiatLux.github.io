@@ -34,6 +34,17 @@ float fbm(vec2 p) {
 }
 `;
 
+/**
+ * Offset (m) applied when looking up paths and yards in the splat map, so their edges
+ * meander instead of following the painted strokes. The ground, the grass and the flowers
+ * all use it, so blades and colours agree. Needs NOISE_GLSL.
+ */
+export const GROUND_WARP_GLSL = /* glsl */ `
+vec2 groundWarp(vec2 xz) {
+  return (vec2(vnoise(xz * 0.37 + 3.1), vnoise(xz * 0.37 - 7.7)) - 0.5) * 1.1;
+}
+`;
+
 /** Terrain lookups shared by grass, water and anything that needs ground height on GPU. */
 export const TERRAIN_GLSL = /* glsl */ `
 uniform sampler2D uHeightMap;
