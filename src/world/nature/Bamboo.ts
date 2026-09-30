@@ -5,6 +5,7 @@ import {
   Group,
   Matrix4,
   Quaternion,
+  type MeshStandardMaterial,
   Vector3,
   type Scene,
 } from 'three';
@@ -98,6 +99,7 @@ class Mesher {
   pos: number[] = [];
   col: number[] = [];
   wind: number[] = [];
+  culm: number[] = [];
   nrm: number[] = [];
   uv: number[] = [];
   idx: number[] = [];
@@ -106,18 +108,24 @@ class Mesher {
     return this.pos.length / 3;
   }
 
-  vert(p: Vector3, c: Color, windH: number, flutter: number): number {
+  /**
+   * `culm` (for the culm shader): x = position in internodes along the culm, (y, z) = the
+   * direction around it, w = 1 where the groove is striped. Zero for leaves and twigs.
+   */
+  vert(p: Vector3, c: Color, windH: number, flutter: number, culm = NO_CULM): number {
     this.pos.push(p.x, p.y, p.z);
     this.col.push(c.r, c.g, c.b);
     this.wind.push(windH, flutter);
+    this.culm.push(culm[0], culm[1], culm[2], culm[3]);
     return this.count - 1;
   }
 
-  build(withNormals: boolean): BufferGeometry {
+  build(withNormals: boolean, withCulm: boolean): BufferGeometry {
     const g = new BufferGeometry();
     g.setAttribute('position', new BufferAttribute(new Float32Array(this.pos), 3));
     g.setAttribute('color', new BufferAttribute(new Float32Array(this.col), 3));
     g.setAttribute('aWind', new BufferAttribute(new Float32Array(this.wind), 2));
+    if (withCulm) g.setAttribute('aCulm', new BufferAttribute(new Float32Array(this.culm), 4));
     if (this.uv.length) g.setAttribute('uv', new BufferAttribute(new Float32Array(this.uv), 2));
     if (withNormals) g.setAttribute('normal', new BufferAttribute(new Float32Array(this.nrm), 3));
     g.setIndex(this.idx);
@@ -126,16 +134,24 @@ class Mesher {
   }
 }
 
+type CulmAttr = [number, number, number, number];
+/** mid-internode, no direction: no rings, bloom or stripe */
+const NO_CULM: CulmAttr = [0.5, 0, 0, 0];
+
+interface Ring {
+  c: Vector3;
+  r: number;
+  color: (theta: number) => Color;
+  windH: number;
+  /** position along the culm in internodes (culm rings only) */
+  node?: number;
+}
+
 /**
  * A tube through a list of rings: each ring has a centre, a radius and a colour per
  * vertex around it. Used for culms, branches and sheaths.
  */
-function tube(
-  m: Mesher,
-  rings: { c: Vector3; r: number; color: (theta: number) => Color; windH: number }[],
-  radial: number,
-  axis: Vector3,
-): void {
+function tube(m: Mesher, rings: Ring[], radial: number, axis: Vector3, stripe = 0): void {
   // frame perpendicular to the (mostly constant) axis
   const u = new Vector3().crossVectors(axis, Math.abs(axis.y) > 0.9 ? X : Y).normalize();
   const w = new Vector3().crossVectors(axis, u).normalize();
@@ -147,7 +163,9 @@ function tube(
       p.copy(ring.c)
         .addScaledVector(u, Math.cos(th) * ring.r)
         .addScaledVector(w, Math.sin(th) * ring.r);
-      m.vert(p, ring.color(th), ring.windH, 0);
+      const culm: CulmAttr =
+        ring.node === undefined ? NO_CULM : [ring.node, Math.cos(th), Math.sin(th), stripe];
+      m.vert(p, ring.color(th), ring.windH, 0, culm);
     }
   }
   for (let j = 0; j < rings.length - 1; j++) {
@@ -160,7 +178,8 @@ function tube(
 }
 
 /**
- * One bamboo culm: nodes with a raised ring and a waxy band below, a gentle curve, papery
+ * One bamboo culm: a gently curved, tapering tube (node rings, the waxy bloom below each
+ * node and the striped grooves of golden culms are drawn by the culm shader), papery
  * sheaths on the lowest nodes, alternate branches on the upper half and hanging leaf
  * sprays on the branches and at the crown.
  */
@@ -170,17 +189,14 @@ function createStalk(
   look: Look,
 ): { stalk: BufferGeometry; foliage: BufferGeometry } {
   const rand = new Random(seed);
-  const nodes = Math.round(height / 0.4);
+  const nodes = Math.round(height / 0.42);
   const seg = height / nodes;
-  const radial = 8;
+  const radial = 7;
   const rBottom = 0.08;
   const rTop = 0.026;
   const bend = rand.range(0.12, 0.35);
   const base = new Color(look.base);
   const top = new Color(look.top);
-  const nodeCol = new Color(look.node);
-  const bloom = new Color(look.bloom);
-  const stripe = look.stripe ? new Color(look.stripe) : null;
   const tmp = new Color();
   const centre = (y: number) => {
     const t = y / height;
@@ -189,48 +205,28 @@ function createStalk(
   const radius = (y: number) => rBottom + (rTop - rBottom) * Math.pow(y / height, 0.85);
   // the groove (and the branch) alternates sides from one internode to the next
   const grooveAngle = (n: number) => (n % 2 ? Math.PI : 0) + 0.3;
-  const bodyColor = (y: number, n: number, shade: number) => (th: number) => {
-    tmp.copy(base).lerp(top, Math.pow(y / height, 0.8));
-    if (stripe && Math.cos(th - grooveAngle(n)) > 0.72) tmp.lerp(stripe, 0.85);
-    // faint streaks along the culm
-    tmp.multiplyScalar(shade * (0.95 + 0.07 * Math.sin(th * 3 + n * 1.7)));
-    return tmp.clone();
-  };
 
   const culm = new Mesher();
-  const rings: Parameters<typeof tube>[1] = [];
-  for (let n = 0; n < nodes; n++) {
-    const y0 = n * seg;
-    const t0 = y0 / height;
-    if (n > 0) {
-      rings.push({
-        c: centre(y0 - 0.012),
-        r: radius(y0) * 1.02,
-        color: () => tmp.copy(nodeCol).lerp(bloom, 0.15).clone(),
-        windH: t0,
-      });
-      rings.push({ c: centre(y0), r: radius(y0) * 1.12, color: () => nodeCol.clone(), windH: t0 });
-      rings.push({
-        c: centre(y0 + 0.02),
-        r: radius(y0) * 1.03,
-        color: bodyColor(y0, n, 0.9),
-        windH: t0,
-      });
-    } else {
-      rings.push({ c: centre(0), r: radius(0), color: bodyColor(0, 0, 0.8), windH: 0 });
-    }
-    const ym = y0 + seg * 0.5;
-    rings.push({ c: centre(ym), r: radius(ym), color: bodyColor(ym, n, 1), windH: ym / height });
-    const yb = y0 + seg - 0.07;
+  const rings: Ring[] = [];
+  const steps = Math.ceil(height / 0.75);
+  for (let k = 0; k <= steps; k++) {
+    const y = (k / steps) * height;
+    const t = y / height;
     rings.push({
-      c: centre(yb),
-      r: radius(yb),
-      color: (th) => bodyColor(yb, n, 1.02)(th).lerp(bloom, 0.45),
-      windH: yb / height,
+      c: centre(y),
+      r: k === steps ? rTop * 0.5 : radius(y),
+      // base-to-tip gradient with faint streaks along the culm
+      color: (th) =>
+        tmp
+          .copy(base)
+          .lerp(top, Math.pow(t, 0.8))
+          .multiplyScalar((k === 0 ? 0.85 : 1) * (0.95 + 0.07 * Math.sin(th * 3 + 1.7)))
+          .clone(),
+      windH: t,
+      node: y / seg,
     });
   }
-  rings.push({ c: centre(height), r: rTop * 0.4, color: () => top.clone(), windH: 1 });
-  tube(culm, rings, radial, Y);
+  tube(culm, rings, radial, Y, look.stripe ? 1 : 0);
 
   // Papery sheaths still wrapped around the lowest nodes.
   if (rand.chance(look.sheaths)) {
@@ -241,9 +237,9 @@ function createStalk(
       const len = seg * rand.range(0.55, 0.85);
       tube(
         culm,
-        [0, 0.5, 1].map((f) => ({
+        [0, 1].map((f) => ({
           c: centre(y0 + f * len),
-          r: radius(y0) * (1.28 - 0.12 * f) + 0.004,
+          r: radius(y0) * (1.22 - 0.1 * f) + 0.004,
           color: (th: number) =>
             tmp
               .copy(sheathCol)
@@ -311,7 +307,7 @@ function createStalk(
         { c: mid, r: 0.009, color: branchCol, windH: (y0 + len * 0.3) / height },
         { c: tip, r: 0.004, color: branchCol, windH: (y0 + len * 0.4) / height },
       ],
-      4,
+      3,
       dir,
     );
     const shade = 0.72 + 0.35 * f + rand.spread(0.06);
@@ -335,7 +331,7 @@ function createStalk(
     );
   }
 
-  return { stalk: culm.build(false), foliage: leaves.build(true) };
+  return { stalk: culm.build(false, true), foliage: leaves.build(true, false) };
 }
 
 /** A young shoot: a pointed cone wrapped in brown sheaths, green at the tip. */
@@ -357,7 +353,7 @@ function createShoot(): BufferGeometry {
     windH: 0,
   }));
   tube(m, rings, 8, Y);
-  return m.build(false);
+  return m.build(false, true);
 }
 
 /**
@@ -370,15 +366,24 @@ export class Bamboo {
 
   constructor(stalks: BambooStalk[], shoots: BambooShoot[] = []) {
     this.count = stalks.length;
-    const stalkMaterial = createVegetationMaterial({
-      name: 'bamboo-stalk',
-      sway: 0.55,
-      push: 0.55,
-      pushRadius: 1.4,
-      translucency: 0.25,
-      roughness: 0.42,
-      doubleSided: false,
-    });
+    const stalkMaterials = {} as Record<BambooSpecies, MeshStandardMaterial>;
+    for (const species of Object.keys(LOOKS) as BambooSpecies[]) {
+      const look = LOOKS[species];
+      stalkMaterials[species] = createVegetationMaterial({
+        name: `bamboo-stalk-${species}`,
+        sway: 0.55,
+        push: 0.55,
+        pushRadius: 1.4,
+        translucency: 0.25,
+        roughness: 0.42,
+        doubleSided: false,
+        culm: {
+          node: new Color(look.node),
+          bloom: new Color(look.bloom),
+          stripe: new Color(look.stripe ?? look.base),
+        },
+      });
+    }
     const leafMaterial = createVegetationMaterial({
       name: 'bamboo-leaves',
       map: createBambooLeafTexture(),
@@ -410,7 +415,7 @@ export class Bamboo {
             .compose(v3.set(s.x, s.y - 0.1, s.z), q, s3.set(s.scale, s.scale, s.scale));
         });
         for (const [part, g, mat] of [
-          ['stalk', geo.stalk, stalkMaterial],
+          ['stalk', geo.stalk, stalkMaterials[species]],
           ['leaves', geo.foliage, leafMaterial],
         ] as const) {
           // Thin culms barely show in shadows; only the leaves cast them.
@@ -432,7 +437,7 @@ export class Bamboo {
           .clone()
           .compose(v3.set(s.x, s.y - 0.04, s.z), q, s3.set(s.scale, s.scale, s.scale));
       });
-      for (const mesh of chunkedInstances(createShoot(), stalkMaterial, matrices, {
+      for (const mesh of chunkedInstances(createShoot(), stalkMaterials.green, matrices, {
         name: 'bamboo-shoots',
         chunk: Infinity,
         castShadow: false,

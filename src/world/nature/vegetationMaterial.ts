@@ -20,6 +20,11 @@ export interface VegetationOptions {
   push?: number;
   pushRadius?: number;
   doubleSided?: boolean;
+  /**
+   * Bamboo culm shading (needs the `aCulm` attribute): dark node rings, a waxy bloom just
+   * below each node and, where `aCulm.w` = 1, a stripe in the groove of each internode.
+   */
+  culm?: { node: Color; bloom: Color; stripe: Color };
 }
 
 /**
@@ -43,6 +48,9 @@ export function createVegetationMaterial(o: VegetationOptions): MeshStandardMate
     uPushRadius: { value: o.pushRadius ?? 1.6 },
     uTranslucency: { value: o.translucency ?? 0 },
     uSunColor: { value: new Color().copy(ATMOSPHERE.sunColor) },
+    uCulmNode: { value: o.culm?.node ?? new Color() },
+    uCulmBloom: { value: o.culm?.bloom ?? new Color() },
+    uCulmStripe: { value: o.culm?.stripe ?? new Color() },
   };
   mat.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniforms, {
@@ -52,6 +60,38 @@ export function createVegetationMaterial(o: VegetationOptions): MeshStandardMate
       uPlayerPos: globalUniforms.uPlayerPos,
       uSunDir: globalUniforms.uSunDir,
     });
+    if (o.culm) {
+      shader.vertexShader = shader.vertexShader
+        .replace(
+          '#include <common>',
+          '#include <common>\nattribute vec4 aCulm;\nvarying vec4 vCulm;',
+        )
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvCulm = aCulm;');
+      shader.fragmentShader = shader.fragmentShader
+        .replace(
+          '#include <common>',
+          '#include <common>\nvarying vec4 vCulm;\nuniform vec3 uCulmNode;\nuniform vec3 uCulmBloom;\nuniform vec3 uCulmStripe;',
+        )
+        .replace(
+          '#include <color_fragment>',
+          /* glsl */ `#include <color_fragment>
+{
+  float k = fract(vCulm.x);
+  float n = floor(vCulm.x);
+  float fw = fwidth(vCulm.x) * 1.5 + 1e-4;
+  // node ring right at each node, a paler waxy band just below it
+  float ring = 1.0 - smoothstep(0.03, 0.03 + fw, min(k, 1.0 - k));
+  float bloom = smoothstep(0.8 - fw, 0.86, k) * (1.0 - smoothstep(0.955, 0.965 + fw, k));
+  vec2 dir = vCulm.yz;
+  float gAng = mod(n, 2.0) * 3.14159 + 0.3;
+  float stripe = vCulm.w * step(0.5, length(dir))
+    * smoothstep(0.62, 0.8, dot(normalize(dir + 1e-5), vec2(cos(gAng), sin(gAng))));
+  diffuseColor.rgb = mix(diffuseColor.rgb, uCulmStripe, stripe * 0.85);
+  diffuseColor.rgb = mix(diffuseColor.rgb, uCulmBloom, bloom * 0.55);
+  diffuseColor.rgb = mix(diffuseColor.rgb, uCulmNode, ring * 0.85);
+}`,
+        );
+    }
     shader.vertexShader = shader.vertexShader
       .replace(
         '#include <common>',
@@ -156,7 +196,7 @@ vec3 nonPerturbedNormal = normal;`,
       );
     }
   };
-  mat.customProgramCacheKey = () => `veg-${o.keepNormals ? 1 : 0}`;
+  mat.customProgramCacheKey = () => `veg-${o.keepNormals ? 1 : 0}-${o.culm ? 1 : 0}`;
   mat.name = o.name;
   return mat;
 }
