@@ -120,7 +120,7 @@ Everything is synthesised with the Web Audio API at runtime:
   gong, scroll open/close, UI ticks.
 
 Audio starts only after the visitor presses _Begin_ (browser autoplay rules) and can be
-muted at any time (`M`).
+muted at any time (`N`); the music has its own toggle.
 
 ## 7. Technology
 
@@ -129,7 +129,7 @@ muted at any time (`M`).
 | Language             | TypeScript (strict)           | Safety and editor help as the project grows                                                                      |
 | Bundler / dev server | Vite                          | Instant HMR, tiny config, static output                                                                          |
 | 3D                   | three.js (WebGL 2)            | Mature, huge community; custom GLSL via `ShaderMaterial` / `onBeforeCompile` maps directly onto OpenGL knowledge |
-| Post-processing      | `postprocessing` (pmndrs)     | Merges effects into few passes: bloom, vignette, tone mapping, grading, SMAA                                     |
+| Post-processing      | `postprocessing` (pmndrs)     | Merges effects into few passes: bloom, tone mapping, grading, vignette; MSAA on the scene target                 |
 | Physics              | Custom kinematic controller   | Heightfield ground + circle/box colliders + walkable platforms: deterministic, tiny, easy to tune                |
 | Audio                | Web Audio API                 | Procedural, no files, full control                                                                               |
 | Tests                | Vitest                        | Pure logic (heightfield, collisions, content validation) is unit-tested                                          |
@@ -142,31 +142,41 @@ WebGPU + TSL is on the roadmap once the WebGL version is feature complete; three
 
 ```
 src/
-  main.ts                 boot: WebGL check, loader, start App
-  app/App.ts              owns renderer, scene, loop and all systems
+  main.ts                 boot: WebGL check, loader, App, audio, Game
+  app/App.ts              owns renderer, scene, loop and all world systems
+  app/Game.ts             gameplay layer: zones, discovery, panels, map, sound cues
   core/                   loop timing, events, input, quality tiers, storage, debug GUI
   render/                 renderer, post-processing, shared uniforms, shader chunks
   world/                  terrain, sky, mountains, grass, trees, water, architecture...
   player/                 panda model, procedural animator, character controller
   camera/                 follow camera and cinematic shots
-  zones/                  zone registry, triggers and discovery state
-  audio/                  audio engine, synths, music, SFX, ambience
-  ui/                     loader, HUD, scroll panel, map, touch controls, classic view
+  effects/                particles, discovery ceremony, sky lanterns
+  zones/                  interactive spots, discovery progress, beacons
+  audio/                  audio engine, instruments, music, SFX, ambience
+  ui/                     loader, HUD, scroll panel, map, menu, touch controls, page view
   content/portfolio.ts    ← all personal content lives here
+tools/portfolio-html.ts   build step: meta tags, link previews, <noscript> page copy
 ```
 
+`App` knows nothing about the portfolio sections: `Game` registers itself as a per-frame
+updater and talks to the world through a few hooks (anchors, `ringBell`, `pulseBloom`,
+`shake`, the `uRipple` uniform).
+
 Update order per frame: input → controller (fixed 60 Hz sub-steps) → animation →
-camera → world uniforms → zones → audio → UI → render.
+camera → world uniforms → gameplay (zones, effects, map, audio) → render.
 
 ## 9. Performance budget
 
 Target 60 fps on a mid-range laptop (integrated GPU) at the _Medium_ preset.
 
-| Preset | Pixel ratio | Shadows | Grass blades | Post FX                  |
-| ------ | ----------- | ------- | ------------ | ------------------------ |
-| Low    | 1.0         | off     | 12k          | tone mapping only        |
-| Medium | ≤ 1.5       | 1024²   | 32k          | bloom, vignette, grading |
-| High   | ≤ 2.0       | 2048²   | 64k          | + SMAA, depth haze       |
+| Preset | Pixel ratio | Shadows | Grass blades | MSAA | Post FX                         |
+| ------ | ----------- | ------- | ------------ | ---- | ------------------------------- |
+| Low    | 1.0         | off     | 14k          | off  | tone mapping, grading, vignette |
+| Medium | ≤ 1.5       | 1024²   | 36k          | 2×   | + bloom                         |
+| High   | ≤ 2.0       | 2048²   | 70k          | 4×   | + bloom                         |
+
+The whole valley renders in roughly 170 draw calls: static architecture is merged per
+material, vegetation is instanced and the grass is a single instanced draw.
 
 The preset is chosen automatically (mobile → Low, otherwise Medium) and adapts down if
 the frame rate stays low. Visitors can override it from the settings menu.
@@ -174,7 +184,13 @@ the frame rate stays low. Visitors can override it from the settings menu.
 ## 10. Accessibility and reach
 
 - "Read as page" view with the complete content as semantic HTML (also the fallback when
-  WebGL 2 is unavailable, and good for search engines).
-- Full keyboard play, touch joystick on phones, gamepad support.
-- Respects `prefers-reduced-motion` (fewer camera moves and particles).
+  WebGL 2 is unavailable). The same markup is written into a `<noscript>` block at build
+  time, so visitors without JavaScript, search engines and link unfurlers get it too.
+- Open Graph and Twitter card tags with a rendered preview image for shared links.
+- Full keyboard play, touch joystick on phones, gamepad support; the help shows the
+  controls of the device in hand.
+- Dialogs trap focus and release it on close; the page view makes everything behind it
+  inert.
+- Respects `prefers-reduced-motion` (no camera shake, instant camera moves, no UI
+  animation).
 - Mute toggle and separate music toggle.

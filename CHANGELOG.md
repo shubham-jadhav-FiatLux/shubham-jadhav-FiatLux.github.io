@@ -6,6 +6,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Link previews: Open Graph and Twitter card tags with a rendered 1200×630 image
+  (`npm run og-image`), absolute URLs filled in by the Pages workflow.
+- The whole portfolio is written into `index.html` at build time as a styled
+  `<noscript>` page, for visitors without JavaScript, search engines and link unfurlers.
+- Menu: How to play, Fullscreen and an optional source-code link (`site.sourceUrl`).
+- Gentle onboarding tips (beacons after the first scroll, the map if progress stalls).
+- A reload banner when the graphics context is lost.
+- Smoke test checks for camera dragging, jumping after a panel closes and leaving the
+  page view with Escape.
+
+### Changed
+
+- The help shows touch or keyboard controls to match the device.
+- three.js and postprocessing ship as a separate, long-cached chunk.
+- README: corrected controls, customisation guide and screenshots.
+
+### Fixed
+
+- Mouse and touch drags never reached the camera once the game had started: the HUD
+  layer swallowed them.
+- Focus could stay on a closed panel's button, so Space did not jump.
+- Escape in the page view also opened the menu; Enter or Space there started the game.
+- Phones: the menu's book icon filled the whole dialog, the title overlapped the HUD
+  buttons, keyboard hints covered the jump button and the title screen overflowed in
+  landscape.
+
 ## [0.4.0] - 2026-09-30
 
 ### Added
