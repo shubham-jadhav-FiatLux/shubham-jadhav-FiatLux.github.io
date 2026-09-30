@@ -1,6 +1,5 @@
-import { SECTIONS } from '../content/sections';
 import type { PortfolioContent } from '../content/types';
-import { esc, renderSection, sectionTitle } from './render';
+import { classicHtml } from './classicHtml';
 
 /**
  * The whole portfolio as a plain, accessible web page: for recruiters in a hurry,
@@ -11,44 +10,21 @@ export class ClassicView {
   isOpen = false;
   private onClose: (() => void) | null = null;
 
+  /**
+   * @param behind elements covered by the page view; they are made inert while it is open
+   *   so keyboard and screen reader users stay on the page.
+   */
   constructor(
     root: HTMLElement,
     content: PortfolioContent,
     private readonly canPlay: boolean,
+    private readonly behind: HTMLElement[] = [],
   ) {
     this.el = document.createElement('div');
     this.el.className = 'classic';
     this.el.setAttribute('role', 'document');
     this.el.hidden = true;
-    const named = !content.owner.name.includes('[');
-    this.el.innerHTML = `
-      <header class="classic__hero">
-        <span class="seal seal--lg" aria-hidden="true">竹</span>
-        <h1>${esc(named ? content.owner.name : content.site.title)}</h1>
-        <p class="classic__role">${esc(content.owner.role)}</p>
-        <p class="classic__intro">${esc(content.owner.intro)}</p>
-        <nav class="classic__nav" aria-label="Sections">
-          ${SECTIONS.filter((s) => s.id !== 'welcome')
-            .map((s) => `<a href="#classic-${s.id}">${esc(s.label)}</a>`)
-            .join('')}
-        </nav>
-        ${canPlay ? '<button type="button" class="btn btn--seal classic__play">Walk the valley instead</button>' : ''}
-      </header>
-      <main class="classic__main prose">
-        ${SECTIONS.filter((s) => s.id !== 'welcome')
-          .map(
-            (
-              s,
-            ) => `<section id="classic-${s.id}" class="classic__section" aria-labelledby="classic-${s.id}-h">
-              <h2 id="classic-${s.id}-h"><span class="seal" aria-hidden="true">${s.glyph}</span>${esc(sectionTitle(s.id, content))}</h2>
-              ${renderSection(s.id, content)}
-            </section>`,
-          )
-          .join('')}
-      </main>
-      <footer class="classic__foot">
-        <p>${esc(content.site.title)} · ${esc(content.site.tagline)}</p>
-      </footer>`;
+    this.el.innerHTML = classicHtml(content, { canPlay });
     root.appendChild(this.el);
     this.el.querySelector('.classic__play')?.addEventListener('click', () => this.close());
     this.el.addEventListener('click', (e) => {
@@ -70,6 +46,7 @@ export class ClassicView {
     this.onClose = onClose ?? null;
     this.isOpen = true;
     this.el.hidden = false;
+    for (const el of this.behind) el.inert = true;
     this.el.scrollTop = 0;
     (this.el.querySelector('h1') as HTMLElement | null)?.setAttribute('tabindex', '-1');
     (this.el.querySelector('h1') as HTMLElement | null)?.focus();
@@ -79,6 +56,7 @@ export class ClassicView {
     if (!this.isOpen || !this.canPlay) return;
     this.isOpen = false;
     this.el.hidden = true;
+    for (const el of this.behind) el.inert = false;
     this.onClose?.();
   }
 }

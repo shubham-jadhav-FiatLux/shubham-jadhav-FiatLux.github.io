@@ -39,6 +39,9 @@ export class Game {
   private moved = false;
   private busyUntil = 0;
   private lastStrikeHit = 0;
+  /** seconds of actual play (no panel open), for gentle hints */
+  private playTime = 0;
+  private tips = { beacons: false, map: false };
 
   constructor(
     private readonly app: App,
@@ -87,7 +90,10 @@ export class Game {
       this.progress,
       content.site.title,
     );
-    this.menu = new Menu(ui, app.quality.settings.level);
+    this.menu = new Menu(ui, {
+      quality: app.quality.settings.level,
+      sourceUrl: content.site.sourceUrl,
+    });
     this.classic = classic;
     this.touch = new TouchControls(ui, app.input);
 
@@ -169,6 +175,13 @@ export class Game {
     this.scroll.on('close', () => {
       audio.sfx('close');
       app.rig.endShot();
+      if (!this.tips.beacons && this.progress.count === 1 && this.progress.has('welcome')) {
+        this.tips.beacons = true;
+        window.setTimeout(
+          () => this.hud.toast('Golden beacons mark the scrolls still hidden'),
+          800,
+        );
+      }
     });
     this.scroll.on('switch', () => audio.sfx('ui'));
     this.scroll.on('project', () => audio.sfx('ui'));
@@ -176,6 +189,7 @@ export class Game {
     this.map.on('travel', (id) => this.travelTo(id));
     this.menu.on('quality', (q) => app.quality.set(q));
     this.menu.on('classic', () => this.classic.open());
+    this.menu.on('help', () => this.openSection('welcome'));
     this.menu.on('reset', () => {
       this.progress.reset();
       this.hud.toast('The scrolls are hidden again');
@@ -362,6 +376,15 @@ export class Game {
 
   update(dt: number, time: number): void {
     const app = this.app;
+    if (app.started && !this.panelOpen) this.playTime += dt;
+    if (!this.tips.map && this.playTime > 75 && this.progress.count < 3) {
+      this.tips.map = true;
+      this.hud.toast(
+        app.input.usingTouch
+          ? 'Tip: the map button shows every landmark'
+          : 'Tip: press M for the map and quick travel',
+      );
+    }
     app.uiBlocking = this.panelOpen;
     app.renderPaused = this.classic.isOpen;
     this.touch.setEnabled(!this.panelOpen && app.started);
