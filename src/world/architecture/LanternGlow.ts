@@ -21,21 +21,33 @@ const COLORS: Record<LightSpot['kind'], Color> = {
 const HALO_SIZE: Record<LightSpot['kind'], number> = { paper: 5.2, stone: 4.6, altar: 3.6 };
 const tmp = new Vector3();
 
+/** Real lights only where there is GPU to spare: 3 on High, 1 on Medium, none on Low. */
+function lightsFor(s: QualitySettings): number {
+  return s.level === 'high' ? 3 : s.level === 'medium' ? 1 : 0;
+}
+
 /**
  * The warm light of the lanterns: a soft halo around every one (a single additive point
  * cloud) and, on the higher presets, a few real point lights that follow the lanterns
  * nearest to the panda so it and the buildings around it catch the glow.
+ *
+ * The number of lights is fixed when the valley is built: every lit shader is compiled
+ * for that many, so changing it later (e.g. when adaptive quality steps down) would stall
+ * the game while they all recompile. A lower preset just switches the extra lights off.
  */
 export class LanternGlow {
   readonly points: Points<BufferGeometry, ShaderMaterial>;
   private lights: PointLight[] = [];
   private assigned: number[] = [];
   private retarget = 0;
+  private active = 0;
 
   constructor(
     private readonly spots: LightSpot[],
-    lightCount: number,
+    settings: QualitySettings,
   ) {
+    const lightCount = lightsFor(settings);
+    this.active = lightCount;
     const n = spots.length;
     const pos = new Float32Array(n * 3);
     const size = new Float32Array(n);
@@ -107,10 +119,9 @@ export class LanternGlow {
     }
   }
 
-  /** Real lights only where there is GPU to spare: 3 on High, 1 on Medium, none on Low. */
+  /** Switches lights off (never removes them: see the class comment). */
   applyQuality(s: QualitySettings): void {
-    const count = s.level === 'high' ? 3 : s.level === 'medium' ? 1 : 0;
-    this.lights.forEach((l, i) => (l.visible = i < count));
+    this.active = Math.min(this.lights.length, lightsFor(s));
   }
 
   addTo(scene: Scene): void {
@@ -140,7 +151,7 @@ export class LanternGlow {
     }
     this.lights.forEach((light, k) => {
       const i = this.assigned[k]!;
-      if (i < 0) {
+      if (i < 0 || k >= this.active) {
         light.intensity = 0;
         return;
       }

@@ -235,6 +235,8 @@ function flappingMaterial(
     transparent: o.transparent ?? false,
     depthWrite: !o.transparent,
   });
+  // each animal injects its own wing motion, so each needs its own program
+  mat.customProgramCacheKey = () => `flap:${flap}`;
   mat.onBeforeCompile = (shader) => {
     shader.uniforms.uTime = globalUniforms.uTime;
     shader.vertexShader = shader.vertexShader

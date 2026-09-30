@@ -244,7 +244,11 @@ function applyLake(x: number, z: number, h: number): number {
   } else {
     profile = 0.25 + sd * 0.18;
   }
-  const w = 1 - smoothstep(0, lerp(7, 1.2, nearFalls), sd);
+  let w = 1 - smoothstep(0, lerp(7, 1.2, nearFalls), sd);
+  // Keep the plateau whole up to just past the lip, so the cliff edge is exactly where the
+  // stream pours over (the pool's shore blend would otherwise eat into it).
+  const along = (x - FALLS.lip.x) * FALLS.dir.x + (z - FALLS.lip.z) * FALLS.dir.z;
+  w *= 1 - nearFalls * (1 - smoothstep(0.4, 1.4, along));
   return lerp(h, Math.min(h, profile), w);
 }
 

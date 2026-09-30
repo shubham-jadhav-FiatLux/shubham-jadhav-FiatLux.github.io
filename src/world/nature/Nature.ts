@@ -467,6 +467,8 @@ export class Nature {
       const z = rand.range(-half, half);
       if (this.placement.insidePlayArea(x, z, -6)) continue;
       if (this.terrain.slopeAt(x, z) > 0.55) continue;
+      // not in the stream or its spring pool
+      if (this.placement.distanceToStream(x, z) < 1.5) continue;
       const y = this.h(x, z);
       if (y < 3) continue;
       if (noise.fbm2(x * 0.02, z * 0.02, 2) < -0.25) continue;

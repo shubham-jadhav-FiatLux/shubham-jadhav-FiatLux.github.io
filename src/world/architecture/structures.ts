@@ -784,7 +784,7 @@ export function buildBridge(
     addMasonryPier(b, mul(m, T(0, bed, 0)), 1.02, landingTop - 0.4 - bed, rand);
     piers.push({ x: p.x, z: p.z, hx: 1.04, hz: 1.04, round: 0.08, rot });
     col.addPlatform({
-      shape: { type: 'circle', x: p.x, z: p.z, r: 1.35 },
+      shape: { type: 'box', x: p.x, z: p.z, hx: LANDING_HALF, hz: LANDING_HALF, rot },
       top: landingTop,
       bottom: deckY - 0.45,
       surface: 'stone',

@@ -100,4 +100,17 @@ describe('heightfield', () => {
     const back = { x: FALLS.lip.x - FALLS.dir.x, z: FALLS.lip.z - FALLS.dir.z };
     expect(terrainHeight(back.x, back.z)).toBeGreaterThan(FALLS_TOP - 1.5);
   });
+
+  it('keeps the rendered cliff edge at the lip, under the water', () => {
+    // the rendered (sampled) ground, not just the analytic height: the stream's last
+    // metres must run over ground, not over the drop
+    for (const back of [0, 0.5, 1]) {
+      const x = FALLS.lip.x - FALLS.dir.x * back;
+      const z = FALLS.lip.z - FALLS.dir.z * back;
+      expect(sampleGrid(grid, x, z)).toBeGreaterThan(FALLS_TOP - 0.6);
+    }
+    // and a couple of metres out, it has dropped into the pool
+    const out = { x: FALLS.lip.x + FALLS.dir.x * 2, z: FALLS.lip.z + FALLS.dir.z * 2 };
+    expect(sampleGrid(grid, out.x, out.z)).toBeLessThan(WATER_LEVEL);
+  });
 });

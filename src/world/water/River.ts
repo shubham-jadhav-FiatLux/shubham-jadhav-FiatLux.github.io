@@ -12,7 +12,7 @@ import {
 import { globalUniforms } from '../../render/uniforms';
 import { NOISE_GLSL, TERRAIN_GLSL } from '../../render/glsl';
 import { ATMOSPHERE } from '../../render/atmosphere';
-import { RIVER_DEPTH, riverCourse } from '../heightfield';
+import { RIVER_DEPTH, riverCourse, type RiverPoint } from '../heightfield';
 
 /**
  * The stream on the plateau: one ribbon along the carved bed, from the spring pool to
@@ -24,7 +24,16 @@ export class River {
   readonly mesh: Mesh<BufferGeometry, ShaderMaterial>;
 
   constructor() {
-    const pts = riverCourse.points;
+    // Start a little upstream of the spring's centre so the water fills the whole pool.
+    const [p0, p1] = riverCourse.points as [RiverPoint, RiverPoint];
+    const back = Math.hypot(p0.x - p1.x, p0.z - p1.z) || 1;
+    const pre: RiverPoint = {
+      ...p0,
+      x: p0.x + ((p0.x - p1.x) / back) * 3.4,
+      z: p0.z + ((p0.z - p1.z) / back) * 3.4,
+      s: -3.4,
+    };
+    const pts = [pre, ...riverCourse.points];
     const n = pts.length;
     const pos = new Float32Array(n * 2 * 3);
     const uv = new Float32Array(n * 2 * 2);
@@ -41,7 +50,7 @@ export class River {
       tz /= tl;
       const drop = Math.max(0, (a.bed - b.bed) / Math.max(0.01, b.s - a.s));
       // wide at the spring so the whole pool is covered, then a little wider than the bed
-      const spring = Math.max(0, 1 - p.s / 3.5);
+      const spring = Math.min(1, Math.max(0, 1 - p.s / 3.5));
       const half = p.halfWidth + 1.3 + spring * 3.2;
       const y = p.bed + RIVER_DEPTH;
       for (const side of [-1, 1]) {
@@ -146,6 +155,8 @@ export class River {
           float alpha = mix(0.55, 0.9, smoothstep(0.02, 0.5, depth));
           alpha = max(alpha, max(fres * 0.9, foam));
           alpha *= smoothstep(-0.01, 0.03, depth);
+          // never draw water over thin air (where the ground drops away past the lip)
+          alpha *= 1.0 - smoothstep(0.95, 1.6, depth);
           gl_FragColor = vec4(col, alpha);
           #include <fog_fragment>
         }
