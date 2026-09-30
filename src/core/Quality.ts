@@ -94,7 +94,9 @@ export class Quality extends Emitter<{ change: QualitySettings; scale: number }>
     const saved = storage.get<QualityLevel | null>('quality', null);
     const chosen = fromUrl && LEVELS.includes(fromUrl) ? fromUrl : saved;
     this.userChosen = chosen !== null;
-    const level: QualityLevel = chosen ?? (isLikelyMobile() ? 'low' : 'medium');
+    // High by default; phones start one step lower. Either way the monitor below steps
+    // down if the frame rate stays low.
+    const level: QualityLevel = chosen ?? (isLikelyMobile() ? 'medium' : 'high');
     this.settings = { ...QUALITY_PRESETS[level] };
     this.adaptive = params.get('adaptive') !== '0';
     // Frames measured before the tab was hidden say nothing about the ones after it.
