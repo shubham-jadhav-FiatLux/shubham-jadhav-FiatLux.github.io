@@ -6,6 +6,8 @@ import { releaseFocus, trapFocus } from './focus';
 import { ICONS } from './icons';
 import { esc } from './render';
 import { BRUSH_FONT } from '../world/architecture/textures';
+import { riverCourse } from '../world/heightfield';
+import { BRIDGE_POINTS, FALLS } from '../world/layout';
 
 const EXTENT = 92; // map covers [-EXTENT, EXTENT] in x and z
 
@@ -92,6 +94,43 @@ function paintMap(
   ctx.putImageData(img, 0, 0);
   const px = (v: number) => ((v + EXTENT) / (EXTENT * 2)) * size;
   const pm = (m: number) => (m / (EXTENT * 2)) * size;
+  // the stream across the plateau, its spring and the white water of the falls
+  const course = riverCourse.points;
+  const spring = course[0]!;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  for (const [width, color] of [
+    [3.4, 'rgba(58, 104, 98, 0.55)'],
+    [2.4, 'rgb(128, 190, 176)'],
+  ] as const) {
+    ctx.strokeStyle = ctx.fillStyle = color;
+    ctx.lineWidth = pm(width);
+    ctx.beginPath();
+    course.forEach((p, i) => (i ? ctx.lineTo(px(p.x), px(p.z)) : ctx.moveTo(px(p.x), px(p.z))));
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(px(spring.x), px(spring.z), pm(2.6 + width * 0.3), 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.strokeStyle = 'rgba(248, 246, 236, 0.9)';
+  ctx.lineWidth = pm(2.2);
+  ctx.beginPath();
+  ctx.moveTo(px(FALLS.lip.x), px(FALLS.lip.z));
+  ctx.lineTo(px(FALLS.foot.x), px(FALLS.foot.z));
+  ctx.stroke();
+  // the zig-zag bridge, in lacquer red
+  for (const [width, color] of [
+    [3.0, 'rgba(40, 24, 20, 0.6)'],
+    [2.0, '#b0463a'],
+  ] as const) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = pm(width);
+    ctx.lineJoin = 'miter';
+    ctx.lineCap = 'butt';
+    ctx.beginPath();
+    BRIDGE_POINTS.forEach(([x, z], i) => (i ? ctx.lineTo(px(x), px(z)) : ctx.moveTo(px(x), px(z))));
+    ctx.stroke();
+  }
   // trees as ink puffs
   for (const t of trees) {
     const rr = Math.max(2.2, pm(t.r) * 0.62);
