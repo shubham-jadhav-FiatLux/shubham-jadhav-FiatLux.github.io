@@ -185,7 +185,11 @@ export class Game {
       audio.setMusic(!audio.musicOn);
       this.hud.setMusic(audio.musicOn);
     });
-    this.hud.on('menu', () => this.menu.toggle());
+    this.hud.on('menu', () => {
+      this.scroll.close();
+      this.map.close();
+      this.menu.toggle();
+    });
     this.hud.on('seal', (id) => this.openSection(id));
 
     this.scroll.on('open', () => audio.sfx('open'));
@@ -209,7 +213,8 @@ export class Game {
     this.menu.on('classic', () => this.classic.open());
     this.menu.on('help', () => this.openSection('welcome'));
     this.menu.on('reset', () => {
-      this.cancelPending();
+      this.cancelPending(); // including a ceremony in progress: release its camera shot
+      app.rig.endShot();
       this.progress.reset();
       this.hud.toast('The scrolls are hidden again');
     });
@@ -275,7 +280,8 @@ export class Game {
           app.dustRing(tmp.set(it.x, it.y + 0.2, it.z), 0.5);
           if (!this.progress.has('skills')) {
             this.later(() => {
-              if (!this.panelOpen) this.discoverOrOpen('skills', index, it);
+              if (this.panelOpen) this.discoverQuietly('skills');
+              else this.discoverOrOpen('skills', index, it);
             }, 350);
           } else {
             const g = app.content.skills.groups[index];
@@ -301,7 +307,8 @@ export class Game {
           this.lanterns.release({ x: it.x, y: it.y + 1, z: it.z }, 14);
           app.rig.shake(0.35);
           this.later(() => {
-            if (!this.panelOpen) this.discoverOrOpen('contact', undefined, it);
+            if (this.panelOpen) this.discoverQuietly('contact');
+            else this.discoverOrOpen('contact', undefined, it);
           }, 1300);
         });
         if (rang) this.busyUntil = now + 900;
@@ -323,18 +330,30 @@ export class Game {
       app.renderer.pulseBloom(1.2);
       this.frameShot(at, 1.6);
       this.later(() => {
-        // the visitor may have opened the map or menu during the ceremony
-        if (!this.panelOpen) this.scroll.open(section, focus);
-        this.hud.toast(
-          `New scroll: ${sectionMeta(section).label} (${this.progress.count}/${this.progress.total})`,
-        );
-        if (this.progress.count === this.progress.total) {
-          this.later(() => this.hud.toast('Every scroll found. Thank you for visiting!'), 1600);
-        }
+        // If the visitor opened the map or menu meanwhile, the scroll waits in the tabs
+        // and the camera goes back to following the panda.
+        if (this.panelOpen) app.rig.endShot();
+        else this.scroll.open(section, focus);
+        this.announce(section);
       }, 1500);
     } else {
       this.frameShot(at, 1.1);
       this.scroll.open(section, focus);
+    }
+  }
+
+  /** A delayed discovery that lands while a panel is open: record it without the show. */
+  private discoverQuietly(section: SectionId): void {
+    if (!this.progress.discover(section)) return;
+    this.audio.sfx('discover');
+    this.announce(section);
+  }
+
+  private announce(section: SectionId): void {
+    const { count, total } = this.progress;
+    this.hud.toast(`New scroll: ${sectionMeta(section).label} (${count}/${total})`);
+    if (count === total) {
+      this.later(() => this.hud.toast('Every scroll found. Thank you for visiting!'), 1600);
     }
   }
 
