@@ -49,6 +49,7 @@ export class Lake {
           uLevel: { value: WATER_LEVEL },
           // where the waterfall lands: x, z, radius of the churn
           uFallsFoot: { value: new Vector3(FALLS.foot.x, FALLS.foot.z, 2.6) },
+          uLampLight: { value: ATMOSPHERE.lampLight },
         },
       ]),
       vertexShader: /* glsl */ `
@@ -72,6 +73,7 @@ export class Lake {
         uniform vec3 uSunColor;
         uniform float uLevel;
         uniform vec3 uFallsFoot;
+        uniform vec3 uLampLight;
         uniform vec4 uRipples[${MAX_RIPPLES}];
         varying vec3 vWorld;
         ${NOISE_GLSL}
@@ -133,6 +135,9 @@ export class Lake {
           float bands = smoothstep(0.62, 0.7, fract(depth * 2.4 - uTime * 0.28 + vnoise(xz * 1.3) * 0.7));
           bands *= 1.0 - smoothstep(0.1, 0.55, depth);
           float foam = clamp(edge * (0.65 + 0.35 * vnoise(xz * 4.0 + uTime * 0.4)) + bands * 0.55, 0.0, 1.0);
+          // Lantern light glinting on the water around the bridge lanterns.
+          float lamp = terrainDetailAt(xz).r;
+          col += uLampLight * lamp * (0.9 + 0.8 * glitter + 0.3 * sin(uTime * 2.0 + dot(xz, vec2(3.1, 1.7))));
           // White water where the falls land, and foam trails drifting across the pool.
           float churn = 1.0 - smoothstep(uFallsFoot.z * 0.5, uFallsFoot.z * 2.4, fd);
           float boil = vnoise((xz - uFallsFoot.xy) * 1.3 - outDir * uTime * 1.1);
@@ -157,6 +162,7 @@ export class Lake {
       uSunDir: globalUniforms.uSunDir,
       uHeightMap: globalUniforms.uHeightMap,
       uMaskMap: globalUniforms.uMaskMap,
+      uDetailMap: globalUniforms.uDetailMap,
       uTerrain: globalUniforms.uTerrain,
       uRipples: { value: this.ripples },
     });

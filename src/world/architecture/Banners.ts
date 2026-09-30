@@ -150,6 +150,7 @@ export class Banners {
         PAL.wood,
         am,
       );
+      b.light({ x: ax, y: ay + 0.9, z: az, size: 0.3, kind: 'altar' });
       col.box(ax, az, 0.48, 0.32, yaw, ay, ay + 0.9, `banner:${i}`);
       this.anchors.push({ x: ax, y: ay + 0.9, z: az, yaw, index: i });
     });

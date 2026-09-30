@@ -15,9 +15,21 @@ import {
   type Material,
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { globalUniforms } from '../../render/uniforms';
+import { NOISE_GLSL } from '../../render/glsl';
 
 /** Material buckets: every structure in the valley is merged into one mesh per bucket. */
 export type Bucket = 'paint' | 'roof' | 'glow' | 'lattice';
+
+/** A lantern (or other warm light) in the world: for halos, light pools and lights. */
+export interface LightSpot {
+  x: number;
+  y: number;
+  z: number;
+  /** size of the glowing body (m) */
+  size: number;
+  kind: 'paper' | 'stone' | 'altar';
+}
 
 const q = new Quaternion();
 
@@ -98,13 +110,35 @@ function createMaterials(): Record<Bucket, Material> {
   };
   roof.customProgramCacheKey = () => 'arch-roof';
 
-  const glow = new MeshStandardMaterial({ vertexColors: true, roughness: 0.6, metalness: 0 });
+  const glow = new MeshStandardMaterial({ vertexColors: true, roughness: 0.7, metalness: 0 });
   glow.name = 'arch-glow';
   glow.onBeforeCompile = (shader) => {
-    shader.fragmentShader = shader.fragmentShader.replace(
-      '#include <emissivemap_fragment>',
-      '#include <emissivemap_fragment>\ntotalEmissiveRadiance += vColor.rgb * 2.4;',
-    );
+    shader.uniforms.uTime = globalUniforms.uTime;
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vGlowWorld;')
+      .replace(
+        '#include <begin_vertex>',
+        '#include <begin_vertex>\nvGlowWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;',
+      );
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        '#include <common>',
+        `#include <common>\nuniform float uTime;\nvarying vec3 vGlowWorld;\n${NOISE_GLSL}`,
+      )
+      // lit from within: the sun barely touches the paper
+      .replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.rgb *= 0.3;')
+      .replace(
+        '#include <emissivemap_fragment>',
+        /* glsl */ `#include <emissivemap_fragment>
+{
+  // paper lit by a candle inside: brightest where it faces you, deeper at the rim,
+  // keeping its own colour (red lanterns stay red) with a gentle flicker
+  float facing = abs(dot(normalize(vNormal), normalize(vViewPosition)));
+  float flicker = 0.84 + 0.16 * vnoise(vec2(dot(vGlowWorld, vec3(1.7, 0.3, 2.9)), uTime * 5.5));
+  vec3 inner = vColor.rgb * (1.2 + 1.8 * pow(facing, 1.3)) + vec3(0.55, 0.22, 0.05) * pow(facing, 2.0);
+  totalEmissiveRadiance += inner * 1.5 * flicker;
+}`,
+      );
   };
   glow.customProgramCacheKey = () => 'arch-glow';
 
@@ -125,6 +159,12 @@ function createMaterials(): Record<Bucket, Material> {
 export class ArchBuilder {
   readonly materials = createMaterials();
   private parts: Record<Bucket, BufferGeometry[]> = { paint: [], roof: [], glow: [], lattice: [] };
+  /** every warm light registered while building */
+  readonly lights: LightSpot[] = [];
+
+  light(spot: LightSpot): void {
+    this.lights.push(spot);
+  }
 
   add(
     bucket: Bucket,
