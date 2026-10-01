@@ -529,3 +529,37 @@
     padding: 5px;
   }
 }
+
+/* A scroll rising out of a discovery flies rolled up (the rollers together, the paper
+   hidden) and unrolls once it has arrived. */
+.overlay--rolled .scroll__roller {
+  transition: none;
+}
+
+.overlay--rolled .scroll__roller--top {
+  transform: translateY(var(--roll, 0px));
+}
+
+.overlay--rolled .scroll__roller--bottom {
+  transform: translateY(calc(-1 * var(--roll, 0px)));
+}
+
+.overlay--open.overlay--rolled .scroll__paper {
+  clip-path: inset(50% 0 50% 0);
+}
+
+/* The golden light around a scroll rising out of a discovery. */
+.scroll__glow {
+  position: absolute;
+  inset: -18% -10%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgba(255, 220, 140, 0.95),
+    rgba(255, 196, 92, 0.45) 55%,
+    rgba(255, 196, 92, 0) 100%
+  );
+  opacity: 0;
+  pointer-events: none;
+}

@@ -3,7 +3,7 @@ import type { App } from './App';
 import { Progress } from '../zones/Progress';
 import { buildInteractables, Zones, type Interactable } from '../zones/Zones';
 import { Beacons } from '../zones/Beacons';
-import { DiscoveryFx } from '../effects/Discovery';
+import { CEREMONY_MS, DiscoveryFx } from '../effects/Discovery';
 import { SkyLanterns } from '../effects/SkyLanterns';
 import { SPRITE } from '../effects/Particles';
 import { Hud } from '../ui/Hud';
@@ -126,10 +126,12 @@ export class Game {
   private tourHost(): TourHost {
     return {
       scrollOpen: () => this.scroll.isOpen,
-      openScroll: (section, focus) => {
+      openScroll: (section, focus, rise) => {
         this.map.close();
         this.menu.close();
-        this.scroll.open(section, focus);
+        // (no rise when tests fast-forward the film: it runs on wall-clock time)
+        const from = rise && this.app.loop.substeps === 1 ? this.pandaOnScreen() : undefined;
+        return this.scroll.open(section, focus, from);
       },
       closeScroll: () => this.scroll.close(),
       scrollBody: () => (this.scroll.isOpen ? this.scroll.bodyEl : null),
@@ -427,20 +429,29 @@ export class Game {
   private discoverOrOpen(section: SectionId, focus: number | undefined, at?: Interactable): void {
     const app = this.app;
     if (this.progress.discover(section)) {
-      this.busyUntil = performance.now() + 1900;
+      this.busyUntil = performance.now() + 2700;
       this.celebrate(section);
       this.frameShot(at, 1.6);
+      // The scroll waits for the bow and the golden light, then rises out of the panda.
       this.later(() => {
         // If the visitor opened the map or menu meanwhile, the scroll waits in the tabs
         // and the camera goes back to following the panda.
         if (this.panelOpen) app.rig.endShot();
-        else this.scroll.open(section, focus);
+        else this.scroll.open(section, focus, this.pandaOnScreen());
         this.announce(section);
-      }, 1500);
+      }, CEREMONY_MS);
     } else {
       this.frameShot(at, 1.1);
       this.scroll.open(section, focus);
     }
+  }
+
+  /** Where the panda's chest is on screen (CSS pixels), or undefined if out of view. */
+  private pandaOnScreen(): { x: number; y: number } | undefined {
+    const c = this.app.controller.position;
+    const v = tmp.set(c.x, c.y + 1.0, c.z).project(this.app.rig.camera);
+    if (v.z > 1 || Math.abs(v.x) > 1.2 || Math.abs(v.y) > 1.2) return undefined;
+    return { x: ((v.x + 1) / 2) * window.innerWidth, y: ((1 - v.y) / 2) * window.innerHeight };
   }
 
   /** A delayed discovery that lands while a panel is open: record it without the show. */

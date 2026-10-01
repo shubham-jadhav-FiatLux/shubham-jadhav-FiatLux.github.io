@@ -1,4 +1,5 @@
-const reduceMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+export const reduceMotion = () =>
+  window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
 /**
  * Scrolls `container` so `target` is visible. Unlike `Element.scrollIntoView`, it never

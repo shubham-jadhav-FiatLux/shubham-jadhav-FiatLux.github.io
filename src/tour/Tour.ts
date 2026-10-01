@@ -7,6 +7,8 @@ import type { SectionId } from '../content/sections';
 import type { PortfolioContent } from '../content/types';
 import type { Anchors } from '../world/architecture/Architecture';
 import { TourOverlay } from '../ui/TourOverlay';
+import { ScrollPanel } from '../ui/ScrollPanel';
+import { CEREMONY_MS } from '../effects/Discovery';
 import { Autopilot } from './Autopilot';
 import { Director } from './Director';
 import { Route, type XZ } from './route';
@@ -17,7 +19,8 @@ import { CHAPTERS, chapterCard, SECTION_CHAPTERS } from './script';
 /** What the tour needs from the gameplay layer. */
 export interface TourHost {
   scrollOpen(): boolean;
-  openScroll(section: SectionId, focus?: number): void;
+  /** `rise`: the scroll rises out of the panda before it unrolls; returns true if it does */
+  openScroll(section: SectionId, focus?: number, rise?: boolean): boolean;
   closeScroll(): void;
   /** the scrollable text of the open scroll */
   scrollBody(): HTMLElement | null;
@@ -68,7 +71,9 @@ export interface TourContext {
   title(on: boolean): void;
   /** a line of narration (hides itself after `seconds` of tour time) */
   caption(text: string | null, seconds?: number): void;
+  /** the discovery: bow, golden light, seal; returns once the light has faded */
   ceremony(section: SectionId): Promise<void>;
+  /** the scroll rises out of the panda and stays open long enough to read */
   read(section: SectionId, focus?: number): Promise<void>;
   strike(dummy: number): Promise<void>;
   drum(): Promise<void>;
@@ -420,16 +425,17 @@ export class Tour extends Emitter<{ start: void; end: TourEnd }> {
       ceremony: async (section) => {
         live();
         host.ceremony(section);
-        await wait(1.9);
+        await wait(CEREMONY_MS / 1000);
       },
       read: async (section, focus) => {
         live();
         // never read in the dark
         if (this.dark) await fade(false, 0.5, 0.3);
-        host.openScroll(section, focus);
+        const rose = host.openScroll(section, focus, true);
         const body = host.scrollBody();
         const words = body?.textContent?.split(/\s+/).filter(Boolean).length ?? 40;
-        const duration = readingTime(words);
+        // time to read, plus the scroll's rise and unrolling
+        const duration = readingTime(words) + (rose ? ScrollPanel.RISE_MS / 1000 : 0);
         this.continueReading = false;
         this.reading = { start: tl.now, duration };
         overlay.setReading(true, 0);

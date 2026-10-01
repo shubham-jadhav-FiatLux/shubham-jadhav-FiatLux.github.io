@@ -11,6 +11,9 @@ import { globalUniforms } from '../render/uniforms';
 import type { Particles } from './Particles';
 import { SPRITE } from './Particles';
 
+/** From the start of a discovery to its scroll: the bow and the golden light (ms). */
+export const CEREMONY_MS = 2400;
+
 const PETALS = ['#fbd3e0', '#f6b3c9', '#f29ab7', '#fde9ef'].map((c) => new Color(c));
 const GOLD = new Color('#ffd27a');
 
