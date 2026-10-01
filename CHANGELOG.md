@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-01
+
 The director's cut of the tour.
 
 ### Added
@@ -255,7 +257,8 @@ lantern light, softer edges between materials and a little more life in the vall
 - Follow camera with orbit, zoom, look-ahead and cinematic shots.
 - Title screen, screenshot script and unit tests.
 
-[Unreleased]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.5.0...v0.5.1
