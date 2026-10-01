@@ -17,6 +17,12 @@ export const ICONS = {
   book: svg(
     '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5V5.5"/>',
   ),
+  play: svg('<path d="M8 5.5v13l10.5-6.5z"/>'),
+  pause: svg('<path d="M8.5 5.5v13M15.5 5.5v13"/>'),
+  next: svg('<path d="M6 5.5v13l8.5-6.5zM18 5.5v13"/>'),
+  film: svg(
+    '<rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="M3.5 9h17M3.5 15h17M8 5v4M12 5v4M16 5v4M8 15v4M12 15v4M16 15v4"/>',
+  ),
   travel: svg(
     '<path d="M12 21s-6-5.5-6-11a6 6 0 0 1 12 0c0 5.5-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/>',
   ),

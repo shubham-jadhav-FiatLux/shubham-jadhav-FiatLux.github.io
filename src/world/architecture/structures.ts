@@ -303,12 +303,18 @@ export function buildPagoda(b: ArchBuilder, col: CollisionWorld, p: Placed): Pag
 
 /* -------------------------------------------------------------- Pavilion */
 
-/** Hexagonal tea pavilion on a stone platform over the water. */
+/**
+ * Hexagonal tea pavilion on a stone platform over the water. Returns the table and the
+ * shore-side entrance (the middle of the opening, and the way out).
+ */
 export function buildPavilion(
   b: ArchBuilder,
   col: CollisionWorld,
   p: Placed,
-): { table: { x: number; y: number; z: number } } {
+): {
+  table: { x: number; y: number; z: number };
+  entrance: { x: number; z: number; nx: number; nz: number };
+} {
   const deck = WATER_LEVEL + 0.62;
   const m = T(p.x, deck, p.z, 0, p.rot);
   const sides = 6;
@@ -342,6 +348,7 @@ export function buildPavilion(
     col.circle(w.x, w.z, 0.2, deck - 0.2, deck + 3, 'pillar');
   }
   // ring beams and benches ("beauty's rest" backrests) on four sides
+  let entrance = { x: p.x, z: p.z, nx: 0, nz: 1 };
   for (let k = 0; k < sides; k++) {
     const a0 = corners[k]!;
     const a1 = corners[(k + 1) % sides]!;
@@ -357,6 +364,12 @@ export function buildPavilion(
       mul(m, T(mid.x * 0.99, 2.62, mid.z * 0.99, 0, yaw)),
     );
     const open = k === 3 || k === 0; // entrances: towards the shore and towards the lake
+    if (k === 0) {
+      const w = toWorld(p, mid.x, mid.z);
+      const out = toWorld(p, mid.x * 2, mid.z * 2);
+      const l = Math.hypot(out.x - w.x, out.z - w.z);
+      entrance = { x: w.x, z: w.z, nx: (out.x - w.x) / l, nz: (out.z - w.z) / l };
+    }
     if (!open) {
       const inward = mid.clone().multiplyScalar(0.93);
       b.add(
@@ -421,7 +434,7 @@ export function buildPavilion(
       mul(m, T(x!, 0.8, z!)),
     );
   }
-  return { table: { x: p.x, y: deck + 0.8, z: p.z } };
+  return { table: { x: p.x, y: deck + 0.8, z: p.z }, entrance };
 }
 
 /* ---------------------------------------------------------------- Houses */

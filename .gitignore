@@ -7,3 +7,4 @@ screenshots/*.png
 .DS_Store
 .vite
 *.ttf
+screenshots/*/

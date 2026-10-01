@@ -93,4 +93,12 @@ export interface PortfolioContent {
     email?: string;
     links: Link[];
   };
+  /** Optional: your own narration for "Watch the tour" (defaults fill any gaps). */
+  tour?: {
+    captions?: Partial<Record<TourScene, string>>;
+  };
 }
+
+/** Scenes of the tour that can carry a caption. */
+export type TourScene =
+  'prologue' | 'welcome' | 'about' | 'skills' | 'journey' | 'projects' | 'contact' | 'epilogue';

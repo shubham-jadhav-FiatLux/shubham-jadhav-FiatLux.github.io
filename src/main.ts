@@ -12,6 +12,7 @@ import './ui/styles/map.css';
 import './ui/styles/menu.css';
 import './ui/styles/classic.css';
 import './ui/styles/touch.css';
+import './ui/styles/tour.css';
 import { App } from './app/App';
 import { Game } from './app/Game';
 import { GameAudio } from './audio/GameAudio';
@@ -78,13 +79,15 @@ async function boot(): Promise<void> {
   }
   const game = new Game(app, audio, ui, classic);
   window.__game = game;
+  const preferTour = new URLSearchParams(window.location.search).has('tour');
   loader.ready(
-    () => {
+    (tour) => {
       void audio.unlock();
-      app.begin();
-      game.start();
+      app.begin({ quiet: tour });
+      game.start({ tour });
     },
     () => !classic.isOpen,
+    preferTour,
   );
 }
 

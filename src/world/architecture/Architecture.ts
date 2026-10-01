@@ -32,6 +32,8 @@ export interface Point3 {
 export interface Anchors {
   gate: Point3;
   pavilionTable: Point3;
+  /** the pavilion's shore-side entrance and the direction out of it */
+  pavilionEntrance: { x: number; z: number; nx: number; nz: number };
   pagoda: Point3;
   pagodaDoor: Point3;
   bell: Point3;
@@ -222,6 +224,7 @@ export class Architecture {
     this.anchors = {
       gate: { x: PLACES.gate.x, y: gateY, z: PLACES.gate.z },
       pavilionTable: pav.table,
+      pavilionEntrance: pav.entrance,
       pagoda: { x: PLACES.pagoda.x, y: pagodaY, z: PLACES.pagoda.z },
       pagodaDoor: { x: pagoda.door.x, y: pagodaY + 0.85, z: pagoda.door.z },
       bell: { x: PLACES.bell.x, y: bellY, z: PLACES.bell.z },

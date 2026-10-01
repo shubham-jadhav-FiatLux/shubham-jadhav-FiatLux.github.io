@@ -28,6 +28,8 @@ export class ScrollPanel extends Emitter<ScrollEvents> {
   private glyph: HTMLElement;
   private tabs: HTMLElement;
   private body: HTMLElement;
+  /** shown by the tour: no tabs or quick travel, and the keyboard stays with the film */
+  private film = false;
 
   constructor(
     root: HTMLElement,
@@ -69,8 +71,23 @@ export class ScrollPanel extends Emitter<ScrollEvents> {
       }
     });
     this.body.addEventListener('click', (e) => this.onBodyClick(e));
-    trapFocus(this.el, () => this.isOpen);
+    trapFocus(this.el, () => this.isOpen && !this.film);
     progress.on('discover', () => this.isOpen && this.renderTabs());
+  }
+
+  /** The scrollable text of the scroll. */
+  get bodyEl(): HTMLElement {
+    return this.body;
+  }
+
+  /**
+   * While the tour shows the scrolls they are part of the film: no tabs, no quick travel,
+   * and the focus is not pulled in, so Space still pauses and Tab reaches "Continue".
+   */
+  setFilm(on: boolean): void {
+    this.film = on;
+    this.el.classList.toggle('overlay--film', on);
+    this.el.querySelector('.scroll')!.setAttribute('aria-modal', String(!on));
   }
 
   open(section: SectionId, focus?: number): void {
@@ -81,7 +98,8 @@ export class ScrollPanel extends Emitter<ScrollEvents> {
       this.isOpen = true;
       this.el.classList.add('overlay--open');
       window.setTimeout(() => {
-        if (this.isOpen) (this.el.querySelector('.scroll__close') as HTMLElement)?.focus();
+        if (this.isOpen && !this.film)
+          (this.el.querySelector('.scroll__close') as HTMLElement)?.focus();
       }, 60);
     }
     this.emit('open', section);
@@ -145,7 +163,7 @@ export class ScrollPanel extends Emitter<ScrollEvents> {
   private onBodyClick(e: MouseEvent): void {
     const t = e.target as HTMLElement;
     const travel = t.closest<HTMLElement>('[data-travel]');
-    if (travel) {
+    if (travel && !this.film) {
       this.emit('travel', travel.dataset.travel as SectionId);
       return;
     }
