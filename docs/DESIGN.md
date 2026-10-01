@@ -151,6 +151,51 @@ The signature moment when a scroll is found:
 4. The landmark's seal (e.g. 技) is stamped in red onto the progress bar.
 5. The camera eases into a framed shot and the scroll unrolls with the content.
 
+### The tour
+
+**Watch the tour** plays the valley as a short film (about four minutes) for visitors who
+would rather sit back. It is the same world and the same gameplay, directed:
+
+| Scene       | What happens                                                                                                | Camera                                                      |
+| ----------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Prologue    | Title over the valley; the panda waves from the start of the path                                           | aerial descent, close-up                                    |
+| 迎 Gate     | The panda sets off and walks through the gate; ceremony; Welcome scroll                                     | follow, through-the-gate tripod, orbit, crane reveal        |
+| 我 About    | Past the old tree and round to the tea pavilion's door; ceremony at the table; About scroll                 | crane down, tripod with the lake beyond, low orbit          |
+| 技 Skills   | A run to the training grounds; one strike, the ceremony, the Skills scroll, a round of strikes and the drum | side tracking, wide, low three-quarter, orbit               |
+| 路 Journey  | Ceremony at the first milestone; Journey scroll; across the bridge, pausing at every milestone              | tripod from the water, dolly alongside, crane over the lake |
+| 作 Projects | Up the banner path; ceremony at the first banner; Projects scroll; the climb to the pagoda                  | leading track, orbit, low tripod, crane up the tiers        |
+| 信 Contact  | Along the shore to the bell; the bell is rung, sky lanterns rise; Contact scroll                            | wide with the falls, close on the bell, tilt up             |
+| Epilogue    | The panda meditates; the camera drifts up and away; closing card                                            | pull-back to an aerial orbit                                |
+
+How it works (`src/tour/`):
+
+- **Autopilot** walks the panda by feeding the character controller the same stick input a
+  player would give, so steps, dust, splashes, grass and collisions behave exactly as in
+  play, and every discovery, strike and bell ring goes through the real gameplay code.
+- **Director** owns the camera while the tour runs: shots (`rail`, `track`, `orbit`,
+  `tripod`, `dolly`) are small objects that write a camera pose every frame; the director
+  cuts or blends between them, widens the lens on portrait screens and keeps the camera
+  above ground and water. Blends become cuts for visitors who prefer reduced motion.
+- **Timeline** runs the chapter scripts on tour time, so pausing freezes everything
+  (walks, shots, captions, reading time) and skipping cancels a chapter cleanly: every
+  verb first checks that its chapter is still playing, so nothing a skipped chapter
+  meant to do happens later.
+- **Script** (`script.ts`) is the film itself: each chapter is a short async function
+  using a handful of verbs (`walk`, `cut`, `card`, `caption`, `ceremony`, `read`, `strike`,
+  `bell`...). Chapters start with a fade and place the panda, so any chapter can be jumped
+  to; a skip in the middle of a fade leaves the picture black and the next scene opens
+  from black.
+- **Overlay** (`ui/TourOverlay.ts`) is the frame: letterbox bars, a chapter strip, title
+  cards, captions, the reading control and the closing card. Controls fade away while the
+  pointer rests, like a video player's (and ignore taps until woken); whatever is off
+  screen is `inert`, and buttons pressed with the mouse let go of the focus so `Space`
+  and `Enter` keep meaning pause and next.
+
+Scrolls stay open for a reading time based on their length (7–16 s), gently scrolling
+longer ones; "Continue" moves on sooner. A scroll shown by the film has no tabs or quick
+travel and does not take the focus, so `Space` still pauses and `Tab` reaches "Continue". Moving the panda (keys, stick) or "Take the
+controls" hands control back on the spot; the tour marks the scrolls it shows as found.
+
 ## 6. Sound
 
 Everything is synthesised with the Web Audio API at runtime:
@@ -194,6 +239,7 @@ src/
   world/                  terrain, sky, mountains, grass, trees, water, architecture...
   player/                 panda model, procedural animator, character controller
   camera/                 follow camera and cinematic shots
+  tour/                   "Watch the tour": autopilot, director, shots, timeline, script
   effects/                particles, discovery ceremony, sky lanterns
   zones/                  interactive spots, discovery progress, beacons
   audio/                  audio engine, instruments, music, SFX, ambience

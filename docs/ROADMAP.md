@@ -13,6 +13,7 @@ Versions follow [Semantic Versioning](https://semver.org). While the project is 
 | 0.4.0   | Portfolio zones and scrolls, discovery moments, map with quick travel, procedural audio  | ✅ released  |
 | 0.5.0   | Polish: accessibility, reduced motion, SEO and sharing, performance, mobile              | ✅ released  |
 | 0.6.0   | Visual update: waterfall and stream, stone, wood and bamboo detail, lantern light, life  | ✅ released  |
+| 0.7.0   | Watch the tour: the whole portfolio as a directed short film                             | ✅ released  |
 | 1.0.0   | Real content filled in, tested on phones, custom domain                                  | ⏳ your turn |
 
 ## Ideas for later
@@ -24,6 +25,8 @@ Versions follow [Semantic Versioning](https://semver.org). While the project is 
 - **Weather** – light rain with ripples on the lake and a rainbow afterwards.
 - **Painting mode** – a Kuwahara post-process that turns the valley into an oil painting (key `P`).
 - **Photo mode** – free camera, hide HUD, depth of field, save a screenshot.
+- **Tour extras** – depth of field and a narrated voice-over for the tour, subtitles in
+  several languages, a recorded video version for social media.
 - **Achievements** – "Ring the bell 3 times", "Swim with the koi", "Meditate under the old tree".
 - **Guest book** – visitors leave a paper lantern with a short message (needs a tiny backend).
 - **Multiplayer ghosts** – see other visitors as translucent pandas (WebSocket).

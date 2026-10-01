@@ -35,6 +35,23 @@ sound and note of music is generated in code; there are no downloaded assets bes
 Prefer reading? **Menu → Read as a page** shows the whole portfolio as a plain, accessible
 page. Browsers without WebGL 2 or JavaScript get that page automatically.
 
+### Watch the tour
+
+![The tour's opening title over the valley, framed by letterbox bars and the chapter seals](docs/images/tour.jpg)
+
+Rather sit back? **Watch the tour** (on the title screen, or in the menu) plays the valley
+as a short film of about four minutes. The panda walks from the gate to the bell on its
+own while a director films it with aerial, tracking, orbit and crane shots, chapter title
+cards and captions. Every discovery ceremony plays, every scroll stays open long enough to
+read, the dummies are struck, the bell is rung. Share a link ending in `?tour` to make the
+tour the first choice on the title screen.
+
+| While watching          | Keyboard           | Gamepad       | Touch / mouse           |
+| ----------------------- | ------------------ | ------------- | ----------------------- |
+| Pause / resume          | `Space`            | `A`           | ❚❚ button               |
+| Next chapter / continue | `Enter` / `E`      | `Y` / D-pad → | ⏭ button, chapter seals |
+| Take the controls       | `Esc` or just walk | `B` / stick   | "Take the controls"     |
+
 ## Make it yours
 
 1. **Content.** Everything personal lives in one typed file:
@@ -49,6 +66,9 @@ page. Browsers without WebGL 2 or JavaScript get that page automatically.
    fresh one with your name on it.
 4. **Gate lettering.** `site.gateGlyphs` must use characters from the brush-font subset;
    add new ones with [`scripts/subset-font.py`](scripts/subset-font.py).
+5. **Tour narration.** The tour's captions have friendly defaults; write your own in
+   `tour.captions` (one line per scene: `prologue`, the six sections, `epilogue`). The
+   chapters themselves live in [`src/tour/script.ts`](src/tour/script.ts).
 
 ## Develop
 
@@ -57,6 +77,7 @@ npm install
 npm run dev        # dev server (add ?debug to the URL for the tweak panel and FPS)
 npm run check      # typecheck + lint + unit tests + production build
 npm run e2e        # headless playthrough of every discovery (needs the dev server)
+npm run tour       # headless run of the whole tour, fast-forwarded (needs the dev server)
 npm run shots      # reference screenshots into screenshots/ (needs the dev server)
 npm run og-image   # re-render the link-preview image (needs the dev server)
 ```
@@ -65,7 +86,8 @@ Requires Node 22.12+. The e2e and screenshot scripts drive Chromium through
 `playwright-core`; point `CHROMIUM_PATH` at a local Chrome or Chromium if needed.
 
 Useful URL parameters: `?quality=low|medium|high`, `?adaptive=0` (fixed resolution),
-`?debug`.
+`?debug`, `?tour` (the tour is the main choice on the title screen), `?sim=N` (N simulation
+steps per frame: fast-forwards time for tests on slow machines).
 
 ## Deploy
 

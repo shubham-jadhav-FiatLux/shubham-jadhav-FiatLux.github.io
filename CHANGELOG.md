@@ -6,6 +6,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-01
+
+A new way to see the portfolio: the whole valley as a short, directed film.
+
+### Added
+
+- **Watch the tour**: the valley as a short film (about four minutes). The panda walks
+  from the gate to the bell on its own while a director films it: an aerial prologue with
+  the title, one chapter per scroll with a title card and a caption, aerial, tracking,
+  orbit, tripod and crane shots, cuts and fades. Every discovery ceremony plays, each
+  scroll stays open long enough to read (gently scrolling longer ones), the dummies and
+  the drum are struck, the bridge's milestones are visited, the bell is rung and sky
+  lanterns rise; an epilogue pulls back over the valley to a closing card.
+- Tour controls: pause (Space), next chapter or continue reading (Enter), a chapter strip
+  to jump to any chapter, and "Take the controls" (Esc, or simply walk) to explore from
+  wherever the panda stands. Controls fade away while the pointer rests.
+- Start it from the title screen or the menu; a link ending in `?tour` makes it the
+  main choice on the title screen. Captions can be customised in `tour.captions`.
+- `?sim=N` runs N simulation steps per frame to fast-forward tests on slow machines;
+  `npm run tour` plays the whole tour headless and checks every chapter and scroll.
+
 ## [0.6.0] - 2026-09-30
 
 A visual update: a waterfall with a real source, richer stone, wood and bamboo, warm
@@ -205,7 +226,8 @@ lantern light, softer edges between materials and a little more life in the vall
 - Follow camera with orbit, zoom, look-ahead and cinematic shots.
 - Title screen, screenshot script and unit tests.
 
-[Unreleased]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.4.0...v0.5.0
