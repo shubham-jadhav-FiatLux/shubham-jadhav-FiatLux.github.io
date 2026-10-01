@@ -155,7 +155,7 @@ The signature moment when a scroll is found:
 
 ### The tour
 
-**Watch the tour** plays the valley as a short film (about five and a half minutes) for
+**Watch the tour** plays the valley as a short film (a little over five minutes) for
 visitors who would rather sit back. It is the same world and the same gameplay, directed:
 
 | Scene       | What happens                                                                                                                                         | Camera                                                                       |

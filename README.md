@@ -40,7 +40,7 @@ page. Browsers without WebGL 2 or JavaScript get that page automatically.
 ![The tour's opening title over the valley, framed by letterbox bars and the chapter seals](docs/images/tour.jpg)
 
 Rather sit back? **Watch the tour** (on the title screen, or in the menu) plays the valley
-as a short film of about five and a half minutes. It opens with a flight from the waterfall
+as a short film of a little over five minutes. It opens with a flight from the waterfall
 down to the panda, who waves at the viewer, then follows it from the gate to the bell on
 its own while the camera glides on smooth Bezier paths: through the bamboo, past the
 lanterns and the signpost, over the meadow as butterflies take off, down the village
