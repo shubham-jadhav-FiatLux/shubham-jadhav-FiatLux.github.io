@@ -178,6 +178,44 @@ export class Koi {
     for (const m of this.meshes) scene.add(m);
   }
 
+  /**
+   * Brings the `count` koi nearest to (x, z) around that spot, swimming towards
+   * `heading` (or any way), for a shot in the tour. They wander on from there as usual.
+   */
+  gather(x: number, z: number, count: number, heading?: number): void {
+    const near = [...this.fish]
+      .sort((a, b) => Math.hypot(a.x - x, a.z - z) - Math.hypot(b.x - x, b.z - z))
+      .slice(0, count);
+    for (const f of near) {
+      for (let k = 0; k < 16; k++) {
+        const fx = x + this.rand.range(-2.6, 2.6);
+        const fz = z + this.rand.range(-2.6, 2.6);
+        if (lakeSdf(fx, fz) > -2.5 || this.terrain.heightAt(fx, fz) > -0.9) continue;
+        f.x = fx;
+        f.z = fz;
+        f.heading = (heading ?? this.rand.range(0, Math.PI * 2)) + this.rand.range(-0.4, 0.4);
+        break;
+      }
+    }
+  }
+
+  /** The koi nearest to (x, z) leaps out of the water now. */
+  leap(x: number, z: number): void {
+    let best: Fish | null = null;
+    let bestD = Infinity;
+    for (const f of this.fish) {
+      const d = Math.hypot(f.x - x, f.z - z);
+      if (f.jumpT < 0 && d < bestD) {
+        best = f;
+        bestD = d;
+      }
+    }
+    if (!best) return;
+    best.jumpT = 0;
+    this.jumpTimer = Math.max(this.jumpTimer, 6);
+    this.onSplash(best.x, best.z, 0.45);
+  }
+
   update(dt: number, time: number, player: Vector3): void {
     const noise = (t: number, s: number) =>
       Math.sin(t * 0.7 + s) * 0.6 + Math.sin(t * 1.9 + s * 2.1) * 0.4;

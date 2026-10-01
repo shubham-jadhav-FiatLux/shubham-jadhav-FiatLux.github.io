@@ -268,6 +268,8 @@ interface Butterfly {
   alive: boolean;
   /** seconds since it appeared (it grows in instead of popping up) */
   age: number;
+  /** seconds it stays where it was gathered, however far the panda is */
+  pinned: number;
 }
 
 interface Dragonfly {
@@ -333,6 +335,7 @@ export class Wildlife {
         seed: this.rand.range(0, 100),
         alive: false,
         age: 0,
+        pinned: 0,
       });
     }
     this.butterflyMesh.frustumCulled = false;
@@ -420,6 +423,39 @@ export class Wildlife {
     return near ? near.clone() : new Vector3(28, WATER_LEVEL + 0.5, -6);
   }
 
+  /**
+   * Gathers `count` butterflies over the grass around (x, z), for a shot in the tour.
+   * They stay for `seconds` wherever the panda is, then live as usual: wandering, and
+   * fluttering off when the panda comes close.
+   */
+  gather(x: number, z: number, count: number, radius = 3, seconds = 40): void {
+    let placed = 0;
+    for (const b of this.butterflies) {
+      if (placed >= count) break;
+      if (b.pinned > 0) continue; // already gathered somewhere else
+      for (let k = 0; k < 12; k++) {
+        const a = this.rand.range(0, Math.PI * 2);
+        const r = this.rand.range(0.4, radius);
+        const hx = x + Math.cos(a) * r;
+        const hz = z + Math.sin(a) * r;
+        if (this.terrain.surfaceAt(hx, hz) !== 'grass') continue;
+        b.home.set(hx, this.terrain.heightAt(hx, hz), hz);
+        b.pos.copy(b.home).setY(b.home.y + this.rand.range(0.4, 1.1));
+        b.vel.set(0, 0, 0);
+        b.alive = true;
+        b.age = 1;
+        b.pinned = seconds;
+        placed++;
+        break;
+      }
+    }
+  }
+
+  /** Lets every gathered butterfly go back to following the panda around. */
+  release(): void {
+    for (const b of this.butterflies) b.pinned = 0;
+  }
+
   /** A meadow spot for a butterfly, some distance from the panda. */
   private meadowSpot(player: Vector3, out: Vector3): boolean {
     for (let k = 0; k < 12; k++) {
@@ -439,7 +475,8 @@ export class Wildlife {
     dt = Math.min(dt, 0.1);
     // ---- butterflies ----
     this.butterflies.forEach((b, i) => {
-      const far = Math.hypot(b.pos.x - player.x, b.pos.z - player.z) > 26;
+      b.pinned = Math.max(0, b.pinned - dt);
+      const far = b.pinned <= 0 && Math.hypot(b.pos.x - player.x, b.pos.z - player.z) > 26;
       if (!b.alive || far) {
         b.alive = this.meadowSpot(player, b.home);
         if (!b.alive) {
