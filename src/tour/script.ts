@@ -745,10 +745,15 @@ const contact: Chapter = {
     await scene(ctx, start, yawTo(start, [31, -30]), () =>
       tripod(v(25.5, 6.4, -18.8), ctx.panda, { fov: 46, lookHeight: 2, drift: v(0.15, 0, -0.1) }),
     );
+    const stand = approach(31, -30, bell.x, bell.z, 2.9);
+    ctx.go([[31, -30], stand], { pace: 0.8 });
+    // the title once the panda has left the last milestone (and its caption) behind
+    const lastMs = ctx.anchors.milestones[ctx.anchors.milestones.length - 1];
+    const c = ctx.app.controller.position;
+    if (lastMs) await ctx.until(() => Math.hypot(c.x - lastMs.x, c.z - lastMs.z) > 10, 5);
     ctx.card('contact');
     ctx.caption(captionFor('contact', ctx.content));
-    const stand = approach(31, -30, bell.x, bell.z, 2.9);
-    await ctx.walk([[31, -30], stand], { pace: 0.8 });
+    await ctx.until(ctx.arrived, 12);
     ctx.face(bell.x, bell.z);
     await ctx.wait(0.5);
     // In close on the bell as the striker swings.
