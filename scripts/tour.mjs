@@ -72,7 +72,8 @@ for (;;) {
     await page.screenshot({ path: new URL(name, outDir).pathname });
   }
   if (state.ended || !state.running) break;
-  if (Date.now() - t0 > 40 * 60_000) {
+  // software rendering can be very slow: allow up to 90 minutes for the whole film
+  if (Date.now() - t0 > 90 * 60_000) {
     errors.push('tour did not finish in time');
     break;
   }
