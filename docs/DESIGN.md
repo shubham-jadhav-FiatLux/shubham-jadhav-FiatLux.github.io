@@ -149,52 +149,68 @@ The signature moment when a scroll is found:
 2. A golden ink ripple expands across the ground; petals burst upward.
 3. Audio: an airy whoosh, an ascending pentatonic zither glissando and a soft gong.
 4. The landmark's seal (e.g. 技) is stamped in red onto the progress bar.
-5. The camera eases into a framed shot and the scroll unrolls with the content.
+5. The camera eases into a framed shot. Once the bow and the golden light are over
+   (2.4 s), the rolled scroll rises out of the panda like a genie from a lamp, a golden
+   wisp swelling along a Bezier curve to the middle of the screen, and unrolls there.
 
 ### The tour
 
-**Watch the tour** plays the valley as a short film (about four minutes) for visitors who
-would rather sit back. It is the same world and the same gameplay, directed:
+**Watch the tour** plays the valley as a short film (about five and a half minutes) for
+visitors who would rather sit back. It is the same world and the same gameplay, directed:
 
-| Scene       | What happens                                                                                                | Camera                                                      |
-| ----------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| Prologue    | Title over the valley; the panda waves from the start of the path                                           | aerial descent, close-up                                    |
-| 迎 Gate     | The panda sets off and walks through the gate; ceremony; Welcome scroll                                     | follow, through-the-gate tripod, orbit, crane reveal        |
-| 我 About    | Past the old tree and round to the tea pavilion's door; ceremony at the table; About scroll                 | crane down, tripod with the lake beyond, low orbit          |
-| 技 Skills   | A run to the training grounds; one strike, the ceremony, the Skills scroll, a round of strikes and the drum | side tracking, wide, low three-quarter, orbit               |
-| 路 Journey  | Ceremony at the first milestone; Journey scroll; across the bridge, pausing at every milestone              | tripod from the water, dolly alongside, crane over the lake |
-| 作 Projects | Up the banner path; ceremony at the first banner; Projects scroll; the climb to the pagoda                  | leading track, orbit, low tripod, crane up the tiers        |
-| 信 Contact  | Along the shore to the bell; the bell is rung, sky lanterns rise; Contact scroll                            | wide with the falls, close on the bell, tilt up             |
-| Epilogue    | The panda meditates; the camera drifts up and away; closing card                                            | pull-back to an aerial orbit                                |
+| Scene       | What happens                                                                                                                                         | Camera                                                                       |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Prologue    | Title over the falls and the lake; the panda looks into the camera, hops and waves                                                                   | a flight from the falls over the lake down the path; push-in at eye level    |
+| 迎 Gate     | Up the path past the stone lanterns and through the gate; ceremony; Welcome scroll                                                                   | dolly behind the bamboo, through-the-gate tripod, orbit, crane over the roof |
+| 我 About    | The panda reads the signpost at the crossroads, then goes round to the tea pavilion's door; ceremony at the table; About scroll                      | beside the signpost boards, follow, tripod with the lake beyond, low orbit   |
+| 技 Skills   | A run through the meadow (butterflies take off, the panda leaps after one), past the bamboo; one strike, ceremony, Skills scroll; a round of strikes | low glide in the grass, dolly behind the culms, crane from the grove, orbit  |
+| 路 Journey  | Down the village street under the lanterns; a glide over the lake past koi; ceremony at the first milestone; across the bridge                       | rising street shot, crane over the roofs, water skim and rise, dolly, crane  |
+| 作 Projects | Up the banner path; ceremony at the first banner; Projects scroll; the climb to the pagoda                                                           | leading track, orbit, low tripod, crane up the tiers                         |
+| 信 Contact  | Along the shore to the bell; the bell is rung, sky lanterns rise past the falls; ceremony; Contact scroll                                            | wide with the falls, close on the bell, tilt up, orbit                       |
+| Epilogue    | The panda meditates; the camera drifts up and away; closing card                                                                                     | pull-back to an aerial orbit                                                 |
 
 How it works (`src/tour/`):
 
 - **Autopilot** walks the panda by feeding the character controller the same stick input a
-  player would give, so steps, dust, splashes, grass and collisions behave exactly as in
-  play, and every discovery, strike and bell ring goes through the real gameplay code.
-- **Director** owns the camera while the tour runs: shots (`rail`, `track`, `orbit`,
-  `tripod`, `dolly`) are small objects that write a camera pose every frame; the director
-  cuts or blends between them, widens the lens on portrait screens and keeps the camera
-  above ground and water. Blends become cuts for visitors who prefer reduced motion.
+  player would give (at a stroll or a run, and jumping when asked), so steps, dust,
+  splashes, grass and collisions behave exactly as in play, and every discovery, strike
+  and bell ring goes through the real gameplay code.
+- **Camera paths** (`spline.ts`) are cubic Bezier curves: through a list of points (smooth
+  handles worked out automatically, without overshoot) or from explicit control points.
+  The camera walks them by distance, so its speed does not depend on how the points are
+  spaced, and a monotone timing curve passes each point at the time the script asks for,
+  easing in at the start and out at the end with no sudden change of speed in between.
+- **Director** owns the camera while the tour runs: shots (`move`, `rail`, `track`,
+  `orbit`, `tripod`, `dolly`) are small objects that write a camera pose every frame. Where
+  a shot looks is keyed in time too, and pans turn the view direction rather than sliding
+  the point looked at, so swinging from the panda nearby to hills far away stays an even
+  pan. The director cuts or blends between shots: a blend pans and tilts from the old view
+  to the new one (the horizon stays level, so even opposite views never swing through the
+  sky or the ground) and longer blends bow gently upward along a curve. It widens the lens
+  on portrait screens and keeps the camera above ground and water. Blends become cuts for
+  visitors who prefer reduced motion.
+- **Staging** puts the valley's life where the camera is: butterflies gather over the
+  meadow the panda runs through, koi swim under the camera's glide and one leaps.
 - **Timeline** runs the chapter scripts on tour time, so pausing freezes everything
   (walks, shots, captions, reading time) and skipping cancels a chapter cleanly: every
   verb first checks that its chapter is still playing, so nothing a skipped chapter
   meant to do happens later.
 - **Script** (`script.ts`) is the film itself: each chapter is a short async function
-  using a handful of verbs (`walk`, `cut`, `card`, `caption`, `ceremony`, `read`, `strike`,
-  `bell`...). Chapters start with a fade and place the panda, so any chapter can be jumped
-  to; a skip in the middle of a fade leaves the picture black and the next scene opens
-  from black.
+  using a handful of verbs (`walk`, `jump`, `cut`, `card`, `caption`, `ceremony`, `read`,
+  `strike`, `callout`, `bell`...). Chapters start with a fade and place the panda, so any
+  chapter can be jumped to; a skip in the middle of a fade leaves the picture black and
+  the next scene opens from black.
 - **Overlay** (`ui/TourOverlay.ts`) is the frame: letterbox bars, a chapter strip, title
-  cards, captions, the reading control and the closing card. Controls fade away while the
-  pointer rests, like a video player's (and ignore taps until woken); whatever is off
-  screen is `inert`, and buttons pressed with the mouse let go of the focus so `Space`
-  and `Enter` keep meaning pause and next.
+  cards, captions, pop-up notes (the skills each dummy guards), the reading control and
+  the closing card. Controls fade away while the pointer rests, like a video player's (and
+  ignore taps until woken); whatever is off screen is `inert`, and buttons pressed with
+  the mouse let go of the focus so `Space` and `Enter` keep meaning pause and next.
 
-Scrolls stay open for a reading time based on their length (7–16 s), gently scrolling
-longer ones; "Continue" moves on sooner. A scroll shown by the film has no tabs or quick
-travel and does not take the focus, so `Space` still pauses and `Tab` reaches "Continue". Moving the panda (keys, stick) or "Take the
-controls" hands control back on the spot; the tour marks the scrolls it shows as found.
+Scrolls stay open for a reading time based on their length (7–16 s, plus the time to rise
+and unroll), gently scrolling longer ones; "Continue" moves on sooner. A scroll shown by the
+film has no tabs or quick travel and does not take the focus, so `Space` still pauses and
+`Tab` reaches "Continue". Moving the panda (keys, stick) or "Take the controls" hands
+control back on the spot; the tour marks the scrolls it shows as found.
 
 ## 6. Sound
 

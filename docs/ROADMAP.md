@@ -14,6 +14,7 @@ Versions follow [Semantic Versioning](https://semver.org). While the project is 
 | 0.5.0   | Polish: accessibility, reduced motion, SEO and sharing, performance, mobile              | ✅ released  |
 | 0.6.0   | Visual update: waterfall and stream, stone, wood and bamboo detail, lantern light, life  | ✅ released  |
 | 0.7.0   | Watch the tour: the whole portfolio as a directed short film                             | ✅ released  |
+| 0.8.0   | The tour's director's cut: Bezier camera moves, more of the valley, genie scrolls        | ✅ released  |
 | 1.0.0   | Real content filled in, tested on phones, custom domain                                  | ⏳ your turn |
 
 ## Ideas for later

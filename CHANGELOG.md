@@ -6,6 +6,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+The director's cut of the tour.
+
+### Added
+
+- The camera moves on smooth Bezier paths: every move eases in and out and passes its
+  marks at set times without sudden changes of speed. Pans and blends turn the view the
+  way a camera operator would (panning and tilting, the horizon level), and longer blends
+  bow gently upward along a curve.
+- The film opens from black on a flight from the waterfall back over the lake and the
+  bridge, down the path to the panda, who looks into the camera, hops and waves.
+- More of the valley in the film: the gate seen through the bamboo past the stone
+  lanterns, the signpost at the crossroads, butterflies taking off in the meadow as the
+  panda leaps after one, the bamboo lining the way to the training grounds, the village
+  street under its strings of paper lanterns, a glide low over the lake past koi and a
+  leaping fish that rises to the panda waiting at the bridge, and a closing view of the
+  whole lake with the bridge, the bell tower and the waterfall.
+- Each strike on a training dummy shows the skills it guards, as in play.
+- A few stands of bamboo along the path to the training grounds.
+
+### Changed
+
+- A discovered scroll now waits for the panda's bow and the golden light, then rises out
+  of the panda like a genie from a lamp before it unrolls (in play and in the tour).
+- Larger, sharper lettering: the paper captions over the dummies and along the bridge,
+  the signpost (the section in large letters, the place below) and the project banners.
+  Lettering textures are drawn at full resolution on High and smaller on Medium and Low,
+  to spare memory on slower devices.
+- Floating captions fade out when the camera comes close, instead of filling the view.
+
 ## [0.7.0] - 2026-10-01
 
 A new way to see the portfolio: the whole valley as a short, directed film.

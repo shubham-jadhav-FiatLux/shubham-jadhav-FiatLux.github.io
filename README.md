@@ -40,11 +40,14 @@ page. Browsers without WebGL 2 or JavaScript get that page automatically.
 ![The tour's opening title over the valley, framed by letterbox bars and the chapter seals](docs/images/tour.jpg)
 
 Rather sit back? **Watch the tour** (on the title screen, or in the menu) plays the valley
-as a short film of about four minutes. The panda walks from the gate to the bell on its
-own while a director films it with aerial, tracking, orbit and crane shots, chapter title
-cards and captions. Every discovery ceremony plays, every scroll stays open long enough to
-read, the dummies are struck, the bell is rung. Share a link ending in `?tour` to make the
-tour the first choice on the title screen.
+as a short film of about five and a half minutes. It opens with a flight from the waterfall
+down to the panda, who waves at the viewer, then follows it from the gate to the bell on
+its own while the camera glides on smooth Bezier paths: through the bamboo, past the
+lanterns and the signpost, over the meadow as butterflies take off, down the village
+street, low over the lake past the koi and up to the bridge and the falls. Every discovery
+plays out (the scroll rises from the panda once it has bowed), every scroll stays open long
+enough to read, each dummy shows the skills it guards, the bell is rung. Share a link
+ending in `?tour` to make the tour the first choice on the title screen.
 
 | While watching          | Keyboard           | Gamepad       | Touch / mouse           |
 | ----------------------- | ------------------ | ------------- | ----------------------- |
