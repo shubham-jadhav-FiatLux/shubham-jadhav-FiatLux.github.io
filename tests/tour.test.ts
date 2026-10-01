@@ -166,3 +166,113 @@ describe('tour film', async () => {
     expect(pose.position.x).toBeCloseTo(5);
   });
 });
+
+describe('camera paths', async () => {
+  const { Vector3 } = await import('three');
+  const { BezierPath, PathTiming, cubicBezierEase } = await import('../src/tour/spline');
+  const { aim, createPose, move, panTilt } = await import('../src/tour/shots');
+
+  it('passes through its points and walks them by distance', () => {
+    const pts = [new Vector3(0, 0, 0), new Vector3(10, 0, 0), new Vector3(10, 0, 4)];
+    const path = BezierPath.through(pts);
+    expect(path.length).toBeGreaterThan(13.9);
+    expect(path.length).toBeLessThan(15);
+    // each point sits at its knot
+    pts.forEach((p, i) => expect(path.at(path.knots[i]!).distanceTo(p)).toBeLessThan(1e-6));
+    // equal steps along the path are equal steps in space
+    const a = path.at(2);
+    const b = path.at(3);
+    const c = path.at(4);
+    expect(a.distanceTo(b)).toBeCloseTo(b.distanceTo(c), 1);
+    // explicit control points: a straight Bezier
+    const line = BezierPath.bezier([
+      new Vector3(0, 0, 0),
+      new Vector3(1, 0, 0),
+      new Vector3(2, 0, 0),
+      new Vector3(3, 0, 0),
+    ]);
+    expect(line.length).toBeCloseTo(3);
+    expect(line.atFraction(0.5).x).toBeCloseTo(1.5, 2);
+  });
+
+  it('times a move: at rest at both ends, through every mark, never backwards', () => {
+    const timing = new PathTiming([
+      { t: 0, f: 0 },
+      { t: 2, f: 0.2 },
+      { t: 6, f: 1 },
+    ]);
+    expect(timing.fraction(0)).toBe(0);
+    expect(timing.fraction(2)).toBeCloseTo(0.2);
+    expect(timing.fraction(6)).toBe(1);
+    let prev = 0;
+    for (let t = 0; t <= 6; t += 0.05) {
+      const f = timing.fraction(t);
+      expect(f).toBeGreaterThanOrEqual(prev - 1e-9);
+      prev = f;
+    }
+    // eases in: the first step is shorter than a step in the middle
+    expect(timing.fraction(0.1)).toBeLessThan(timing.fraction(3.1) - timing.fraction(3));
+  });
+
+  it('eases like CSS cubic-bezier curves', () => {
+    const linear = cubicBezierEase(0, 0, 1, 1);
+    expect(linear(0.3)).toBeCloseTo(0.3, 4);
+    const inOut = cubicBezierEase(0.42, 0, 0.58, 1);
+    expect(inOut(0)).toBe(0);
+    expect(inOut(1)).toBe(1);
+    expect(inOut(0.5)).toBeCloseTo(0.5, 4);
+    expect(inOut(0.2)).toBeLessThan(0.2);
+  });
+
+  it('pans by turning the view, not by sliding the target', () => {
+    const d = panTilt(new Vector3(1, 0, 0), new Vector3(0, 0, 1), 0.5);
+    expect(d.x).toBeCloseTo(Math.SQRT1_2);
+    expect(d.z).toBeCloseTo(Math.SQRT1_2);
+    // between two opposite views looking a little down, the camera pans level: it never
+    // swings through the ground
+    const down = 0.3;
+    const a = new Vector3(0, -Math.sin(down), Math.cos(down));
+    const b = new Vector3(0.001, -Math.sin(down), -Math.cos(down)).normalize();
+    for (let k = 0; k <= 1; k += 0.1) {
+      const m = panTilt(a.clone(), b, k);
+      expect(Math.asin(m.y)).toBeCloseTo(-down, 2);
+      expect(m.length()).toBeCloseTo(1);
+    }
+    const out = new Vector3();
+    const keys = [
+      { t: 0, at: new Vector3(10, 0, 0) },
+      { t: 2, at: new Vector3(0, 0, 40) },
+    ];
+    aim(keys, -1, new Vector3(), out);
+    expect(out.x).toBeCloseTo(10);
+    aim(keys, 1, new Vector3(), out);
+    // halfway through the pan: 45° round, halfway between the two distances
+    expect(Math.atan2(out.z, out.x)).toBeCloseTo(Math.PI / 4);
+    expect(out.length()).toBeCloseTo(25);
+    aim(keys, 9, new Vector3(), out);
+    expect(out.z).toBeCloseTo(40);
+  });
+
+  it('moves the camera through its points at the times given', () => {
+    const shot = move({
+      path: [new Vector3(0, 5, 0), new Vector3(10, 5, 0), new Vector3(10, 5, 10)],
+      times: [0, 3, 8],
+      look: new Vector3(0, 0, 0),
+      fov: [
+        { t: 0, fov: 40 },
+        { t: 8, fov: 50 },
+      ],
+      clearance: 0.3,
+    });
+    const pose = createPose();
+    shot.pose(3, 0, pose);
+    expect(pose.position.distanceTo(new Vector3(10, 5, 0))).toBeLessThan(1e-3);
+    expect(pose.clearance).toBe(0.3);
+    shot.pose(8, 0, pose);
+    expect(pose.position.distanceTo(new Vector3(10, 5, 10))).toBeLessThan(1e-6);
+    expect(pose.fov).toBeCloseTo(50);
+    shot.pose(4, 0, pose);
+    expect(pose.fov).toBeGreaterThan(40);
+    expect(pose.fov).toBeLessThan(50);
+  });
+});
