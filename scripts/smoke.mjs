@@ -78,7 +78,8 @@ try {
     timeout: 90_000,
   });
   await page.keyboard.press('KeyM');
-  await page.waitForTimeout(2500);
+  // the scroll would rise once the bow and the golden light are over (2.4 s)
+  await page.waitForTimeout(3200);
   const layered = await page.evaluate(() => ({
     map: window.__game.map.isOpen,
     scroll: window.__game.scroll.isOpen,

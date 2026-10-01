@@ -210,7 +210,8 @@ export class Nature {
     })) {
       centres.push({ x: c.x, z: c.z, n: rand.int(6, 11), species: 'green' });
     }
-    // Golden bamboo framing the entrance gate; ornamental black bamboo by the village.
+    // Golden bamboo framing the entrance gate; ornamental black bamboo by the village;
+    // a few stands lining the way to the training grounds.
     for (const [x, z, species] of [
       [-8.5, 49, 'golden'],
       [8.5, 49.5, 'golden'],
@@ -219,6 +220,9 @@ export class Nature {
       [16, 33, 'black'],
       [48, 34, 'black'],
       [18, 50, 'green'],
+      [-16, 24.6, 'green'],
+      [-20.5, 23.2, 'golden'],
+      [-25.2, 21.6, 'green'],
     ] as const) {
       centres.push({ x, z, n: rand.int(6, 10), species });
     }

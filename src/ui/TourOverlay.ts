@@ -14,6 +14,14 @@ export type TourOverlayEvents = {
   classic: void;
 };
 
+/** A pop-up note in the film (a skill group after a strike, for example). */
+export interface Callout {
+  glyph: string;
+  kicker: string;
+  title: string;
+  items: string[];
+}
+
 export interface ChapterCard {
   glyph: string;
   /** small line above the title, e.g. "Chapter 2 · The tea pavilion" */
@@ -32,6 +40,7 @@ export class TourOverlay extends Emitter<TourOverlayEvents> {
   private card: HTMLElement;
   private title: HTMLElement;
   private caption: HTMLElement;
+  private callout: HTMLElement;
   private readingFill: HTMLElement;
   private fadeEl: HTMLElement;
   private endEl: HTMLElement;
@@ -65,6 +74,14 @@ export class TourOverlay extends Emitter<TourOverlayEvents> {
         <div><p class="tour__kicker"></p><h2 class="tour__card-title"></h2></div>
       </div>
       <div class="tour__title" aria-hidden="true"></div>
+      <div class="tour__callout" aria-hidden="true">
+        <span class="seal tour__callout-seal"></span>
+        <div class="tour__callout-text">
+          <p class="tour__callout-kicker"></p>
+          <h3 class="tour__callout-title"></h3>
+          <ul class="tour__callout-items"></ul>
+        </div>
+      </div>
       <div class="tour__reading">
         <button type="button" class="tour__continue">
           <span class="tour__continue-fill" aria-hidden="true"></span>
@@ -90,6 +107,7 @@ export class TourOverlay extends Emitter<TourOverlayEvents> {
     this.card = this.el.querySelector('.tour__card')!;
     this.title = this.el.querySelector('.tour__title')!;
     this.caption = this.el.querySelector('.tour__caption')!;
+    this.callout = this.el.querySelector('.tour__callout')!;
     this.readingFill = this.el.querySelector('.tour__continue-fill')!;
     this.fadeEl = this.el.querySelector('.tour__fade')!;
     this.endEl = this.el.querySelector('.tour__end')!;
@@ -154,6 +172,7 @@ export class TourOverlay extends Emitter<TourOverlayEvents> {
     this.setCard(null);
     this.setTitle(null);
     this.setCaption(null);
+    this.setCallout(null);
     this.fade(false, 0.4);
     this.sync();
   }
@@ -206,6 +225,24 @@ export class TourOverlay extends Emitter<TourOverlayEvents> {
       <p class="tour__title-tagline">${esc(t.tagline)}</p>`;
     this.title.classList.add('tour__title--on');
     this.say(t.owner ? `${t.title}, ${t.owner}` : t.title);
+  }
+
+  /** A note that pops up over the picture (lower right); `null` hides it. */
+  setCallout(c: Callout | null): void {
+    if (!c) {
+      this.callout.classList.remove('tour__callout--on');
+      return;
+    }
+    this.callout.querySelector('.tour__callout-seal')!.textContent = c.glyph;
+    this.callout.querySelector('.tour__callout-kicker')!.textContent = c.kicker;
+    this.callout.querySelector('.tour__callout-title')!.textContent = c.title;
+    this.callout.querySelector('.tour__callout-items')!.innerHTML = c.items
+      .map((item, i) => `<li style="--i:${i}">${esc(item)}</li>`)
+      .join('');
+    this.callout.classList.remove('tour__callout--on');
+    void this.callout.offsetWidth;
+    this.callout.classList.add('tour__callout--on');
+    this.say(`${c.title}: ${c.items.join(', ')}`);
   }
 
   /** A line of narration in the lower bar; `null` clears it. */

@@ -38,7 +38,7 @@ export type AppEvents = {
 
 /** Something that drives the panda instead of the visitor (the tour's autopilot). */
 export interface PandaDriver {
-  steer(dt: number): { move: Vector2; run: boolean };
+  steer(dt: number): { move: Vector2; run: boolean; jump?: boolean };
   /** idle time handed to the animator */
   idleSeconds: number;
 }
@@ -182,6 +182,7 @@ export class App extends Emitter<AppEvents> {
       this.placement,
       this.content,
       this.environment,
+      { low: 0.5, medium: 0.75, high: 1 }[this.quality.settings.level],
     );
     this.lanterns = new LanternGlow(this.architecture.lights, this.quality.settings);
     this.lanterns.addTo(this.scene);
@@ -355,7 +356,7 @@ export class App extends Emitter<AppEvents> {
     if (driver) {
       // The tour walks the panda; visitor input is only watched (to hand control back).
       const d = driver.steer(dt);
-      this.controller.update(dt, d.move, 0, d.run, false);
+      this.controller.update(dt, d.move, 0, d.run, d.jump ?? false);
     } else {
       const jump = playing && this.input.consume('jump');
       this.controller.update(dt, this.input.move, this.rig.yaw, this.input.run, jump);
@@ -385,7 +386,7 @@ export class App extends Emitter<AppEvents> {
     else tmp.set(PLACES.crossroads.x, 2, PLACES.crossroads.z);
     this.lighting.update(tmp);
     this.water.update(dt, elapsed, this.controller, this.quality.settings.particles);
-    this.architecture.update(dt, this.controller.position);
+    this.architecture.update(dt, this.controller.position, this.rig.camera.position);
     this.lanterns.update(dt, elapsed, this.controller.position);
     this.wildlife.update(dt, elapsed, this.controller.position);
     for (const u of this.updaters) u(dt, elapsed);

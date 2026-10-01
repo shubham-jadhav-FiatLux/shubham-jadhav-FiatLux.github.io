@@ -956,6 +956,9 @@ export function buildBellTower(b: ArchBuilder, col: CollisionWorld, p: Placed): 
 
 /* -------------------------------------------------------------- Signpost */
 
+/** Board size and spacing (m): boards stack down from `top` above the post's foot. */
+export const SIGNPOST = { boardWidth: 2.1, boardHeight: 0.48, top: 3.35, step: 0.56 };
+
 export function buildSignpost(
   b: ArchBuilder,
   col: CollisionWorld,
@@ -964,17 +967,23 @@ export function buildSignpost(
   texture: Texture,
 ): Mesh {
   const m = T(p.x, p.y, p.z);
-  b.add('paint', post(0.1, 3.0, 8), PAL.wood, m);
-  b.add('paint', new CylinderGeometry(0.22, 0.26, 0.2, 8).translate(0, 0.1, 0), PAL.stoneDark, m);
-  col.circle(p.x, p.z, 0.2, p.y, p.y + 3, 'signpost');
+  // boards stacked down from the top of a 3.75 m post
+  const bw = SIGNPOST.boardWidth;
+  const bh = SIGNPOST.boardHeight;
+  const top = SIGNPOST.top;
+  const step = SIGNPOST.step;
+  b.add('paint', post(0.12, 3.75, 8), PAL.wood, m);
+  b.add('paint', new CylinderGeometry(0.26, 0.3, 0.22, 8).translate(0, 0.11, 0), PAL.stoneDark, m);
+  b.add('paint', new CylinderGeometry(0.02, 0.16, 0.22, 8).translate(0, 3.86, 0), PAL.wood, m);
+  col.circle(p.x, p.z, 0.22, p.y, p.y + 3.75, 'signpost');
   const boards = arrows.length;
   const geos: BufferGeometry[] = [];
   arrows.forEach((a, i) => {
     // a board UV-mapped to its row in the atlas, readable from both sides
-    const front = new PlaneGeometry(1.5, 0.3);
+    const front = new PlaneGeometry(bw, bh);
     const uv = front.attributes.uv!;
     for (let k = 0; k < uv.count; k++) uv.setY(k, 1 - (i + 1 - uv.getY(k)) / boards);
-    front.translate(0.83, 2.65 - i * 0.36, 0.012);
+    front.translate(bw / 2 + 0.12, top - i * step, 0.016);
     const back = front.clone();
     const bu = back.attributes.uv!;
     for (let k = 0; k < bu.count; k++) bu.setX(k, 1 - bu.getX(k));
@@ -984,10 +993,10 @@ export function buildSignpost(
       idx.setX(k + 1, idx.getX(k + 2));
       idx.setX(k + 2, t);
     }
-    back.translate(0, 0, -0.024);
+    back.translate(0, 0, -0.032);
     const bn = back.attributes.normal!;
     for (let k = 0; k < bn.count; k++) bn.setZ(k, -1);
-    const plank = box(1.52, 0.31, 0.02).translate(0.83, 2.65 - i * 0.36, 0);
+    const plank = box(bw + 0.03, bh + 0.02, 0.03).translate(bw / 2 + 0.12, top - i * step, 0);
     plank.deleteAttribute('uv');
     b.add('paint', plank, PAL.wood, mul(m, T(0, 0, 0, 0, a.yaw - Math.PI / 2)));
     for (const g of [front, back]) geos.push(g.rotateY(a.yaw - Math.PI / 2));

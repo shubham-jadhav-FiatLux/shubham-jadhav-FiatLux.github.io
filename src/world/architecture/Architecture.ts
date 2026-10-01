@@ -8,6 +8,7 @@ import {
   buildPagoda,
   buildPavilion,
   buildSignpost,
+  SIGNPOST,
   buildVillageDetails,
   type BellParts,
 } from './structures';
@@ -34,6 +35,8 @@ export interface Anchors {
   pavilionTable: Point3;
   /** the pavilion's shore-side entrance and the direction out of it */
   pavilionEntrance: { x: number; z: number; nx: number; nz: number };
+  /** the signpost at the crossroads and the middle of each board, by section */
+  signpost: Point3 & { boards: Record<string, Point3> };
   pagoda: Point3;
   pagodaDoor: Point3;
   bell: Point3;
@@ -53,9 +56,10 @@ const NUMERALS = '一二三四五六七八九十';
 export class Architecture {
   readonly anchors: Anchors;
   readonly training: TrainingGround;
+  private signpost: Anchors['signpost'] = { x: 0, y: 0, z: 0, boards: {} };
   readonly banners: Banners;
   readonly bell: BellParts;
-  readonly labels = new Labels();
+  readonly labels: Labels;
   /** every lantern and glowing altar, for halos and lights */
   readonly lights: LightSpot[];
   private meshes: Mesh[] = [];
@@ -72,7 +76,10 @@ export class Architecture {
     placement: Placement,
     content: PortfolioContent,
     environment: Texture | null = null,
+    /** resolution of lettering textures (1 = full; less saves memory on slower devices) */
+    textScale = 1,
   ) {
+    this.labels = new Labels(textScale);
     const b = new ArchBuilder();
     if (environment) b.setEnvironment(environment);
     const h = (x: number, z: number) => terrain.heightAt(x, z);
@@ -165,6 +172,7 @@ export class Architecture {
         number: NUMERALS[i] ?? String(i + 1),
         title: p.bannerTitle ?? p.title,
       })),
+      textScale,
     );
     this.banners.addTo(scene);
     for (const a of this.banners.anchors) {
@@ -175,21 +183,33 @@ export class Architecture {
     // Signpost at the crossroads.
     const sp = { x: 3.4, z: 28.6 };
     const dests = [
-      { label: 'Training Grounds · Skills', to: PLACES.training },
-      { label: 'Tea Pavilion · About', to: PLACES.pavilion },
-      { label: 'Zig-zag Bridge · Journey', to: PLACES.bridgeSouth },
-      { label: 'Pagoda · Projects', to: PLACES.pagoda },
-      { label: 'Bell Tower · Contact', to: PLACES.bell },
+      { title: 'Skills', place: 'Training Grounds', to: PLACES.training },
+      { title: 'About', place: 'Tea Pavilion', to: PLACES.pavilion },
+      { title: 'Journey', place: 'Zig-zag Bridge', to: PLACES.bridgeSouth },
+      { title: 'Projects', place: 'Pagoda', to: PLACES.pagoda },
+      { title: 'Contact', place: 'Bell Tower', to: PLACES.bell },
     ];
     const signpost = buildSignpost(
       b,
       col,
       { x: sp.x, y: h(sp.x, sp.z), z: sp.z, rot: 0 },
       dests.map((d) => ({ yaw: Math.atan2(d.to.x - sp.x, d.to.z - sp.z) })),
-      createSignpostTexture(dests.map((d) => d.label)),
+      createSignpostTexture(dests, textScale),
     );
     this.meshes.push(signpost);
     placement.reserve(sp.x, sp.z, 2.5);
+    const spY = h(sp.x, sp.z);
+    const boards: Record<string, Point3> = {};
+    dests.forEach((d, i) => {
+      const len = Math.hypot(d.to.x - sp.x, d.to.z - sp.z) || 1;
+      const reach = SIGNPOST.boardWidth / 2 + 0.12;
+      boards[d.title.toLowerCase()] = {
+        x: sp.x + ((d.to.x - sp.x) / len) * reach,
+        y: spY + SIGNPOST.top - i * SIGNPOST.step,
+        z: sp.z + ((d.to.z - sp.z) / len) * reach,
+      };
+    });
+    this.signpost = { x: sp.x, y: spY, z: sp.z, boards };
 
     // Merge everything static into a handful of meshes.
     this.meshes.push(...b.build());
@@ -204,9 +224,22 @@ export class Architecture {
     }
 
     // Floating captions: skill groups over the dummies, milestones along the bridge.
-    content.skills.groups.slice(0, this.training.dummies.length).forEach((g, i) => {
-      const d = this.training.dummies[i]!;
-      this.labels.add(scene, { x: d.x, y: d.y + 2.55, z: d.z }, g.name, g.blurb, { width: 2.0 });
+    // as large as the spacing of the dummies allows, so they read from across the yard
+    const dummies = this.training.dummies;
+    let spacing = Infinity;
+    for (let i = 1; i < dummies.length; i++)
+      spacing = Math.min(
+        spacing,
+        Math.hypot(dummies[i]!.x - dummies[i - 1]!.x, dummies[i]!.z - dummies[i - 1]!.z),
+      );
+    const skillWidth = Math.min(3.0, spacing * 0.92);
+    content.skills.groups.slice(0, dummies.length).forEach((g, i) => {
+      const d = dummies[i]!;
+      this.labels.add(scene, { x: d.x, y: d.y + 2.75, z: d.z }, g.name, g.blurb, {
+        width: skillWidth,
+        near: 9,
+        far: 14,
+      });
     });
     const entries = content.journey.entries.slice(0, bridge.milestones.length);
     const slots = entries.map((_, i) =>
@@ -214,10 +247,10 @@ export class Architecture {
     );
     entries.forEach((e, i) => {
       const ms = bridge.milestones[slots[i]!]!;
-      this.labels.add(scene, { x: ms.x, y: ms.y + 2.0, z: ms.z }, e.when, e.title, {
-        width: 2.3,
-        near: 6,
-        far: 10,
+      this.labels.add(scene, { x: ms.x, y: ms.y + 2.2, z: ms.z }, e.when, e.title, {
+        width: 3.0,
+        near: 7,
+        far: 11,
       });
     });
 
@@ -225,6 +258,7 @@ export class Architecture {
       gate: { x: PLACES.gate.x, y: gateY, z: PLACES.gate.z },
       pavilionTable: pav.table,
       pavilionEntrance: pav.entrance,
+      signpost: this.signpost,
       pagoda: { x: PLACES.pagoda.x, y: pagodaY, z: PLACES.pagoda.z },
       pagodaDoor: { x: pagoda.door.x, y: pagodaY + 0.85, z: pagoda.door.z },
       bell: { x: PLACES.bell.x, y: bellY, z: PLACES.bell.z },
@@ -243,9 +277,9 @@ export class Architecture {
     return true;
   }
 
-  update(dt: number, player: Vector3): void {
+  update(dt: number, player: Vector3, camera?: Vector3): void {
     this.training.update(dt);
-    this.labels.update(player);
+    this.labels.update(player, camera);
 
     // Striker: pulled back on its ropes, swung into the bell, then rebounding.
     let angle = 0;

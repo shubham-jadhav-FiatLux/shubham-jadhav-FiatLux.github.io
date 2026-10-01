@@ -70,6 +70,7 @@ export class Banners {
     path: readonly Vec2[],
     ground: (x: number, z: number) => number,
     specs: BannerSpec[],
+    textScale = 1,
   ) {
     const n = Math.max(1, specs.length);
     const total = pathLength(path);
@@ -82,14 +83,14 @@ export class Banners {
       const poleX = p.x + normal.x * 2.55;
       const poleZ = p.z + normal.z * 2.55;
       const y = ground(poleX, poleZ);
-      const poleH = 5.0;
+      const poleH = 5.6;
       // banner faces down the path, towards visitors walking up it
       const yaw = Math.atan2(-dir.x, -dir.z);
       b.add('paint', post(0.09, poleH, 8), PAL.wood, T(poleX, y, poleZ));
       b.add('paint', post(0.18, 0.4, 8, 0.12), PAL.stoneDark, T(poleX, y, poleZ));
       b.add('paint', post(0.06, 0.3, 6), PAL.gold, T(poleX, y + poleH, poleZ));
       // crossbar reaching over the path edge
-      const armLen = 1.35;
+      const armLen = 1.55;
       const mid = new Vector3(
         poleX - normal.x * armLen * 0.5,
         y + poleH - 0.25,
@@ -103,15 +104,15 @@ export class Banners {
       );
       col.circle(poleX, poleZ, 0.2, y, y + poleH, 'banner-pole');
 
-      // cloth: 1.1 x 3 m, top edge under the crossbar, UVs into the atlas column
-      const cloth = new PlaneGeometry(1.1, 3.0, 4, 16);
-      cloth.translate(0, -1.5, 0);
+      // cloth: 1.3 x 3.55 m, top edge under the crossbar, UVs into the atlas column
+      const cloth = new PlaneGeometry(1.3, 3.55, 4, 16);
+      cloth.translate(0, -1.775, 0);
       const uv = cloth.attributes.uv as BufferAttribute;
       const hang = new Float32Array(uv.count);
       const pos = cloth.attributes.position as BufferAttribute;
       for (let k = 0; k < uv.count; k++) {
         uv.setX(k, (i + uv.getX(k)) / n);
-        hang[k] = -pos.getY(k) / 3.0;
+        hang[k] = -pos.getY(k) / 3.55;
       }
       cloth.setAttribute('aHang', new BufferAttribute(hang, 1));
       const cx = poleX - normal.x * armLen * 0.72;
@@ -158,7 +159,7 @@ export class Banners {
     const merged = cloths.length ? mergeGeometries(cloths, false)! : new PlaneGeometry(0.01, 0.01);
     cloths.forEach((c) => c.dispose());
     const material = new MeshStandardMaterial({
-      map: createBannerAtlas(specs),
+      map: createBannerAtlas(specs, textScale),
       side: DoubleSide,
       roughness: 0.85,
       alphaTest: 0.5,

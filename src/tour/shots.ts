@@ -1,11 +1,14 @@
-import { CatmullRomCurve3, Vector3 } from 'three';
-import { damp, dampAngle, easeInOutSine } from '../utils/math';
+import { Vector3 } from 'three';
+import { clamp01, damp, dampAngle, easeInOutSine } from '../utils/math';
+import { BezierPath, cubicBezierEase, PathTiming } from './spline';
 
 /** Where the camera is, what it looks at and how wide the lens is (vertical fov, °). */
 export interface CameraPose {
   position: Vector3;
   target: Vector3;
   fov: number;
+  /** how close to the ground or water the camera may go (m); default 0.45 */
+  clearance?: number;
 }
 
 export function createPose(): CameraPose {
@@ -26,10 +29,146 @@ export interface Subject {
   yaw: number;
 }
 
-type Point = Vector3 | (() => Vector3);
+/** A fixed point, or one worked out every frame (the panda, a point ahead of it...). */
+export type Target = Vector3 | (() => Vector3);
+
+type Point = Target;
 
 const at = (p: Point): Vector3 => (typeof p === 'function' ? p() : p);
 const tmp = new Vector3();
+const dirA = new Vector3();
+const dirB = new Vector3();
+
+/**
+ * Turns unit direction `a` towards unit direction `b` by fraction `k` (into `a`) the way a
+ * camera operator would: panning the short way round and tilting, separately, so the
+ * horizon stays level and a turn between opposite views never swings through the sky or
+ * the ground.
+ */
+export function panTilt(a: Vector3, b: Vector3, k: number): Vector3 {
+  const yawA = Math.atan2(a.x, a.z);
+  const yawB = Math.atan2(b.x, b.z);
+  const pitchA = Math.asin(Math.min(1, Math.max(-1, a.y)));
+  const pitchB = Math.asin(Math.min(1, Math.max(-1, b.y)));
+  let turn = yawB - yawA;
+  turn -= Math.round(turn / (Math.PI * 2)) * Math.PI * 2;
+  const yaw = yawA + turn * k;
+  const pitch = pitchA + (pitchB - pitchA) * k;
+  const flat = Math.cos(pitch);
+  return a.set(Math.sin(yaw) * flat, Math.sin(pitch), Math.cos(yaw) * flat);
+}
+
+const smoother = (u: number) => {
+  const x = clamp01(u);
+  return x * x * x * (x * (x * 6 - 15) + 10);
+};
+
+/** Where the camera looks, by time: hold, or pan from one target to the next. */
+export interface LookKey {
+  t: number;
+  at: Target;
+}
+
+/** The lens (vertical fov, °), by time; eased between keys. */
+export interface FovKey {
+  t: number;
+  fov: number;
+}
+
+/**
+ * Points the camera at `look` from `position` at shot time `t`: one target, or a list of
+ * keys panned between smoothly. Pans turn the view (pan and tilt, not a straight slide of
+ * the target), so swinging from a nearby panda to far hills stays an even pan.
+ */
+export function aim(look: Target | LookKey[], t: number, position: Vector3, out: Vector3): void {
+  if (!Array.isArray(look)) {
+    out.copy(at(look));
+    return;
+  }
+  const keys = look;
+  if (t <= keys[0]!.t || keys.length === 1) {
+    out.copy(at(keys[0]!.at));
+    return;
+  }
+  const last = keys[keys.length - 1]!;
+  if (t >= last.t) {
+    out.copy(at(last.at));
+    return;
+  }
+  let i = 0;
+  while (i < keys.length - 2 && t > keys[i + 1]!.t) i++;
+  const a = keys[i]!;
+  const b = keys[i + 1]!;
+  const k = smoother((t - a.t) / Math.max(1e-6, b.t - a.t));
+  const pa = at(a.at);
+  const pb = at(b.at);
+  dirA.subVectors(pa, position);
+  dirB.subVectors(pb, position);
+  const da = dirA.length();
+  const db = dirB.length();
+  if (da < 1e-4 || db < 1e-4) {
+    out.lerpVectors(pa, pb, k);
+    return;
+  }
+  panTilt(dirA.multiplyScalar(1 / da), dirB.multiplyScalar(1 / db), k);
+  out.copy(position).addScaledVector(dirA, da + (db - da) * k);
+}
+
+/** The lens at shot time `t`. */
+export function lens(fov: number | FovKey[] | undefined, t: number, fallback: number): number {
+  if (fov === undefined) return fallback;
+  if (typeof fov === 'number') return fov;
+  if (t <= fov[0]!.t || fov.length === 1) return fov[0]!.fov;
+  const last = fov[fov.length - 1]!;
+  if (t >= last.t) return last.fov;
+  let i = 0;
+  while (i < fov.length - 2 && t > fov[i + 1]!.t) i++;
+  const a = fov[i]!;
+  const b = fov[i + 1]!;
+  return a.fov + (b.fov - a.fov) * smoother((t - a.t) / Math.max(1e-6, b.t - a.t));
+}
+
+/**
+ * The camera on a smooth Bezier path: a crane, a glide over the water, a sweep around a
+ * landmark. The path passes through `path` (handles worked out automatically), or takes
+ * explicit Bezier control points (`bezier: true`: P0, C, C, P1, C, C, P2 ...).
+ *
+ * Timing: give `times` (when the camera passes each point; it eases in at the start,
+ * out at the end, and changes speed smoothly in between), or a `duration` with an
+ * optional CSS-style `ease` curve (default: a gentle ease-in-out).
+ */
+export function move(o: {
+  path: Vector3[];
+  bezier?: boolean;
+  times?: number[];
+  duration?: number;
+  ease?: [number, number, number, number];
+  look: Target | LookKey[];
+  fov?: number | FovKey[];
+  clearance?: number;
+}): Shot {
+  const curve = o.bezier ? BezierPath.bezier(o.path) : BezierPath.through(o.path);
+  let progress: (t: number) => number;
+  if (o.times && !o.bezier) {
+    if (o.times.length !== o.path.length) throw new Error('one time per path point');
+    const timing = new PathTiming(
+      o.times.map((t, i) => ({ t, f: curve.knots[i]! / Math.max(1e-6, curve.length) })),
+    );
+    progress = (t) => timing.fraction(t);
+  } else {
+    const duration = o.duration ?? o.times?.[o.times.length - 1] ?? 6;
+    const ease = cubicBezierEase(...(o.ease ?? [0.45, 0.05, 0.25, 1]));
+    progress = (t) => ease(clamp01(t / duration));
+  }
+  return {
+    pose(t, _dt, out) {
+      curve.atFraction(progress(t), out.position);
+      aim(o.look, t, out.position, out.target);
+      out.fov = lens(o.fov, t, 45);
+      out.clearance = o.clearance;
+    },
+  };
+}
 
 /**
  * Camera on rails: glides along a smooth curve through `path` over `duration` seconds,
@@ -43,18 +182,17 @@ export function rail(o: {
   /** ease the move in and out (default) or glide at constant speed */
   ease?: boolean;
 }): Shot {
-  const cam = new CatmullRomCurve3(o.path, false, 'centripetal');
-  const lookCurve = Array.isArray(o.look)
-    ? new CatmullRomCurve3(o.look, false, 'centripetal')
-    : null;
+  const cam = BezierPath.through(o.path);
+  const lookCurve = Array.isArray(o.look) ? BezierPath.through(o.look) : null;
   return {
     pose(t, _dt, out) {
       const u = Math.min(1, t / o.duration);
       const k = o.ease === false ? u : easeInOutSine(u);
-      cam.getPointAt(k, out.position);
-      if (lookCurve) lookCurve.getPointAt(k, out.target);
+      cam.atFraction(k, out.position);
+      if (lookCurve) lookCurve.atFraction(k, out.target);
       else out.target.copy((o.look as () => Vector3)());
       out.fov = o.fov ?? 45;
+      out.clearance = undefined;
     },
   };
 }
@@ -79,6 +217,7 @@ export function track(
     stiffness?: number;
     /** swing the angle slowly over the shot (rad/s) */
     swing?: number;
+    clearance?: number;
   },
 ): Shot {
   const pos = new Vector3();
@@ -116,6 +255,7 @@ export function track(
       out.position.copy(pos);
       out.target.copy(look);
       out.fov = o.fov ?? 42;
+      out.clearance = o.clearance;
     },
   };
 }
@@ -165,7 +305,13 @@ export function orbit(
 export function tripod(
   position: Vector3,
   look: Point,
-  o: { fov?: number; lookHeight?: number; drift?: Vector3; stiffness?: number } = {},
+  o: {
+    fov?: number | FovKey[];
+    lookHeight?: number;
+    drift?: Vector3;
+    stiffness?: number;
+    clearance?: number;
+  } = {},
 ): Shot {
   const target = new Vector3();
   let started = false;
@@ -185,7 +331,8 @@ export function tripod(
       out.position.copy(position);
       if (o.drift) out.position.addScaledVector(o.drift, t);
       out.target.copy(target);
-      out.fov = o.fov ?? 42;
+      out.fov = lens(o.fov, t, 42);
+      out.clearance = o.clearance;
     },
   };
 }

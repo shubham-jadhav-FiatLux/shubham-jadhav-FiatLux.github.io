@@ -6,7 +6,9 @@ import type { PandaAnimator } from '../player/PandaAnimator';
 import type { SectionId } from '../content/sections';
 import type { PortfolioContent } from '../content/types';
 import type { Anchors } from '../world/architecture/Architecture';
-import { TourOverlay } from '../ui/TourOverlay';
+import { TourOverlay, type Callout } from '../ui/TourOverlay';
+import { ScrollPanel } from '../ui/ScrollPanel';
+import { CEREMONY_MS } from '../effects/Discovery';
 import { Autopilot } from './Autopilot';
 import { Director } from './Director';
 import { Route, type XZ } from './route';
@@ -17,7 +19,8 @@ import { CHAPTERS, chapterCard, SECTION_CHAPTERS } from './script';
 /** What the tour needs from the gameplay layer. */
 export interface TourHost {
   scrollOpen(): boolean;
-  openScroll(section: SectionId, focus?: number): void;
+  /** `rise`: the scroll rises out of the panda before it unrolls; returns true if it does */
+  openScroll(section: SectionId, focus?: number, rise?: boolean): boolean;
   closeScroll(): void;
   /** the scrollable text of the open scroll */
   scrollBody(): HTMLElement | null;
@@ -47,18 +50,24 @@ export interface TourContext {
   arrived(): boolean;
   wait(seconds: number): Promise<void>;
   until(done: () => boolean, timeout?: number): Promise<void>;
-  /** walks (or runs) through the points, from wherever the panda stands */
-  walk(points: XZ[], o?: { run?: boolean }): Promise<void>;
+  /**
+   * Walks (or runs) through the points, from wherever the panda stands; `pace` is a
+   * fraction of full speed (0.6: a stroll).
+   */
+  walk(points: XZ[], o?: Gait): Promise<void>;
   /** like `walk`, but returns at once */
-  go(points: XZ[], o?: { run?: boolean }): void;
+  go(points: XZ[], o?: Gait): void;
   face(x: number, z: number): void;
-  /** where the panda's head looks (`null`: wherever it likes) */
-  look(p: { x: number; y: number; z: number } | null): void;
+  /** a jump (walking or standing) */
+  jump(): void;
+  /** where the panda's head looks: a point, into the lens, or (`null`) wherever it likes */
+  look(p: { x: number; y: number; z: number } | 'camera' | null): void;
   /** puts the panda somewhere (hidden by a cut or a fade) */
   place(x: number, z: number, yaw: number): void;
   /** a wave, a bow... */
   emote(action: Parameters<PandaAnimator['play']>[0]): void;
-  cut(shot: Shot, blend?: number): void;
+  /** cuts (or blends over `blend` s, bowing up by `arc` × the distance) to a shot */
+  cut(shot: Shot, blend?: number, o?: { arc?: number }): void;
   /** true while the picture is faded to black (it stays black across a skip) */
   readonly dark: boolean;
   fadeOut(seconds?: number): Promise<void>;
@@ -68,8 +77,18 @@ export interface TourContext {
   title(on: boolean): void;
   /** a line of narration (hides itself after `seconds` of tour time) */
   caption(text: string | null, seconds?: number): void;
+  /** the discovery: bow, golden light, seal; returns once the light has faded */
   ceremony(section: SectionId): Promise<void>;
+  /** the scroll rises out of the panda and stays open long enough to read */
   read(section: SectionId, focus?: number): Promise<void>;
+  /** a note that pops up over the picture for `seconds` (`null` hides it) */
+  callout(c: Callout | null, seconds?: number): void;
+  /** stages the valley's life for a shot */
+  stage: {
+    butterflies(x: number, z: number, count: number, radius?: number): void;
+    koi(x: number, z: number, count: number, heading?: number): void;
+    leap(x: number, z: number): void;
+  };
   strike(dummy: number): Promise<void>;
   drum(): Promise<void>;
   bell(): Promise<void>;
@@ -77,6 +96,11 @@ export interface TourContext {
 }
 
 export type TourEnd = 'finished' | 'exit' | 'takeover';
+
+export interface Gait {
+  run?: boolean;
+  pace?: number;
+}
 
 const tmp = new Vector3();
 
@@ -103,6 +127,9 @@ export class Tour extends Emitter<{ start: void; end: TourEnd }> {
   private takeover = 0;
   /** the picture is faded to black */
   private dark = false;
+  /** the panda looks into the lens */
+  private eyeContact = false;
+  private readonly lensPoint = { x: 0, y: 0, z: 0 };
   private readonly subjectPose: Subject = { position: new Vector3(), yaw: 0 };
 
   constructor(
@@ -128,7 +155,15 @@ export class Tour extends Emitter<{ start: void; end: TourEnd }> {
       host.openClassic();
     });
     app.beforeCamera.push((dt) => {
-      if (this.running) this.director.update(dt);
+      if (!this.running) return;
+      this.director.update(dt);
+      if (this.eyeContact) {
+        const cam = app.rig.camera.position;
+        this.lensPoint.x = cam.x;
+        this.lensPoint.y = cam.y;
+        this.lensPoint.z = cam.z;
+        app.animator.lookTarget = this.lensPoint;
+      }
     });
   }
 
@@ -169,6 +204,7 @@ export class Tour extends Emitter<{ start: void; end: TourEnd }> {
     this.overlay.hide();
     this.dark = false;
     this.director.release();
+    this.app.wildlife.release();
     this.autopilot.stop();
     this.app.driver = null;
     const c = this.app.controller;
@@ -301,8 +337,10 @@ export class Tour extends Emitter<{ start: void; end: TourEnd }> {
     this.overlay.setCard(null);
     this.overlay.setTitle(null);
     this.overlay.setCaption(null);
+    this.overlay.setCallout(null);
     if (this.host.scrollOpen()) this.host.closeScroll();
     this.autopilot.stop();
+    this.eyeContact = false;
     this.app.animator.lookTarget = null;
     this.autopilot.idleSeconds = 0;
   }
@@ -324,10 +362,11 @@ export class Tour extends Emitter<{ start: void; end: TourEnd }> {
     };
     let cardId = 0;
     let captionId = 0;
-    const go = (points: XZ[], o: { run?: boolean } = {}) => {
+    let calloutId = 0;
+    const go = (points: XZ[], o: Gait = {}) => {
       live();
       const route = new Route([[c.position.x, c.position.z], ...points]);
-      autopilot.walk(route, o.run ?? false);
+      autopilot.walk(route, o.run ?? false, o.pace ?? 1);
       return route;
     };
     const fade = async (on: boolean, seconds: number, hold: number) => {
@@ -353,8 +392,8 @@ export class Tour extends Emitter<{ start: void; end: TourEnd }> {
       go: (points, o) => void go(points, o),
       walk: async (points, o = {}) => {
         const route = go(points, o);
-        const speed = o.run ? 5.5 : 2.6;
-        await until(() => autopilot.done, route.length / speed + 5);
+        const speed = (o.run ? 7 : 3.3) * Math.min(1, Math.max(0.3, o.pace ?? 1)) * 0.75;
+        await until(() => autopilot.done, route.length / speed + 4);
         if (!autopilot.done) {
           // Held up somewhere: finish the move off-camera rather than stall the film.
           const [x, z] = route.end;
@@ -366,9 +405,14 @@ export class Tour extends Emitter<{ start: void; end: TourEnd }> {
         live();
         autopilot.face(x, z);
       },
+      jump: () => {
+        live();
+        autopilot.hop();
+      },
       look: (p) => {
         live();
-        app.animator.lookTarget = p;
+        this.eyeContact = p === 'camera';
+        app.animator.lookTarget = p === 'camera' ? this.lensPoint : p;
       },
       place: (x, z, yaw) => {
         live();
@@ -381,9 +425,9 @@ export class Tour extends Emitter<{ start: void; end: TourEnd }> {
         live();
         app.animator.play(action);
       },
-      cut: (shot, blend = 0) => {
+      cut: (shot, blend = 0, o) => {
         live();
-        this.director.cut(shot, blend);
+        this.director.cut(shot, blend, o);
       },
       get dark() {
         return isDark();
@@ -420,16 +464,17 @@ export class Tour extends Emitter<{ start: void; end: TourEnd }> {
       ceremony: async (section) => {
         live();
         host.ceremony(section);
-        await wait(1.9);
+        await wait(CEREMONY_MS / 1000);
       },
       read: async (section, focus) => {
         live();
         // never read in the dark
         if (this.dark) await fade(false, 0.5, 0.3);
-        host.openScroll(section, focus);
+        const rose = host.openScroll(section, focus, true);
         const body = host.scrollBody();
         const words = body?.textContent?.split(/\s+/).filter(Boolean).length ?? 40;
-        const duration = readingTime(words);
+        // time to read, plus the scroll's rise and unrolling
+        const duration = readingTime(words) + (rose ? ScrollPanel.RISE_MS / 1000 : 0);
         this.continueReading = false;
         this.reading = { start: tl.now, duration };
         overlay.setReading(true, 0);
@@ -447,6 +492,26 @@ export class Tour extends Emitter<{ start: void; end: TourEnd }> {
         }
         if (host.scrollOpen()) host.closeScroll();
         await wait(0.5);
+      },
+      callout: (c, seconds = 3.2) => {
+        live();
+        overlay.setCallout(c);
+        const id = ++calloutId;
+        if (c) later(seconds, () => id === calloutId && overlay.setCallout(null));
+      },
+      stage: {
+        butterflies: (x, z, count, radius) => {
+          live();
+          app.wildlife.gather(x, z, count, radius);
+        },
+        koi: (x, z, count, heading) => {
+          live();
+          app.water.koi.gather(x, z, count, heading);
+        },
+        leap: (x, z) => {
+          live();
+          app.water.koi.leap(x, z);
+        },
       },
       strike: async (dummy) => {
         live();
