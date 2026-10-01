@@ -11,10 +11,14 @@ interface Label {
 
 /**
  * Floating paper captions in the world (skill names over the dummies, milestones along
- * the bridge). They face the camera and fade in only when the panda is close.
+ * the bridge). They face the camera, fade in only when the panda is close, and fade out
+ * when the camera itself comes so close that it would pass through one.
  */
 export class Labels {
   private labels: Label[] = [];
+
+  /** `textScale`: texture resolution (1 = full; less on lower quality levels) */
+  constructor(private readonly textScale = 1) {}
 
   add(
     scene: Scene,
@@ -24,14 +28,14 @@ export class Labels {
     options: { width?: number; near?: number; far?: number } = {},
   ): Sprite {
     const material = new SpriteMaterial({
-      map: createLabelTexture(title, subtitle),
+      map: createLabelTexture(title, subtitle, this.textScale),
       transparent: true,
       depthWrite: false,
       opacity: 0,
       fog: false,
     });
     const sprite = new Sprite(material);
-    const w = options.width ?? 2.2;
+    const w = options.width ?? 3.0;
     sprite.scale.set(w, w * (192 / 512), 1);
     sprite.position.set(at.x, at.y, at.z);
     sprite.renderOrder = 8;
@@ -41,10 +45,14 @@ export class Labels {
     return sprite;
   }
 
-  update(player: Vector3): void {
+  update(player: Vector3, camera?: Vector3): void {
     for (const l of this.labels) {
       const d = Math.hypot(l.sprite.position.x - player.x, l.sprite.position.z - player.z);
-      const target = 1 - smoothstep(l.near, l.far, d);
+      let target = 1 - smoothstep(l.near, l.far, d);
+      if (camera) {
+        const reach = l.sprite.scale.x * 0.6;
+        target *= smoothstep(reach, reach + 3.2, l.sprite.position.distanceTo(camera));
+      }
       l.material.opacity += (target - l.material.opacity) * 0.12;
       l.sprite.visible = l.material.opacity > 0.01;
     }

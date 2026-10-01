@@ -4,6 +4,19 @@ import { roundRectPath } from '../../utils/canvas';
 export const BRUSH_FONT = "'Brush', 'Ma Shan Zheng', 'KaiTi', serif";
 export const SERIF_FONT = "'Cormorant Garamond', Georgia, serif";
 
+/**
+ * A canvas `w` x `h` (drawing units) stored at `scale` times that resolution: drawing code
+ * keeps its coordinates and the texture costs less memory on lower quality levels.
+ */
+function canvas(w: number, h: number, scale: number) {
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(w * scale));
+  c.height = Math.max(1, Math.round(h * scale));
+  const ctx = c.getContext('2d')!;
+  ctx.scale(c.width / w, c.height / h);
+  return { c, ctx };
+}
+
 function tex(c: HTMLCanvasElement): CanvasTexture {
   const t = new CanvasTexture(c);
   t.colorSpace = SRGBColorSpace;
@@ -62,13 +75,10 @@ export interface BannerSpec {
 }
 
 /** One atlas with a column per project banner: seal numeral on top, brush title below. */
-export function createBannerAtlas(banners: BannerSpec[]): CanvasTexture {
-  const w = 256;
-  const h = 704;
-  const c = document.createElement('canvas');
-  c.width = w * Math.max(1, banners.length);
-  c.height = h;
-  const ctx = c.getContext('2d')!;
+export function createBannerAtlas(banners: BannerSpec[], scale = 1): CanvasTexture {
+  const w = 384;
+  const h = 1056;
+  const { c, ctx } = canvas(w * Math.max(1, banners.length), h, scale);
   banners.forEach((b, i) => {
     const x0 = i * w;
     // cloth with a subtle weave and darker borders
@@ -83,57 +93,68 @@ export function createBannerAtlas(banners: BannerSpec[]): CanvasTexture {
     ctx.fillStyle = 'rgba(0,0,0,0.08)';
     for (let y = 0; y < h; y += 6) ctx.fillRect(x0, y, w, 2);
     ctx.strokeStyle = '#e8c56d';
-    ctx.lineWidth = 8;
-    ctx.strokeRect(x0 + 14, 14, w - 28, h - 28);
+    ctx.lineWidth = 12;
+    ctx.strokeRect(x0 + 21, 21, w - 42, h - 42);
     // swallowtail notch at the bottom
     ctx.fillStyle = '#000';
     ctx.globalCompositeOperation = 'destination-out';
     ctx.beginPath();
     ctx.moveTo(x0 + w * 0.25, h);
-    ctx.lineTo(x0 + w * 0.5, h - 70);
+    ctx.lineTo(x0 + w * 0.5, h - 105);
     ctx.lineTo(x0 + w * 0.75, h);
     ctx.closePath();
     ctx.fill();
     ctx.globalCompositeOperation = 'source-over';
     // numeral seal
     ctx.fillStyle = '#f3ead6';
-    ctx.fillRect(x0 + w / 2 - 62, 52, 124, 124);
+    ctx.fillRect(x0 + w / 2 - 93, 78, 186, 186);
     ctx.fillStyle = base[0]!;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = `100px ${BRUSH_FONT}`;
-    ctx.fillText(b.number, x0 + w / 2, 118);
-    // title, wrapped onto up to three lines
-    ctx.fillStyle = '#f7ecd4';
+    ctx.font = `150px ${BRUSH_FONT}`;
+    ctx.fillText(b.number, x0 + w / 2, 177);
+    // title, wrapped onto up to three lines, with a dark edge so it reads from afar
     const words = b.title.split(/\s+/);
     const lines: string[] = [];
     let line = '';
-    ctx.font = `64px ${BRUSH_FONT}`;
+    ctx.font = `104px ${BRUSH_FONT}`;
     for (const word of words) {
       const test = line ? `${line} ${word}` : word;
-      if (ctx.measureText(test).width > w - 50 && line) {
+      if (ctx.measureText(test).width > w - 64 && line) {
         lines.push(line);
         line = word;
       } else line = test;
     }
     if (line) lines.push(line);
     const shown = lines.slice(0, 3);
-    const size = Math.min(64, ...shown.map((l) => fitText(ctx, l, w - 50, 64, BRUSH_FONT)));
+    const size = Math.min(104, ...shown.map((l) => fitText(ctx, l, w - 64, 104, BRUSH_FONT)));
     ctx.font = `${size}px ${BRUSH_FONT}`;
-    shown.forEach((l, k) => ctx.fillText(l, x0 + w / 2, 300 + k * (size + 14)));
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = Math.max(6, size * 0.12);
+    ctx.strokeStyle = 'rgba(20, 10, 6, 0.55)';
+    ctx.fillStyle = '#fbf1da';
+    shown.forEach((l, k) => {
+      const y = 430 + k * (size + 22);
+      ctx.strokeText(l, x0 + w / 2, y);
+      ctx.fillText(l, x0 + w / 2, y);
+    });
   });
   return tex(c);
 }
 
-/** Wooden signpost arrows (one row per destination). */
-export function createSignpostTexture(labels: string[]): CanvasTexture {
-  const w = 512;
-  const rowH = 96;
-  const c = document.createElement('canvas');
-  c.width = w;
-  c.height = rowH * labels.length;
-  const ctx = c.getContext('2d')!;
-  labels.forEach((label, i) => {
+/**
+ * Wooden signpost arrows, one row per destination: the section in large letters, the
+ * place it is found below.
+ */
+export function createSignpostTexture(
+  rows: { title: string; place: string }[],
+  scale = 1,
+): CanvasTexture {
+  const w = 1024;
+  // rows match the boards' proportions (2.1 x 0.48 m)
+  const rowH = 234;
+  const { c, ctx } = canvas(w, rowH * Math.max(1, rows.length), scale);
+  rows.forEach((row, i) => {
     const y = i * rowH;
     const g = ctx.createLinearGradient(0, y, 0, y + rowH);
     g.addColorStop(0, '#8a5f3f');
@@ -141,45 +162,53 @@ export function createSignpostTexture(labels: string[]): CanvasTexture {
     ctx.fillStyle = g;
     ctx.fillRect(0, y, w, rowH);
     ctx.strokeStyle = 'rgba(40, 20, 10, 0.35)';
-    ctx.lineWidth = 2;
-    for (let k = 0; k < 5; k++) {
+    ctx.lineWidth = 3;
+    for (let k = 0; k < 6; k++) {
       ctx.beginPath();
-      ctx.moveTo(0, y + 12 + k * 18 + Math.sin(k) * 3);
-      ctx.bezierCurveTo(w * 0.3, y + 8 + k * 18, w * 0.6, y + 18 + k * 18, w, y + 12 + k * 18);
+      ctx.moveTo(0, y + 22 + k * 38 + Math.sin(k) * 5);
+      ctx.bezierCurveTo(w * 0.3, y + 16 + k * 38, w * 0.6, y + 32 + k * 38, w, y + 22 + k * 38);
       ctx.stroke();
     }
-    ctx.fillStyle = '#f3e3c3';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    fitText(ctx, label, w - 70, 50, SERIF_FONT, '700');
-    ctx.fillText(label, w / 2, y + rowH / 2 + 2);
+    ctx.lineJoin = 'round';
+    // carved look: a dark edge under pale letters
+    ctx.lineWidth = 10;
+    ctx.strokeStyle = 'rgba(40, 20, 10, 0.55)';
+    ctx.fillStyle = '#fbefd4';
+    fitText(ctx, row.title, w - 120, 128, SERIF_FONT, '700');
+    ctx.strokeText(row.title, w / 2, y + 96);
+    ctx.fillText(row.title, w / 2, y + 96);
+    ctx.fillStyle = '#ecc779';
+    ctx.lineWidth = 6;
+    fitText(ctx, row.place, w - 140, 58, SERIF_FONT, '700');
+    ctx.strokeText(row.place, w / 2, y + 186);
+    ctx.fillText(row.place, w / 2, y + 186);
   });
   return tex(c);
 }
 
 /** Text label drawn on a transparent canvas (used for floating in-world captions). */
-export function createLabelTexture(title: string, subtitle?: string): CanvasTexture {
-  const c = document.createElement('canvas');
-  c.width = 512;
-  c.height = 192;
-  const ctx = c.getContext('2d')!;
-  ctx.fillStyle = 'rgba(243, 234, 214, 0.92)';
-  const r = 26;
+export function createLabelTexture(title: string, subtitle?: string, scale = 1): CanvasTexture {
+  const W = 1024;
+  const H = 384;
+  const { c, ctx } = canvas(W, H, scale);
+  ctx.fillStyle = 'rgba(246, 238, 220, 0.95)';
   ctx.beginPath();
-  roundRectPath(ctx, 8, 8, c.width - 16, c.height - 16, r);
+  roundRectPath(ctx, 14, 14, W - 28, H - 28, 52);
   ctx.fill();
   ctx.strokeStyle = '#b8352b';
-  ctx.lineWidth = 5;
+  ctx.lineWidth = 11;
   ctx.stroke();
-  ctx.fillStyle = '#1e1a18';
+  ctx.fillStyle = '#1a1614';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  fitText(ctx, title, c.width - 70, 58, BRUSH_FONT);
-  ctx.fillText(title, c.width / 2, subtitle ? 78 : c.height / 2);
+  fitText(ctx, title, W - 120, subtitle ? 128 : 150, BRUSH_FONT);
+  ctx.fillText(title, W / 2, subtitle ? 150 : H / 2);
   if (subtitle) {
-    ctx.fillStyle = '#6b4e3a';
-    fitText(ctx, subtitle, c.width - 70, 34, SERIF_FONT, '700');
-    ctx.fillText(subtitle, c.width / 2, 135);
+    ctx.fillStyle = '#5c4130';
+    fitText(ctx, subtitle, W - 120, 70, SERIF_FONT, '700');
+    ctx.fillText(subtitle, W / 2, 272);
   }
   return tex(c);
 }
