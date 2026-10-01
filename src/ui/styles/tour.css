@@ -491,3 +491,95 @@
 .overlay--film .scroll__foot {
   display: none;
 }
+
+/* A note popping up over the picture: a skill group after a strike. */
+.tour__callout {
+  position: absolute;
+  right: max(5vw, 18px);
+  bottom: calc(var(--bar) + 5vh);
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  max-width: min(420px, 60vw);
+  padding: 16px 20px 16px 16px;
+  border-radius: var(--radius);
+  background: rgba(250, 243, 228, 0.94);
+  box-shadow:
+    0 14px 40px rgba(20, 12, 5, 0.35),
+    inset 0 0 0 1.5px rgba(184, 53, 43, 0.55);
+  color: var(--ink);
+  opacity: 0;
+  transform: translateY(14px) scale(0.92);
+  transform-origin: 70% 100%;
+  transition:
+    opacity 0.35s ease,
+    transform 0.5s var(--ease-out);
+}
+
+.tour__callout--on {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.4s ease,
+    transform 0.55s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+
+.tour__callout-seal {
+  flex: none;
+  font-size: 30px;
+}
+
+.tour__callout-kicker {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--seal-dark);
+}
+
+.tour__callout-title {
+  margin: 2px 0 8px;
+  font-family: var(--font-brush);
+  font-weight: 400;
+  font-size: clamp(26px, 4.4vh, 38px);
+  line-height: 1.05;
+}
+
+.tour__callout-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tour__callout-items li {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(184, 53, 43, 0.12);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity 0.3s ease,
+    transform 0.4s var(--ease-out);
+}
+
+.tour__callout--on .tour__callout-items li {
+  opacity: 1;
+  transform: none;
+  transition-delay: calc(0.18s + var(--i) * 0.09s);
+}
+
+@media (max-width: 640px) {
+  .tour__callout {
+    left: 16px;
+    right: 16px;
+    max-width: none;
+  }
+}

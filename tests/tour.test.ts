@@ -276,3 +276,68 @@ describe('camera paths', async () => {
     expect(pose.fov).toBeLessThan(50);
   });
 });
+
+describe('autopilot and director', async () => {
+  const { PerspectiveCamera, Vector3 } = await import('three');
+  const { Autopilot } = await import('../src/tour/Autopilot');
+  const { Route } = await import('../src/tour/route');
+  const { Director } = await import('../src/tour/Director');
+  const { tripod } = await import('../src/tour/shots');
+  type Controller = ConstructorParameters<typeof Autopilot>[0];
+
+  const controller = () =>
+    ({
+      position: new Vector3(0, 0, 0),
+      yaw: 0,
+      speed: 0,
+      teleport() {},
+    }) as unknown as Controller;
+
+  it('jumps once when asked, and strolls at a fraction of full speed', () => {
+    const c = controller();
+    const pilot = new Autopilot(c);
+    pilot.hop();
+    expect(pilot.steer(1 / 60).jump).toBe(true);
+    expect(pilot.steer(1 / 60).jump).toBe(false);
+    const route = new Route([
+      [0, 0],
+      [0, 20],
+    ]);
+    pilot.walk(route, false, 1);
+    const full = pilot.steer(1 / 60).move.length();
+    pilot.walk(route, false, 0.5);
+    const stroll = pilot.steer(1 / 60).move.length();
+    expect(full).toBeCloseTo(1);
+    expect(stroll).toBeCloseTo(0.5);
+  });
+
+  it('blends between shots along a curve, turning the view', () => {
+    const camera = new PerspectiveCamera(45, 16 / 9, 0.1, 100);
+    camera.position.set(0, 2, 0);
+    const out = { position: new Vector3(), target: new Vector3() };
+    const rig = {
+      camera,
+      lookTarget: new Vector3(0, 2, 10), // looking north... along +z
+      direct(p: InstanceType<typeof Vector3>, t: InstanceType<typeof Vector3>) {
+        out.position.copy(p);
+        out.target.copy(t);
+      },
+    };
+    const director = new Director(rig as never, () => 0);
+    // to a camera 20 m east, looking east
+    director.cut(tripod(new Vector3(20, 2, 0), new Vector3(30, 2, 0), { lookHeight: 0 }), 2, {
+      arc: 0.25,
+    });
+    director.update(1); // halfway through the blend
+    // bowed up above the straight line (y = 2), halfway across
+    expect(out.position.y).toBeGreaterThan(3.5);
+    expect(out.position.x).toBeGreaterThan(8);
+    expect(out.position.x).toBeLessThan(12);
+    // looking half-way round: north-east
+    const dir = out.target.clone().sub(out.position).setY(0).normalize();
+    expect(dir.x).toBeCloseTo(Math.SQRT1_2, 1);
+    expect(dir.z).toBeCloseTo(Math.SQRT1_2, 1);
+    director.update(1.5);
+    expect(out.position.distanceTo(new Vector3(20, 2, 0))).toBeLessThan(1e-6);
+  });
+});

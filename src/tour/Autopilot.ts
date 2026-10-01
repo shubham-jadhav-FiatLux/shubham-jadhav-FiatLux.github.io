@@ -16,6 +16,8 @@ export class Autopilot {
   /** stick input for this frame (x = east, y = north) */
   readonly move = new Vector2();
   run = false;
+  /** jump this frame */
+  jump = false;
   paused = false;
   /** idle time handed to the animator (long idles make the panda meditate) */
   idleSeconds = 0;
@@ -25,18 +27,30 @@ export class Autopilot {
   private arrived = true;
   private faceTarget: { x: number; z: number } | null = null;
   private stuck = 0;
+  private wantJump = false;
+  /** fraction of full walking (or running) speed */
+  private pace = 1;
 
   constructor(private readonly c: PlayerController) {}
 
-  /** Starts walking (or running) along `route` from wherever the panda is. */
-  walk(route: Route, run = false): void {
+  /**
+   * Starts walking (or running) along `route` from wherever the panda is, at `pace`
+   * (a fraction of full speed: 0.6 is a stroll).
+   */
+  walk(route: Route, run = false, pace = 1): void {
     this.route = route;
+    this.pace = Math.min(1, Math.max(0.3, pace));
     this.s = route.project(this.c.position.x, this.c.position.z);
     this.run = run;
     this.arrived = false;
     this.faceTarget = null;
     this.stuck = 0;
     this.idleSeconds = 0;
+  }
+
+  /** Jumps (on the next frame), walking or standing. */
+  hop(): void {
+    this.wantJump = true;
   }
 
   /** Turns to face (x, z) once standing still. */
@@ -50,6 +64,7 @@ export class Autopilot {
     this.faceTarget = null;
     this.move.set(0, 0);
     this.run = false;
+    this.wantJump = false;
   }
 
   get done(): boolean {
@@ -62,10 +77,15 @@ export class Autopilot {
   }
 
   /** Call once per frame before the controller update. */
-  steer(dt: number): { move: Vector2; run: boolean } {
+  steer(dt: number): { move: Vector2; run: boolean; jump: boolean } {
     this.move.set(0, 0);
+    this.jump = false;
     const c = this.c;
     if (this.paused) return this;
+    if (this.wantJump) {
+      this.jump = true;
+      this.wantJump = false;
+    }
     const r = this.route;
     if (r && !this.arrived) {
       this.s = r.project(c.position.x, c.position.z, Math.max(0, this.s - 1));
@@ -87,7 +107,7 @@ export class Autopilot {
       }
       const l = Math.hypot(dx, dz) || 1;
       // ease off over the last couple of metres so the panda stops on its mark
-      const amount = Math.min(1, 0.22 + toEnd / (this.run ? 3.2 : 1.8));
+      const amount = Math.min(1, 0.22 + toEnd / (this.run ? 3.2 : 1.8)) * this.pace;
       // world direction → stick input for a camera looking north (yaw 0)
       this.move.set((dx / l) * amount, (-dz / l) * amount);
       // Blocked (a stray collider on the way): after a while, hop a little further along.
