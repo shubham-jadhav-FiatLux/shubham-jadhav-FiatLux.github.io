@@ -25,7 +25,8 @@ function pageMeta(content: PortfolioContent): { title: string; description: stri
 
 /**
  * Writes the content into the index.html template: `<title>`, meta description, Open
- * Graph / Twitter tags and the `<noscript>` page. Pure, so it can be unit-tested.
+ * Graph / Twitter tags, the title screen's name and seal, and the `<noscript>` page.
+ * Pure, so it can be unit-tested.
  */
 export function renderIndexHtml(html: string, mod: typeof Prerender, siteUrl?: string): string {
   const { portfolio: content, classicHtml, esc } = mod;
@@ -57,17 +58,28 @@ export function renderIndexHtml(html: string, mod: typeof Prerender, siteUrl?: s
   });
   // Replacer functions, not strings: content may contain "$&", "$'" and friends, which
   // String.replace would otherwise expand.
-  return html
-    .replace(/<title>[\s\S]*?<\/title>/, () => `<title>${esc(title)}</title>`)
-    .replace(
-      /<meta\s+name="description"[\s\S]*?\/>/,
-      () => `<meta name="description" content="${esc(description)}" />`,
-    )
-    .replace('</head>', () => `${head}\n  </head>`)
-    .replace(
-      /<noscript>\s*<div class="noscript">[\s\S]*?<\/noscript>/,
-      () => `<noscript><div class="classic classic--static">${page}</div></noscript>`,
-    );
+  return (
+    html
+      .replace(/<title>[\s\S]*?<\/title>/, () => `<title>${esc(title)}</title>`)
+      .replace(
+        /<meta\s+name="description"[\s\S]*?\/>/,
+        () => `<meta name="description" content="${esc(description)}" />`,
+      )
+      .replace('</head>', () => `${head}\n  </head>`)
+      // the title screen shows before any script runs
+      .replace(
+        /(<h1 id="loader-title" class="loader__title">)[\s\S]*?(<\/h1>)/,
+        (_m, open: string, close: string) => `${open}${esc(content.site.title)}${close}`,
+      )
+      .replace(
+        /(<div class="seal seal--lg loader__seal" aria-hidden="true">)[\s\S]*?(<\/div>)/,
+        (_m, open: string, close: string) => `${open}${esc(content.site.seal)}${close}`,
+      )
+      .replace(
+        /<noscript>\s*<div class="noscript">[\s\S]*?<\/noscript>/,
+        () => `<noscript><div class="classic classic--static">${page}</div></noscript>`,
+      )
+  );
 }
 
 /**

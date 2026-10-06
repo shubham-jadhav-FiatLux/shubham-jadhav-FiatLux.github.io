@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Renamed to **Valley of Peace**: the title screen, the corner badge, the tour and the
+  link preview, with 和平谷 ("Valley of Peace") on the gate's signboard and 和 ("peace")
+  on the red seal. The seal's character is now part of the content file (`site.seal`).
+
 ## [0.8.0] - 2026-10-01
 
 The director's cut of the tour.

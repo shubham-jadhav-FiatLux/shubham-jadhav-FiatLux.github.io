@@ -46,9 +46,14 @@ export interface PortfolioContent {
     title: string;
     /** Chinese characters for the gate signboard (must be in the font subset) */
     gateGlyphs: string;
+    /**
+     * The character on the red seal: title screen, corner badge, closing card, page view
+     * and link preview (one character; must be in the font subset)
+     */
+    seal: string;
     tagline: string;
     /**
-     * Public address of the site, e.g. "https://you.github.io/valley-of-whispering-bamboo/".
+     * Public address of the site, e.g. "https://you.github.io/".
      * Used for link previews (Open Graph). The deploy workflow fills it in automatically.
      */
     url?: string;

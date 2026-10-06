@@ -16,11 +16,12 @@ import type { PortfolioContent } from './types';
  */
 export const portfolio: PortfolioContent = {
   site: {
-    title: 'Valley of Whispering Bamboo',
-    gateGlyphs: '竹语谷',
+    title: 'Valley of Peace',
+    gateGlyphs: '和平谷', // "Valley of Peace"
+    seal: '和', // peace, harmony
     tagline: 'A portfolio you can walk through',
-    // url: 'https://[you].github.io/valley-of-whispering-bamboo/', // set by the deploy workflow
-    sourceUrl: '', // TODO: e.g. 'https://github.com/[you]/valley-of-whispering-bamboo'
+    // url: 'https://[you].github.io/', // set by the deploy workflow
+    sourceUrl: '', // TODO: e.g. 'https://github.com/[you]/[you].github.io'
   },
 
   owner: {
@@ -103,7 +104,7 @@ export const portfolio: PortfolioContent = {
     items: [
       {
         id: 'valley',
-        title: 'Valley of Whispering Bamboo',
+        title: 'Valley of Peace',
         bannerTitle: 'This Valley',
         year: '2026',
         summary:
@@ -113,9 +114,7 @@ export const portfolio: PortfolioContent = {
           'Built with three.js, TypeScript and custom GLSL shaders, with a kinematic character controller and procedural animation.',
         ],
         tech: ['three.js', 'TypeScript', 'GLSL', 'Web Audio', 'Vite'],
-        links: [
-          { label: 'Source code', url: 'https://github.com/[you]/valley-of-whispering-bamboo' },
-        ], // TODO
+        links: [{ label: 'Source code', url: 'https://github.com/[you]/[you].github.io' }], // TODO
       },
       {
         id: 'renderer',

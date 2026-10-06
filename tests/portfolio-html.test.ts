@@ -15,7 +15,7 @@ function withContent(patch: (c: PortfolioContent) => void): typeof prerender {
 describe('index.html generation', () => {
   it('writes title, description and link-preview tags', () => {
     const html = renderIndexHtml(template, prerender);
-    expect(html).toContain('<title>Valley of Whispering Bamboo · An explorable portfolio</title>');
+    expect(html).toContain('<title>Valley of Peace · An explorable portfolio</title>');
     expect(html).toContain('<meta property="og:image" content="og-image.jpg" />');
     expect(html).toContain('<meta name="twitter:card" content="summary_large_image" />');
     expect(html).not.toContain('og:url');
@@ -32,6 +32,16 @@ describe('index.html generation', () => {
     expect(html.match(/<noscript><div class="classic classic--static">/g)).toHaveLength(1);
     expect(html).toContain('id="classic-projects"');
     expect(html).toContain('<script type="module" src="/src/main.ts"></script>');
+  });
+
+  it('puts the name and the seal on the title screen', () => {
+    const mod = withContent((c) => {
+      c.site.title = 'Valley & Hills';
+      c.site.seal = '山';
+    });
+    const html = renderIndexHtml(template, mod);
+    expect(html).toContain('<h1 id="loader-title" class="loader__title">Valley &amp; Hills</h1>');
+    expect(html).toContain('<div class="seal seal--lg loader__seal" aria-hidden="true">山</div>');
   });
 
   it('keeps dollar signs from the content literally', () => {

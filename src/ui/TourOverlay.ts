@@ -51,14 +51,14 @@ export class TourOverlay extends Emitter<TourOverlayEvents> {
   private readingEl: HTMLElement;
   private idleTimer = 0;
 
-  constructor(root: HTMLElement, siteTitle: string) {
+  constructor(root: HTMLElement, site: { title: string; seal: string }) {
     super();
     this.el = document.createElement('div');
     this.el.className = 'tour';
     this.el.innerHTML = `
       <div class="tour__bar tour__bar--top">
         <div class="tour__brand"><span class="seal" aria-hidden="true">影</span>
-          <span>${esc(siteTitle)} <em>· the tour</em></span></div>
+          <span>${esc(site.title)} <em>· the tour</em></span></div>
         <div class="tour__controls" role="group" aria-label="Tour controls">
           <button type="button" class="tour__btn" data-act="pause" aria-label="Pause the tour (Space)" title="Pause (Space)">${ICONS.pause}</button>
           <button type="button" class="tour__btn" data-act="next" aria-label="Skip to the next chapter (Enter)" title="Next chapter (Enter)">${ICONS.next}</button>
@@ -91,7 +91,7 @@ export class TourOverlay extends Emitter<TourOverlayEvents> {
       <div class="tour__fade" aria-hidden="true"></div>
       <div class="tour__end" role="dialog" aria-modal="false" aria-labelledby="tour-end-title">
         <div class="tour__end-card">
-          <span class="seal seal--lg" aria-hidden="true">竹</span>
+          <span class="seal seal--lg" aria-hidden="true">${esc(site.seal)}</span>
           <h2 id="tour-end-title">Thank you for watching</h2>
           <p class="tour__end-owner"></p>
           <div class="tour__end-actions">

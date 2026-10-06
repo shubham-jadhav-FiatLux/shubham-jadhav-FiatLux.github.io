@@ -132,7 +132,10 @@ export class App extends Emitter<AppEvents> {
     // Canvas textures (signboards, banners, labels) need the brush font loaded first.
     try {
       await Promise.all([
-        document.fonts.load("64px 'Brush'", this.content.site.gateGlyphs + 'Aa一'),
+        document.fonts.load(
+          "64px 'Brush'",
+          this.content.site.gateGlyphs + this.content.site.seal + 'Aa一',
+        ),
         document.fonts.load("700 32px 'Cormorant Garamond'"),
       ]);
     } catch {
