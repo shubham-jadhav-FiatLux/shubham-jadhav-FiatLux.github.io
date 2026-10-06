@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   clinging pines, rising out of bands of mist, with ever paler and higher ranges behind
   them fading into the sky, and a sea of cloud below the rim of the valley. Sunlit faces
   glow gold, shaded ones turn cool, and edges against the low sun shine.
+- Bolder lettering that reads from afar: the signpost's boards are dark oiled wood with
+  big cream brush titles and gold place names, both outlined; the captions over the
+  dummies and along the bridge set their second line in bold black instead of thin brown;
+  the banners' titles and the gate's signboard are thicker, with a dark edge.
 - Renamed to **Valley of Peace**: the title screen, the corner badge, the tour and the
   link preview, with 和平谷 ("Valley of Peace") on the gate's signboard and 和 ("peace")
   on the red seal. The seal's character is now part of the content file (`site.seal`).

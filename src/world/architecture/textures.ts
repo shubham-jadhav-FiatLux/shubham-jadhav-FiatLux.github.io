@@ -2,7 +2,8 @@ import { CanvasTexture, SRGBColorSpace } from 'three';
 import { roundRectPath } from '../../utils/canvas';
 
 export const BRUSH_FONT = "'Brush', 'Ma Shan Zheng', 'KaiTi', serif";
-export const SERIF_FONT = "'Cormorant Garamond', Georgia, serif";
+/** A sturdy serif for small lettering that has to read from a distance (used at 700). */
+export const INSCRIPTION_FONT = "'Lora', Georgia, serif";
 
 /**
  * A canvas `w` x `h` (drawing units) stored at `scale` times that resolution: drawing code
@@ -43,6 +44,34 @@ export function fitText(
   return s;
 }
 
+/**
+ * Lettering that reads from afar: the letters thickened (stroked in their own colour) and,
+ * optionally, set inside a contrasting outline. Sizes are fractions of the font size.
+ */
+export function boldText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  size: number,
+  o: { fill: string; outline?: string; edge?: number; thicken?: number },
+): void {
+  ctx.save();
+  ctx.lineJoin = 'round';
+  ctx.miterLimit = 2;
+  if (o.outline) {
+    ctx.strokeStyle = o.outline;
+    ctx.lineWidth = size * (o.edge ?? 0.16);
+    ctx.strokeText(text, x, y);
+  }
+  ctx.strokeStyle = o.fill;
+  ctx.lineWidth = size * (o.thicken ?? 0.05);
+  ctx.strokeText(text, x, y);
+  ctx.fillStyle = o.fill;
+  ctx.fillText(text, x, y);
+  ctx.restore();
+}
+
 /** Gilded signboard for the gate: dark lacquer, gold frame, brush glyphs. */
 export function createSignboardTexture(glyphs: string): CanvasTexture {
   const c = document.createElement('canvas');
@@ -59,13 +88,18 @@ export function createSignboardTexture(glyphs: string): CanvasTexture {
   ctx.strokeRect(9, 9, c.width - 18, c.height - 18);
   ctx.lineWidth = 4;
   ctx.strokeRect(34, 34, c.width - 68, c.height - 68);
-  ctx.fillStyle = '#e9c46a';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  fitText(ctx, glyphs, c.width - 120, 190, BRUSH_FONT);
+  const spaced = glyphs.split('').join(' ');
+  const size = fitText(ctx, spaced, c.width - 130, 190, BRUSH_FONT);
   ctx.shadowColor = 'rgba(0,0,0,0.35)';
   ctx.shadowBlur = 6;
-  ctx.fillText(glyphs.split('').join(' '), c.width / 2, c.height / 2 + 8);
+  boldText(ctx, spaced, c.width / 2, c.height / 2 + 8, size, {
+    fill: '#f2cf6e',
+    outline: '#0e1a2c',
+    edge: 0.1,
+    thicken: 0.05,
+  });
   return tex(c);
 }
 
@@ -129,14 +163,14 @@ export function createBannerAtlas(banners: BannerSpec[], scale = 1): CanvasTextu
     const shown = lines.slice(0, 3);
     const size = Math.min(104, ...shown.map((l) => fitText(ctx, l, w - 64, 104, BRUSH_FONT)));
     ctx.font = `${size}px ${BRUSH_FONT}`;
-    ctx.lineJoin = 'round';
-    ctx.lineWidth = Math.max(6, size * 0.12);
-    ctx.strokeStyle = 'rgba(20, 10, 6, 0.55)';
-    ctx.fillStyle = '#fbf1da';
     shown.forEach((l, k) => {
       const y = 430 + k * (size + 22);
-      ctx.strokeText(l, x0 + w / 2, y);
-      ctx.fillText(l, x0 + w / 2, y);
+      boldText(ctx, l, x0 + w / 2, y, size, {
+        fill: '#fff6e4',
+        outline: 'rgba(24, 10, 6, 0.85)',
+        edge: 0.17,
+        thicken: 0.05,
+      });
     });
   });
   return tex(c);
@@ -156,12 +190,13 @@ export function createSignpostTexture(
   const { c, ctx } = canvas(w, rowH * Math.max(1, rows.length), scale);
   rows.forEach((row, i) => {
     const y = i * rowH;
+    // dark, oiled wood so pale letters stand out
     const g = ctx.createLinearGradient(0, y, 0, y + rowH);
-    g.addColorStop(0, '#8a5f3f');
-    g.addColorStop(1, '#6b4630');
+    g.addColorStop(0, '#5a3a25');
+    g.addColorStop(1, '#3c2617');
     ctx.fillStyle = g;
     ctx.fillRect(0, y, w, rowH);
-    ctx.strokeStyle = 'rgba(40, 20, 10, 0.35)';
+    ctx.strokeStyle = 'rgba(20, 10, 4, 0.35)';
     ctx.lineWidth = 3;
     for (let k = 0; k < 6; k++) {
       ctx.beginPath();
@@ -169,21 +204,27 @@ export function createSignpostTexture(
       ctx.bezierCurveTo(w * 0.3, y + 16 + k * 38, w * 0.6, y + 32 + k * 38, w, y + 22 + k * 38);
       ctx.stroke();
     }
+    // a painted border, like the frame of a shop sign
+    ctx.strokeStyle = 'rgba(236, 199, 121, 0.55)';
+    ctx.lineWidth = 6;
+    ctx.strokeRect(14, y + 14, w - 28, rowH - 28);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.lineJoin = 'round';
-    // carved look: a dark edge under pale letters
-    ctx.lineWidth = 10;
-    ctx.strokeStyle = 'rgba(40, 20, 10, 0.55)';
-    ctx.fillStyle = '#fbefd4';
-    fitText(ctx, row.title, w - 120, 128, SERIF_FONT, '700');
-    ctx.strokeText(row.title, w / 2, y + 96);
-    ctx.fillText(row.title, w / 2, y + 96);
-    ctx.fillStyle = '#ecc779';
-    ctx.lineWidth = 6;
-    fitText(ctx, row.place, w - 140, 58, SERIF_FONT, '700');
-    ctx.strokeText(row.place, w / 2, y + 186);
-    ctx.fillText(row.place, w / 2, y + 186);
+    // big brush title in cream paint, thick, with a dark edge
+    const title = fitText(ctx, row.title, w - 150, 154, BRUSH_FONT);
+    boldText(ctx, row.title, w / 2, y + 98, title, {
+      fill: '#fff4dc',
+      outline: 'rgba(18, 8, 2, 0.8)',
+      edge: 0.14,
+      thicken: 0.06,
+    });
+    const place = fitText(ctx, row.place, w - 170, 54, INSCRIPTION_FONT, '700');
+    boldText(ctx, row.place, w / 2, y + 191, place, {
+      fill: '#f6d27c',
+      outline: 'rgba(18, 8, 2, 0.75)',
+      edge: 0.16,
+      thicken: 0.03,
+    });
   });
   return tex(c);
 }
@@ -200,15 +241,13 @@ export function createLabelTexture(title: string, subtitle?: string, scale = 1):
   ctx.strokeStyle = '#b8352b';
   ctx.lineWidth = 11;
   ctx.stroke();
-  ctx.fillStyle = '#1a1614';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  fitText(ctx, title, W - 120, subtitle ? 128 : 150, BRUSH_FONT);
-  ctx.fillText(title, W / 2, subtitle ? 150 : H / 2);
+  const size = fitText(ctx, title, W - 120, subtitle ? 134 : 156, BRUSH_FONT);
+  boldText(ctx, title, W / 2, subtitle ? 146 : H / 2, size, { fill: '#14100d', thicken: 0.05 });
   if (subtitle) {
-    ctx.fillStyle = '#5c4130';
-    fitText(ctx, subtitle, W - 120, 70, SERIF_FONT, '700');
-    ctx.fillText(subtitle, W / 2, 272);
+    const small = fitText(ctx, subtitle, W - 120, 78, INSCRIPTION_FONT, '700');
+    boldText(ctx, subtitle, W / 2, 274, small, { fill: '#1c1714', thicken: 0.03 });
   }
   return tex(c);
 }

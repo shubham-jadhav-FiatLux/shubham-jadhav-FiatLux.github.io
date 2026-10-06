@@ -136,7 +136,7 @@ export class App extends Emitter<AppEvents> {
           "64px 'Brush'",
           this.content.site.gateGlyphs + this.content.site.seal + 'Aa一',
         ),
-        document.fonts.load("700 32px 'Cormorant Garamond'"),
+        document.fonts.load("700 32px 'Lora'"),
       ]);
     } catch {
       /* fall back to system fonts */
