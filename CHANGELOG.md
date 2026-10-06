@@ -16,6 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   big cream brush titles and gold place names, both outlined; the captions over the
   dummies and along the bridge set their second line in bold black instead of thin brown;
   the banners' titles and the gate's signboard are thicker, with a dark edge.
+- The training dummies are wooden warriors with arms all the way round: three tiers of
+  arms set at staggered angles and bent legs, each fixed in a brass collar, so they look
+  like training dummies from every side (and their arms whirl when struck).
+- The bell tower is turned a quarter round, so the log striker hangs across the view of
+  a visitor arriving along the shore and its swing into the bell is plain to see.
+- The tea pavilion is turned to face the path: one opening greets the visitor arriving
+  from the crossroads, the other looks out over the lake.
 - Renamed to **Valley of Peace**: the title screen, the corner badge, the tour and the
   link preview, with 和平谷 ("Valley of Peace") on the gate's signboard and 和 ("peace")
   on the red seal. The seal's character is now part of the content file (`site.seal`).

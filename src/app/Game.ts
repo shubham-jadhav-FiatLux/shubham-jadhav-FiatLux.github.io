@@ -15,7 +15,7 @@ import { TouchControls } from '../ui/TouchControls';
 import { SECTIONS, sectionMeta, type SectionId } from '../content/sections';
 import type { GameAudio } from '../audio/GameAudio';
 import { globalUniforms } from '../render/uniforms';
-import { HOUSES, PLACES, TRAVEL_POINTS } from '../world/layout';
+import { BELL_ROT, HOUSES, PAVILION_ROT, PLACES, TRAVEL_POINTS } from '../world/layout';
 import { Tour, type TourHost } from '../tour/Tour';
 
 const CLOUD = new Color('#fdf8ef');
@@ -81,11 +81,11 @@ export class Game {
           z: PLACES.pavilion.z,
           w: 7.6,
           d: 7.6,
-          rot: 0,
+          rot: PAVILION_ROT,
           color: '#5a6470',
           sides: 6,
         },
-        { x: PLACES.bell.x, z: PLACES.bell.z, w: 4, d: 4, rot: 0.6, color: '#5a6470' },
+        { x: PLACES.bell.x, z: PLACES.bell.z, w: 4, d: 4, rot: BELL_ROT, color: '#5a6470' },
         { x: PLACES.gate.x, z: PLACES.gate.z, w: 10, d: 1.2, rot: 0, color: '#b8352b' },
       ],
       SECTIONS.map((s) => {

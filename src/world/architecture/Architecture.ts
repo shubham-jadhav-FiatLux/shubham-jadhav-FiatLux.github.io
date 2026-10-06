@@ -16,7 +16,7 @@ import { TrainingGround } from './Training';
 import { Banners, type BannerAnchor } from './Banners';
 import { Labels } from './Labels';
 import { createSignpostTexture } from './textures';
-import { BRIDGE_POINTS, HOUSES, PATHS, PLACES } from '../layout';
+import { BELL_ROT, BRIDGE_POINTS, HOUSES, PATHS, PAVILION_ROT, PLACES } from '../layout';
 import type { Terrain } from '../Terrain';
 import type { Placement } from '../placement';
 import type { CollisionWorld } from '../../physics/CollisionWorld';
@@ -67,7 +67,7 @@ export class Architecture {
   private bellSwing = 0;
   private bellSwingVel = 0;
   private onBellHit: (() => void) | null = null;
-  private readonly bellRot = 0.6;
+  private readonly bellRot = BELL_ROT;
 
   constructor(
     private readonly scene: Scene,
@@ -106,12 +106,12 @@ export class Architecture {
     mask.circle('stone', PLACES.pagoda.x, PLACES.pagoda.z, 7.2);
     mask.circle('nograss', PLACES.pagoda.x, PLACES.pagoda.z, 7.6);
 
-    // Tea pavilion on the lake shore, opening towards the lake (north-east).
+    // Tea pavilion on the lake shore: one opening faces the path in, the other the lake.
     const pav = buildPavilion(b, col, {
       x: PLACES.pavilion.x,
       y: 0,
       z: PLACES.pavilion.z,
-      rot: -0.5,
+      rot: PAVILION_ROT,
     });
 
     // Village and the training hall.

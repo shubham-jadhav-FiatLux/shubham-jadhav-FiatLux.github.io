@@ -39,40 +39,94 @@ function colored(g: BufferGeometry, color: string, m: Matrix4): BufferGeometry {
   return out;
 }
 
-/** Wooden wing-chun style dummy: a post with three arms and a leg, facing local +z. */
+/** A tapered wooden limb from `root` along `dir` (unit), with a rounded end. */
+function limb(
+  root: Vector3,
+  dir: Vector3,
+  length: number,
+  r0: number,
+  r1: number,
+  color: string,
+): BufferGeometry[] {
+  const rot = new Quaternion().setFromUnitVectors(new Vector3(0, 1, 0), dir);
+  const mid = root.clone().addScaledVector(dir, length / 2);
+  const tip = root.clone().addScaledVector(dir, length);
+  return [
+    colored(
+      new CylinderGeometry(r1, r0, length, 8),
+      color,
+      new Matrix4().compose(mid, rot, new Vector3(1, 1, 1)),
+    ),
+    colored(new SphereGeometry(r1 * 1.15, 8, 6), color, T(tip.x, tip.y, tip.z)),
+  ];
+}
+
+/** Direction at `angle` around the post (0 = local +z, the dummy's front), tilted up by `pitch`. */
+function around(angle: number, pitch: number): Vector3 {
+  return new Vector3(
+    Math.sin(angle) * Math.cos(pitch),
+    Math.sin(pitch),
+    Math.cos(angle) * Math.cos(pitch),
+  );
+}
+
+/**
+ * A wooden training dummy with arms all the way round, like the spinning wooden warriors
+ * of a kung fu training hall: a carved post on a round plinth, three tiers of arms set at
+ * staggered angles (so some arm always faces whoever steps up, from any side) and three
+ * bent legs, each tier fixed in a brass collar. Faces local +z.
+ */
 function createDummyGeometry(): BufferGeometry {
   const wood = '#8a5a36';
   const dark = '#5b3a22';
+  const arm = '#6e4529';
+  const brass = '#c49a45';
   const parts: BufferGeometry[] = [
-    colored(post(0.19, 1.72, 12), wood, T()),
-    colored(new SphereGeometry(0.19, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), wood, T(0, 1.72, 0)),
-    colored(new CylinderGeometry(0.21, 0.21, 0.07, 12), dark, T(0, 1.2, 0)),
-    colored(new CylinderGeometry(0.21, 0.21, 0.07, 12), dark, T(0, 0.75, 0)),
-    colored(box(0.6, 0.12, 0.6), dark, T(0, 0.06, 0)),
+    colored(new CylinderGeometry(0.44, 0.5, 0.16, 18), '#6f6a61', T(0, 0.08, 0)),
+    colored(new CylinderGeometry(0.3, 0.34, 0.1, 16), dark, T(0, 0.21, 0)),
+    colored(post(0.19, 1.66, 14, 0.175), wood, T(0, 0.2, 0)),
+    // a rounded, carved head with a band
+    colored(new SphereGeometry(0.2, 14, 10), wood, T(0, 1.9, 0, 0, 0, 0, 1, 0.85, 1)),
+    colored(new CylinderGeometry(0.205, 0.205, 0.07, 14), dark, T(0, 1.78, 0)),
+    colored(new SphereGeometry(0.06, 8, 6), brass, T(0, 2.07, 0)),
   ];
-  for (const s of [-1, 1]) {
-    parts.push(
-      colored(
-        new CylinderGeometry(0.045, 0.05, 0.5, 8),
-        dark,
-        T(s * 0.1, 1.42, 0.3, Math.PI / 2 - 0.25, s * 0.35, 0),
-      ),
-    );
+  // tiers: height, number of limbs, angle offset, pitch, length, radius
+  const tiers = [
+    { y: 1.5, n: 3, offset: 0, pitch: 0.22, length: 0.6, r: 0.056 },
+    { y: 1.16, n: 3, offset: Math.PI / 3, pitch: 0, length: 0.54, r: 0.056 },
+  ];
+  for (const t of tiers) {
+    parts.push(colored(new CylinderGeometry(0.215, 0.215, 0.08, 14), brass, T(0, t.y, 0)));
+    for (let k = 0; k < t.n; k++) {
+      const a = t.offset + (k / t.n) * Math.PI * 2;
+      const dir = around(a, t.pitch);
+      const root = new Vector3(dir.x * 0.16, t.y, dir.z * 0.16);
+      parts.push(...limb(root, dir, t.length, t.r, t.r * 0.82, arm));
+      // a brass ferrule where the arm enters the post
+      parts.push(
+        colored(
+          new CylinderGeometry(t.r * 1.35, t.r * 1.35, 0.06, 8),
+          brass,
+          new Matrix4().compose(
+            root.clone().addScaledVector(dir, 0.06),
+            new Quaternion().setFromUnitVectors(new Vector3(0, 1, 0), dir),
+            new Vector3(1, 1, 1),
+          ),
+        ),
+      );
+    }
   }
-  parts.push(
-    colored(
-      new CylinderGeometry(0.045, 0.05, 0.46, 8),
-      dark,
-      T(0, 1.08, 0.3, Math.PI / 2 - 0.1, 0, 0),
-    ),
-  );
-  parts.push(
-    colored(
-      new CylinderGeometry(0.05, 0.06, 0.62, 8),
-      dark,
-      T(0, 0.5, 0.28, Math.PI / 2 + 0.7, 0, 0),
-    ),
-  );
+  // bent legs: out from the post, then down at the knee
+  const legY = 0.66;
+  parts.push(colored(new CylinderGeometry(0.205, 0.205, 0.07, 14), brass, T(0, legY, 0)));
+  for (let k = 0; k < 3; k++) {
+    const a = (k / 3) * Math.PI * 2;
+    const out = around(a, 0.12);
+    const root = new Vector3(out.x * 0.16, legY, out.z * 0.16);
+    const knee = root.clone().addScaledVector(out, 0.3);
+    parts.push(...limb(root, out, 0.3, 0.055, 0.05, arm));
+    parts.push(...limb(knee, around(a, -1.0), 0.32, 0.05, 0.045, arm));
+  }
   const merged = mergeGeometries(parts, false)!;
   merged.computeVertexNormals();
   return merged;
