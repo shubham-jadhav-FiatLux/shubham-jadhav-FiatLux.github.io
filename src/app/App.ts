@@ -13,7 +13,7 @@ import { CameraRig } from '../camera/CameraRig';
 import { CollisionWorld } from '../physics/CollisionWorld';
 import { Terrain } from '../world/Terrain';
 import { Sky } from '../world/Sky';
-import { Mountains } from '../world/Mountains';
+import { Mountains } from '../world/mountains/Mountains';
 import { Lighting } from '../world/Lighting';
 import { PLACES } from '../world/layout';
 import { Panda } from '../player/Panda';
@@ -208,7 +208,7 @@ export class App extends Emitter<AppEvents> {
   private buildSky(): void {
     this.sky = new Sky();
     this.sky.addTo(this.scene);
-    new Mountains().addTo(this.scene);
+    new Mountains(this.quality.settings.level).addTo(this.scene);
     this.lighting = new Lighting(this.scene, this.quality.settings);
     try {
       this.environment = createSkyEnvironment(this.renderer.webgl);

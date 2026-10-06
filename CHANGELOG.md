@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- New mountains: ranges of karst towers and stone pillars crowned with woods and
+  clinging pines, rising out of bands of mist, with ever paler and higher ranges behind
+  them fading into the sky, and a sea of cloud below the rim of the valley. Sunlit faces
+  glow gold, shaded ones turn cool, and edges against the low sun shine.
 - Renamed to **Valley of Peace**: the title screen, the corner badge, the tour and the
   link preview, with 和平谷 ("Valley of Peace") on the gate's signboard and 和 ("peace")
   on the red seal. The seal's character is now part of the content file (`site.seal`).
