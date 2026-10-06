@@ -22,6 +22,8 @@ export type ScrollEvents = {
 export class ScrollPanel extends Emitter<ScrollEvents> {
   readonly el: HTMLElement;
   isOpen = false;
+  /** the last `open` began with the scroll rising out of a discovery (it unrolls later) */
+  rising = false;
   section: SectionId = 'welcome';
   private focus: number | undefined;
   private title: HTMLElement;
@@ -104,6 +106,7 @@ export class ScrollPanel extends Emitter<ScrollEvents> {
     if (!this.isOpen) {
       this.isOpen = true;
       rose = !!from && !reduceMotion() && this.rise(from);
+      this.rising = rose;
       this.el.classList.add('overlay--open');
       window.setTimeout(() => {
         if (this.isOpen && !this.film)
@@ -116,6 +119,8 @@ export class ScrollPanel extends Emitter<ScrollEvents> {
 
   /** How long the scroll takes to rise and unroll after `open` (ms). */
   static readonly RISE_MS = 1650;
+  /** When, during a rise, the scroll has arrived and starts to unroll (ms). */
+  static readonly UNROLL_AT_MS = 860;
 
   private riseTimer = 0;
   private flights: Animation[] = [];
@@ -163,7 +168,10 @@ export class ScrollPanel extends Emitter<ScrollEvents> {
       glow.animate([{ opacity: 1 }, { opacity: 0.85, offset: 0.55 }, { opacity: 0 }], timing),
     ];
     // Arrived: unroll.
-    this.riseTimer = window.setTimeout(() => this.el.classList.remove('overlay--rolled'), 860);
+    this.riseTimer = window.setTimeout(
+      () => this.el.classList.remove('overlay--rolled'),
+      ScrollPanel.UNROLL_AT_MS,
+    );
     return true;
   }
 

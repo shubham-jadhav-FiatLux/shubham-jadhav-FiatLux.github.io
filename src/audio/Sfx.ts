@@ -12,6 +12,7 @@ export type SfxName =
   | 'gong'
   | 'discover'
   | 'open'
+  | 'unroll'
   | 'close'
   | 'ui'
   | 'travel'
@@ -23,6 +24,8 @@ export interface SfxOptions {
   x?: number;
   z?: number;
   volume?: number;
+  /** unroll: seconds the scroll flies before it unrolls */
+  delay?: number;
 }
 
 const r = (a: number, b: number) => a + Math.random() * (b - a);
@@ -252,7 +255,8 @@ export class Sfx {
         this.noise(t, d, { type: 'bandpass', freq: 700, q: 9, volume: 0.25 * v, decay: 0.2, pan });
         break;
       case 'drum':
-        bigDrum(core, t, 0.9 * v, d, pan);
+        // a big drum carries across the yard: distance softens it less than most sounds
+        bigDrum(core, t, 1.35 * Math.max(v, 0.65), d, pan);
         break;
       case 'gong':
         templeBell(core, t, 0.55 * Math.max(v, 0.5), d, pan);
@@ -303,6 +307,55 @@ export class Sfx {
           });
         pluck(core, { midi: 74, time: t + 0.05, volume: 0.1, dest: d, seconds: 1.8 });
         break;
+      case 'unroll': {
+        // "Schedushh": a whoosh as the scroll flies out (sche-), its rollers knocking
+        // apart (-du-) and the paper unfurling with a long, crisp rustle (-shhh).
+        const fly = Math.max(0.08, o.delay ?? 0.12);
+        this.noise(t, d, {
+          type: 'bandpass',
+          freq: 420,
+          sweepTo: 3600,
+          q: 1.1,
+          volume: 0.42,
+          attack: Math.min(0.3, fly * 0.6),
+          decay: Math.max(0.1, fly * 0.5),
+        });
+        this.noise(t, d, {
+          type: 'highpass',
+          freq: 5200,
+          volume: 0.07,
+          attack: Math.min(0.3, fly * 0.6),
+          decay: 0.12,
+        });
+        const u = t + fly;
+        this.tone(u, d, { freq: 210, to: 92, volume: 0.32, decay: 0.13 });
+        woodblock(core, u + 0.012, 0.16, d, 520);
+        this.noise(u, d, {
+          type: 'highpass',
+          freq: 2300,
+          sweepTo: 6500,
+          volume: 0.34,
+          attack: 0.025,
+          decay: 1.0,
+        });
+        this.noise(u, d, {
+          type: 'bandpass',
+          freq: 1350,
+          q: 0.7,
+          volume: 0.17,
+          attack: 0.02,
+          decay: 0.55,
+        });
+        for (let i = 0; i < 12; i++)
+          this.noise(u + r(0.03, 0.72), d, {
+            type: 'highpass',
+            freq: r(3500, 6000),
+            volume: r(0.05, 0.11),
+            decay: r(0.01, 0.025),
+          });
+        pluck(core, { midi: 74, time: u + 0.3, volume: 0.07, dest: d, seconds: 1.8 });
+        break;
+      }
       case 'close':
         this.noise(t, d, {
           type: 'bandpass',

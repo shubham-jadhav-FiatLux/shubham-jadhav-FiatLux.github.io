@@ -242,7 +242,27 @@ export function woodblock(
   osc.stop(time + 0.15);
 }
 
-/** Big barrel drum: pitched thump, low body and skin slap. */
+let driveCurve: Float32Array | null = null;
+
+/** A gentle tanh saturation curve: adds the overtones that let a deep boom carry. */
+function drive(): Float32Array {
+  if (driveCurve) return driveCurve;
+  const n = 1024;
+  const curve = new Float32Array(n);
+  const k = 2.2;
+  for (let i = 0; i < n; i++) {
+    const x = (i / (n - 1)) * 2 - 1;
+    curve[i] = Math.tanh(k * x) / Math.tanh(k);
+  }
+  driveCurve = curve;
+  return curve;
+}
+
+/**
+ * Big barrel drum (a taiko): the beater's slap, a deep pitched boom with a second, higher
+ * mode that small speakers can still play, the thud of the shell, and a little saturation
+ * so the boom carries.
+ */
 export function bigDrum(
   core: AudioCore,
   time: number,
@@ -251,23 +271,39 @@ export function bigDrum(
   pan = 0,
 ): void {
   const ctx = core.ctx;
-  const osc = ctx.createOscillator();
-  osc.type = 'sine';
-  osc.frequency.setValueAtTime(120, time);
-  osc.frequency.exponentialRampToValueAtTime(52, time + 0.18);
-  const g = core.out(dest, 0, pan);
-  core.envelope(g.gain, time, volume, 0.003, 0.9);
-  osc.connect(g);
-  osc.start(time);
-  osc.stop(time + 1);
-  const n = core.noiseSource();
-  const bp = ctx.createBiquadFilter();
-  bp.type = 'bandpass';
-  bp.frequency.value = 1100;
-  bp.Q.value = 1.2;
-  const ng = core.out(dest, 0, pan);
-  core.envelope(ng.gain, time, volume * 0.45, 0.001, 0.08);
-  n.connect(bp).connect(ng);
-  n.start(time, Math.random());
-  n.stop(time + 0.12);
+  const shaper = ctx.createWaveShaper();
+  shaper.curve = drive() as Float32Array<ArrayBuffer>;
+  shaper.oversample = '2x';
+  const out = core.out(dest, volume, pan);
+  const bus = ctx.createGain();
+  bus.gain.value = 0.9;
+  bus.connect(shaper).connect(out);
+  const mode = (from: number, to: number, glide: number, peak: number, decay: number) => {
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(from, time);
+    osc.frequency.exponentialRampToValueAtTime(to, time + glide);
+    const g = ctx.createGain();
+    core.envelope(g.gain, time, peak, 0.004, decay);
+    osc.connect(g).connect(bus);
+    osc.start(time);
+    osc.stop(time + decay + 0.1);
+  };
+  mode(150, 58, 0.22, 1, 1.3); // the boom
+  mode(260, 128, 0.16, 0.55, 0.55); // second mode: the "body" heard on small speakers
+  mode(390, 300, 0.1, 0.18, 0.2); // skin overtone
+  const burst = (type: BiquadFilterType, freq: number, q: number, peak: number, decay: number) => {
+    const n = core.noiseSource();
+    const f = ctx.createBiquadFilter();
+    f.type = type;
+    f.frequency.value = freq;
+    f.Q.value = q;
+    const g = ctx.createGain();
+    core.envelope(g.gain, time, peak, 0.001, decay);
+    n.connect(f).connect(g).connect(bus);
+    n.start(time, Math.random());
+    n.stop(time + decay + 0.05);
+  };
+  burst('bandpass', 1900, 0.9, 0.5, 0.06); // the beater's slap
+  burst('lowpass', 320, 0.7, 0.6, 0.28); // thud of the shell
 }

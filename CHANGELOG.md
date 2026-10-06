@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A "schedushh!" as a scroll opens: a whoosh as it flies out, the knock of its rollers
+  parting and the rustle of the paper unfurling, timed to the scroll's flight.
+
 ### Changed
 
 - New mountains: ranges of karst towers and stone pillars crowned with woods and
@@ -23,6 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   a visitor arriving along the shore and its swing into the bell is plain to see.
 - The tea pavilion is turned to face the path: one opening greets the visitor arriving
   from the crossroads, the other looks out over the lake.
+- The big drum booms: a deeper, longer note with a second, higher tone that small
+  speakers can play, the beater's slap and the thud of the shell, and it carries across
+  the yard (about two and a half times as loud).
 - Renamed to **Valley of Peace**: the title screen, the corner badge, the tour and the
   link preview, with 和平谷 ("Valley of Peace") on the gate's signboard and 和 ("peace")
   on the red seal. The seal's character is now part of the content file (`site.seal`).

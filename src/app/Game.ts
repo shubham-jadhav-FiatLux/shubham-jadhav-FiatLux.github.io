@@ -251,7 +251,12 @@ export class Game {
     });
     this.hud.on('seal', (id) => this.openSection(id));
 
-    this.scroll.on('open', () => audio.sfx('open'));
+    // "schedushh": the scroll whooshes out and unrolls (after its flight, if it rises)
+    this.scroll.on('open', () =>
+      audio.sfx('unroll', {
+        delay: this.scroll.rising ? ScrollPanel.UNROLL_AT_MS / 1000 : 0.12,
+      }),
+    );
     this.scroll.on('close', () => {
       audio.sfx('close');
       app.rig.endShot();
