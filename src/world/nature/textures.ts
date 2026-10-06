@@ -134,28 +134,41 @@ export function createPineTexture(palette = ['#2f5433', '#3b6440', '#46704a', '#
   return toTexture(c);
 }
 
-/** Tall strip of hanging willow leaves. */
+/**
+ * A ribbon of hanging willow: a few slender strands side by side, each a thin stem
+ * hung with narrow leaves that point down and outwards, fresh yellow-green.
+ */
 export function createWillowTexture() {
-  const [c, ctx] = canvas(64, 256);
+  const [c, ctx] = canvas(128, 512);
   const rand = new Random(12);
-  for (let strand = 0; strand < 3; strand++) {
-    const x0 = 12 + strand * 20 + rand.range(-3, 3);
-    ctx.strokeStyle = 'rgba(90, 110, 40, 0.8)';
-    ctx.lineWidth = 1;
+  const greens = ['#a8c65c', '#94b84d', '#b9d46e', '#86a842', '#9fbf55', '#c4db7c'];
+  const strands = 7;
+  for (let strand = 0; strand < strands; strand++) {
+    const x0 = 10 + strand * 18 + rand.range(-3, 3);
+    const bend = rand.range(-7, 7);
+    const end = rand.range(380, 506);
+    const stemX = (y: number) => x0 + bend * Math.sin((y / end) * Math.PI * 0.8);
+    ctx.strokeStyle = 'rgba(96, 110, 46, 0.85)';
+    ctx.lineWidth = 1.4;
     ctx.beginPath();
-    ctx.moveTo(x0, 0);
-    ctx.quadraticCurveTo(x0 + rand.range(-4, 4), 128, x0 + rand.range(-3, 3), 250);
+    ctx.moveTo(stemX(0), 0);
+    for (let y = 8; y <= end; y += 8) ctx.lineTo(stemX(y), y);
     ctx.stroke();
-    const end = rand.range(170, 250);
-    for (let y = 4; y < end; y += rand.range(5, 9)) {
-      const x = x0 + Math.sin(y * 0.02 + strand) * 2;
-      const side = rand.chance(0.5) ? 1 : -1;
+    let side = rand.chance(0.5) ? 1 : -1;
+    for (let y = 2; y < end - 4; y += rand.range(4.5, 7.5)) {
+      side = -side;
+      const size = 1 - (y / end) * 0.3;
       ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(side * rand.range(0.25, 0.6));
-      ctx.fillStyle = rand.pick(['#a3c25a', '#8fb04b', '#b6cf6c', '#7c9d40']);
+      ctx.translate(stemX(y), y);
+      ctx.rotate(side * rand.range(0.35, 0.7));
+      ctx.fillStyle = greens[rand.int(0, greens.length - 1)]!;
       ctx.beginPath();
-      ctx.ellipse(side * 4, 4, 2.3, 7, 0, 0, Math.PI * 2);
+      // a narrow, pointed leaf hanging from the stem
+      const L = 22 * size;
+      const W = 4.2 * size;
+      ctx.moveTo(0, 0);
+      ctx.quadraticCurveTo(side * W * 1.6, L * 0.45, side * W * 0.4, L);
+      ctx.quadraticCurveTo(-side * W * 0.4, L * 0.5, 0, 0);
       ctx.fill();
       ctx.restore();
     }

@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The weeping willows by the lake are grown anew: a stout trunk splits into limbs that
+  rise like a vase, branches arch over from them, and a dense curtain of long, leafy
+  strands falls from the arches almost to the ground, ragged at the ends and swaying
+  most at the tips.
 - The panda's gear in detail: a red silk scarf wound round its neck like a collar, folded
   and pleated, hemmed in gold and tied in a knot, its tails ending in gold bands and
   fringes; a bamboo scroll case with nodes, cord bindings, brass caps, a tassel and the
