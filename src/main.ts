@@ -3,6 +3,7 @@ import '@fontsource/cormorant-garamond/latin-700.css';
 import '@fontsource/cormorant-garamond/latin-500-italic.css';
 import '@fontsource/lora/latin-400.css';
 import '@fontsource/lora/latin-600.css';
+import '@fontsource/lora/latin-700.css';
 import '@fontsource/lora/latin-400-italic.css';
 import './ui/styles/base.css';
 import './ui/styles/loader.css';
