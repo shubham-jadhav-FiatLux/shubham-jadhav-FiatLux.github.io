@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The scroll is mounted like a real hanging scroll: a cord and a lacquered rod with a
+  silk tassel and jade bead, a pine-green brocade woven with gold coins, the two hanging
+  strips of the "heaven" panel, fret-patterned bands either side of aged, fibrous paper
+  with fret corners, a vermilion rule under the title, the section's character as a faint
+  watermark, the mounter's seal in the corner, and a heavy roller with jade knobs. It
+  still rises rolled up and unrolls the same way, and the tassel sways as it opens.
 - New mountains: ranges of karst towers and stone pillars crowned with woods and
   clinging pines, rising out of bands of mist, with ever paler and higher ranges behind
   them fading into the sky, and a sea of cloud below the rim of the valley. Sunlit faces

@@ -22,10 +22,23 @@
     visibility 0s;
 }
 
-/* A hanging scroll: wooden rollers top and bottom, paper that unrolls between them. */
+/* A hanging scroll as it is mounted: a cord and a lacquered top rod; a "heaven" panel of
+   pine-green brocade with its two hanging strips; fret-patterned bands either side of the
+   paper; a shorter "earth" panel; a heavy roller with jade knobs. The mounting and the
+   paper unroll together between the rollers. */
 .scroll {
+  --silk: #1f4547;
+  --silk-light: #2b5b5c;
+  --thread: #d8b665;
+  --band: #b8975a;
+  --band-dark: #7a5f2f;
+  --xuan: #f1e5cb;
+  --lacquer: #2c170d;
+  --heaven: 30px;
+  --earth: 16px;
+  --margin: 12px;
   position: relative;
-  width: min(760px, 100%);
+  width: min(760px, calc(100% - 52px));
   max-height: min(86vh, 900px);
   display: flex;
   flex-direction: column;
@@ -35,53 +48,170 @@
 .scroll__roller {
   position: relative;
   z-index: 2;
-  height: 22px;
-  margin: 0 -14px;
-  border-radius: 11px;
-  background: linear-gradient(180deg, #7a4a2c 0%, #4f2c18 45%, #2e1a0e 100%);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+  flex: none;
   transition: transform 0.75s var(--ease-out);
 }
 
-.scroll__roller::before,
-.scroll__roller::after {
+/* The top rod: thin, flat and lacquered, slightly wider than the mounting. */
+.scroll__roller--top {
+  height: 12px;
+  margin: 0 -5px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #6e3e24 0%, #3d2012 50%, #1f0f07 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 222, 180, 0.28),
+    0 3px 6px rgba(0, 0, 0, 0.35);
+}
+
+/* The hanging cord, from the rod up to the loop it hangs by. */
+.scroll__cord {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  width: 34%;
+  height: 26px;
+  transform: translateX(-50%);
+  background:
+    radial-gradient(circle at 50% 4px, var(--thread) 0 3px, transparent 3.5px),
+    linear-gradient(
+        to top left,
+        transparent calc(50% - 1px),
+        #8e2f24 calc(50% - 1px) calc(50% + 0.6px),
+        transparent calc(50% + 0.6px)
+      )
+      left / 50% 100% no-repeat,
+    linear-gradient(
+        to top right,
+        transparent calc(50% - 1px),
+        #8e2f24 calc(50% - 1px) calc(50% + 0.6px),
+        transparent calc(50% + 0.6px)
+      )
+      right / 50% 100% no-repeat;
+}
+
+/* A jade bead and a silk tassel hanging from the end of the rod. */
+.scroll__tassel {
+  position: absolute;
+  right: -2px;
+  top: 6px;
+  width: 14px;
+  height: 64px;
+  transform-origin: 50% 0;
+  background:
+    radial-gradient(circle at 40% 35%, #d7ecdd 0 1px, #8fbaa2 3px, #3f7a62 6px, transparent 6.6px)
+      50% 12px / 14px 14px no-repeat,
+    linear-gradient(#c9a24a, #c9a24a) 50% 25px / 8px 3px no-repeat,
+    linear-gradient(#8e2f24, #8e2f24) 50% 0 / 1.5px 12px no-repeat,
+    repeating-linear-gradient(90deg, #b8352b 0 1.5px, #8e241d 1.5px 2.6px) 50% 28px / 10px 36px
+      no-repeat;
+  clip-path: polygon(0 0, 100% 0, 100% 40%, 85% 100%, 15% 100%, 0 40%);
+}
+
+.overlay--open:not(.overlay--rolled) .scroll__tassel {
+  animation: tassel-sway 1.8s var(--ease-out) 0.15s;
+}
+
+@keyframes tassel-sway {
+  0% {
+    transform: rotate(0);
+  }
+  25% {
+    transform: rotate(11deg);
+  }
+  55% {
+    transform: rotate(-6deg);
+  }
+  80% {
+    transform: rotate(2.5deg);
+  }
+  100% {
+    transform: rotate(0);
+  }
+}
+
+/* The bottom roller: heavy and round, with jade knobs in gold collars at both ends. */
+.scroll__roller--bottom {
+  height: 22px;
+  margin: 0 -3px;
+  border-radius: 11px;
+  background:
+    linear-gradient(180deg, transparent 18%, rgba(255, 228, 196, 0.32) 24%, transparent 32%),
+    linear-gradient(180deg, #8a5232 0%, #5b321d 34%, #3a1d0f 66%, #1c0d05 100%);
+  box-shadow: 0 4px 9px rgba(0, 0, 0, 0.4);
+}
+
+.scroll__roller--bottom::before,
+.scroll__roller--bottom::after {
   content: '';
   position: absolute;
-  top: -3px;
-  width: 20px;
-  height: 28px;
-  border-radius: 6px;
-  background: linear-gradient(180deg, #e5c16c, #a8792f);
+  top: -7px;
+  width: 30px;
+  height: 36px;
+  border-radius: 45% / 40%;
+  background:
+    radial-gradient(ellipse at 38% 28%, rgba(236, 248, 238, 0.85) 0 8%, transparent 30%),
+    linear-gradient(90deg, transparent 46%, rgba(20, 50, 38, 0.35) 50%, transparent 54%),
+    radial-gradient(ellipse at 45% 40%, #9cc7ae 0%, #5f9a7e 38%, #2f6450 72%, #1d4033 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(16, 44, 33, 0.5),
+    0 3px 6px rgba(0, 0, 0, 0.35);
 }
 
-.scroll__roller::before {
-  left: -12px;
+.scroll__roller--bottom::before {
+  left: -26px;
+  border-right: 4px solid #c9a24a;
 }
 
-.scroll__roller::after {
-  right: -12px;
+.scroll__roller--bottom::after {
+  right: -26px;
+  border-left: 4px solid #c9a24a;
 }
 
+/* The mounting: brocade woven with a gold interlocking-coin pattern over a fine twill. */
 .scroll__paper {
   position: relative;
   display: flex;
   flex-direction: column;
   min-height: 0;
+  padding: var(--heaven) var(--margin) var(--earth);
   background:
-    radial-gradient(ellipse at 20% 10%, rgba(255, 252, 244, 0.9), transparent 60%),
-    radial-gradient(ellipse at 90% 90%, rgba(214, 190, 150, 0.35), transparent 50%), var(--paper);
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 36 36'%3E%3Cg fill='none' stroke='%23d8b665' stroke-opacity='0.3' stroke-width='1'%3E%3Ccircle cx='0' cy='0' r='12.6'/%3E%3Ccircle cx='36' cy='0' r='12.6'/%3E%3Ccircle cx='0' cy='36' r='12.6'/%3E%3Ccircle cx='36' cy='36' r='12.6'/%3E%3Ccircle cx='18' cy='18' r='12.6'/%3E%3C/g%3E%3Cg fill='%23d8b665' fill-opacity='0.34'%3E%3Ccircle cx='18' cy='18' r='1.8'/%3E%3Ccircle cx='0' cy='0' r='1.8'/%3E%3Ccircle cx='36' cy='0' r='1.8'/%3E%3Ccircle cx='0' cy='36' r='1.8'/%3E%3Ccircle cx='36' cy='36' r='1.8'/%3E%3C/g%3E%3C/svg%3E")
+      0 0 / 36px 36px,
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, var(--silk-light), var(--silk) 40%, #193b3d);
+  box-shadow:
+    inset 0 0 0 1px rgba(8, 20, 20, 0.45),
+    inset 0 0 18px rgba(0, 0, 0, 0.25);
   clip-path: inset(50% 0 50% 0);
   transition: clip-path 0.75s var(--ease-out);
   overflow: hidden;
 }
 
-.scroll__paper::before {
+/* The two strips that hang over the heaven panel (jingyan, "startled swallows"). */
+.scroll__paper::before,
+.scroll__paper::after {
   content: '';
   position: absolute;
-  inset: 0;
-  opacity: 0.4;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.38 0 0 0 0 0.28 0 0 0 0.3 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  pointer-events: none;
+  top: 0;
+  width: 7px;
+  height: var(--heaven);
+  background: linear-gradient(
+    90deg,
+    var(--band-dark),
+    var(--band) 30%,
+    #d4b878 50%,
+    var(--band) 70%,
+    var(--band-dark)
+  );
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.scroll__paper::before {
+  left: 27%;
+}
+
+.scroll__paper::after {
+  right: 27%;
 }
 
 .overlay--open .scroll__paper {
@@ -96,12 +226,96 @@
   transform: translateY(-40px);
 }
 
+/* Fret-patterned silk bands above and below the paper. */
+.scroll__band {
+  display: block;
+  flex: none;
+  height: 11px;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='11' viewBox='0 0 14 11'%3E%3Cpath d='M0 10.2H14M1.2 10.2V1.2H12.2V7.8H4.6V4.4H8.6V6.2' fill='none' stroke='%235e4520' stroke-opacity='0.7' stroke-width='1.1'/%3E%3C/svg%3E")
+      0 0 / 14px 11px repeat-x,
+    linear-gradient(180deg, #cdb173, var(--band) 55%, #9d7e44);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 240, 200, 0.35),
+    0 0 0 1px rgba(40, 26, 8, 0.35);
+}
+
+/* The paper: aged xuan with fibres, a darker edge, fret corners and the section's
+   character as a faint watermark. */
+.scroll__sheet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30'%3E%3Cg transform='rotate(0 15 15)' fill='none' stroke='%239e2f25' stroke-opacity='0.55'%3E%3Cpath d='M2 28V2H28' stroke-width='1.6'/%3E%3Cpath d='M7 28V7H28' stroke-width='0.9'/%3E%3Cpath d='M7 13H13V7' stroke-width='0.9'/%3E%3C/g%3E%3C/svg%3E")
+      top 8px left 8px / 30px 30px no-repeat,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30'%3E%3Cg transform='rotate(90 15 15)' fill='none' stroke='%239e2f25' stroke-opacity='0.55'%3E%3Cpath d='M2 28V2H28' stroke-width='1.6'/%3E%3Cpath d='M7 28V7H28' stroke-width='0.9'/%3E%3Cpath d='M7 13H13V7' stroke-width='0.9'/%3E%3C/g%3E%3C/svg%3E")
+      top 8px right 8px / 30px 30px no-repeat,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30'%3E%3Cg transform='rotate(180 15 15)' fill='none' stroke='%239e2f25' stroke-opacity='0.55'%3E%3Cpath d='M2 28V2H28' stroke-width='1.6'/%3E%3Cpath d='M7 28V7H28' stroke-width='0.9'/%3E%3Cpath d='M7 13H13V7' stroke-width='0.9'/%3E%3C/g%3E%3C/svg%3E")
+      bottom 8px right 8px / 30px 30px no-repeat,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30'%3E%3Cg transform='rotate(270 15 15)' fill='none' stroke='%239e2f25' stroke-opacity='0.55'%3E%3Cpath d='M2 28V2H28' stroke-width='1.6'/%3E%3Cpath d='M7 28V7H28' stroke-width='0.9'/%3E%3Cpath d='M7 13H13V7' stroke-width='0.9'/%3E%3C/g%3E%3C/svg%3E")
+      bottom 8px left 8px / 30px 30px no-repeat,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.37 0 0 0 0 0.26 0 0 0 0.13 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")
+      0 0 / 220px 220px,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.004 0.09' numOctaves='2' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.42 0 0 0 0 0.3 0 0 0 0.16 -0.03'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E")
+      0 0 / 300px 300px,
+    radial-gradient(ellipse at 18% 8%, rgba(255, 252, 240, 0.75), transparent 55%),
+    radial-gradient(circle at 82% 74%, rgba(160, 118, 60, 0.08), transparent 18%),
+    radial-gradient(circle at 12% 88%, rgba(160, 118, 60, 0.06), transparent 14%),
+    var(--xuan);
+  box-shadow: inset 0 0 34px rgba(120, 88, 44, 0.22);
+}
+
+.scroll__sheet::before {
+  content: attr(data-glyph);
+  position: absolute;
+  right: 4%;
+  bottom: 2%;
+  font-family: var(--font-brush);
+  font-size: clamp(150px, 28vw, 250px);
+  line-height: 1;
+  color: rgba(30, 26, 24, 0.055);
+  pointer-events: none;
+  user-select: none;
+}
+
 .scroll__head {
   position: relative;
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 22px 28px 10px;
+  padding: 24px 32px 18px;
+}
+
+/* A double rule in vermilion with a lozenge knot under the title. */
+.scroll__head::after {
+  content: '';
+  position: absolute;
+  left: 32px;
+  right: 32px;
+  bottom: 2px;
+  height: 16px;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='16' viewBox='0 0 120 16'%3E%3Cg fill='%23a3352a'%3E%3Cpath d='M60 1.5L66.5 8L60 14.5L53.5 8Z'/%3E%3Ccircle cx='47' cy='8' r='1.8'/%3E%3Ccircle cx='73' cy='8' r='1.8'/%3E%3C/g%3E%3Cpath d='M60 5L63 8L60 11L57 8Z' fill='%23f1e5cb'/%3E%3C/svg%3E")
+      center / 120px 16px no-repeat,
+    linear-gradient(
+        90deg,
+        transparent,
+        rgba(158, 47, 37, 0.55) 10%,
+        rgba(158, 47, 37, 0.55) 90%,
+        transparent
+      )
+      0 6px / 100% 1px no-repeat,
+    linear-gradient(
+        90deg,
+        transparent,
+        rgba(158, 47, 37, 0.35) 14%,
+        rgba(158, 47, 37, 0.35) 86%,
+        transparent
+      )
+      0 9px / 100% 1px no-repeat;
 }
 
 .scroll__head .seal {
@@ -113,7 +327,7 @@
   margin: 0;
   font-family: var(--font-brush);
   font-weight: 400;
-  font-size: clamp(30px, 5vw, 42px);
+  font-size: clamp(32px, 5vw, 46px);
   line-height: 1.05;
   color: var(--ink);
 }
@@ -121,6 +335,16 @@
 .scroll__close {
   margin-left: auto;
   flex: none;
+  width: 40px;
+  height: 40px;
+  background: rgba(30, 26, 24, 0.07);
+  box-shadow: inset 0 0 0 1.5px rgba(30, 26, 24, 0.3);
+}
+
+.scroll__close:hover {
+  background: var(--seal);
+  color: #fbeee0;
+  box-shadow: none;
 }
 
 .scroll__tabs {
@@ -128,8 +352,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  padding: 0 28px 12px;
-  border-bottom: 1px solid rgba(30, 26, 24, 0.12);
+  padding: 12px 32px 10px;
 }
 
 .tab {
@@ -137,10 +360,11 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 12px 5px 6px;
+  padding: 4px 12px 4px 5px;
   border: 0;
   border-radius: 999px;
-  background: rgba(30, 26, 24, 0.06);
+  background: rgba(122, 95, 47, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(122, 95, 47, 0.22);
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 15px;
@@ -167,8 +391,9 @@
 }
 
 .tab[aria-selected='true'] {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--silk);
+  box-shadow: inset 0 0 0 1px rgba(216, 182, 101, 0.6);
+  color: #f6ecd6;
 }
 
 .tab:focus-visible {
@@ -179,7 +404,7 @@
 .scroll__body {
   position: relative;
   overflow-y: auto;
-  padding: 18px 28px 26px;
+  padding: 14px 32px 26px;
   font-size: 16.5px;
   line-height: 1.65;
   color: var(--ink);
@@ -190,10 +415,33 @@
 
 .scroll__foot {
   position: relative;
-  padding: 10px 28px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 32px 16px;
   font-size: 13px;
   color: var(--ink-faint);
-  border-top: 1px solid rgba(30, 26, 24, 0.1);
+  border-top: 1px solid rgba(122, 95, 47, 0.22);
+}
+
+/* The mounter's seal, pressed a little crooked into the corner of the paper. */
+.scroll__stamp {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  font-family: var(--font-brush);
+  font-size: 19px;
+  line-height: 1;
+  color: var(--xuan);
+  background: #ad3127;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 2px rgba(241, 229, 203, 0.55);
+  transform: rotate(-5deg);
+  opacity: 0.88;
+  mask-image: radial-gradient(circle at 30% 30%, #000 60%, rgba(0, 0, 0, 0.8));
 }
 
 /* Content typography (shared with the classic page). */
@@ -508,12 +756,34 @@
   .overlay {
     padding: 8px;
   }
+  .scroll {
+    --heaven: 20px;
+    --earth: 11px;
+    --margin: 7px;
+    width: calc(100% - 30px);
+  }
+  .scroll__roller--bottom::before,
+  .scroll__roller--bottom::after {
+    width: 18px;
+    height: 26px;
+    top: -3px;
+  }
+  .scroll__roller--bottom::before {
+    left: -15px;
+  }
+  .scroll__roller--bottom::after {
+    right: -15px;
+  }
   .scroll__head,
   .scroll__tabs,
   .scroll__body,
   .scroll__foot {
     padding-left: 18px;
     padding-right: 18px;
+  }
+  .scroll__head::after {
+    left: 18px;
+    right: 18px;
   }
   .scroll__foot {
     display: none;

@@ -486,10 +486,14 @@
   }
 }
 
-/* A scroll shown by the tour is part of the film: no tabs or keyboard hints. */
-.overlay--film .scroll__tabs,
-.overlay--film .scroll__foot {
+/* A scroll shown by the tour is part of the film: no tabs or keyboard hints (the
+   mounter's seal stays). */
+.overlay--film .scroll__tabs {
   display: none;
+}
+
+.overlay--film .scroll__foot > span:not(.scroll__stamp) {
+  visibility: hidden;
 }
 
 /* A note popping up over the picture: a skill group after a strike. */

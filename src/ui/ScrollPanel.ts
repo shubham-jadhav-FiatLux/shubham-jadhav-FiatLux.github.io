@@ -28,6 +28,7 @@ export class ScrollPanel extends Emitter<ScrollEvents> {
   private focus: number | undefined;
   private title: HTMLElement;
   private glyph: HTMLElement;
+  private sheet: HTMLElement;
   private tabs: HTMLElement;
   private body: HTMLElement;
   /** shown by the tour: no tabs or quick travel, and the keyboard stays with the film */
@@ -41,25 +42,39 @@ export class ScrollPanel extends Emitter<ScrollEvents> {
     super();
     this.el = document.createElement('div');
     this.el.className = 'overlay';
+    // A hanging scroll as it is mounted: a cord and a top rod, a "heaven" panel of
+    // brocade with its two hanging strips, fret-patterned bands either side of the paper,
+    // a shorter "earth" panel, and a heavy roller with jade knobs at the foot.
     this.el.innerHTML = `
       <div class="scroll" role="dialog" aria-modal="true" aria-labelledby="scroll-title">
         <div class="scroll__glow" aria-hidden="true"></div>
-        <div class="scroll__roller scroll__roller--top" aria-hidden="true"></div>
+        <div class="scroll__roller scroll__roller--top" aria-hidden="true">
+          <span class="scroll__cord"></span>
+          <span class="scroll__tassel"></span>
+        </div>
         <div class="scroll__paper">
-          <header class="scroll__head">
-            <span class="seal" aria-hidden="true"></span>
-            <h2 class="scroll__title" id="scroll-title"></h2>
-            <button type="button" class="icon-btn scroll__close" aria-label="Close scroll (Esc)">${ICONS.close}</button>
-          </header>
-          <div class="scroll__tabs" role="tablist" aria-label="Scrolls"></div>
-          <div class="scroll__body prose" tabindex="0"></div>
-          <footer class="scroll__foot">Esc to close · ← → to switch scrolls</footer>
+          <i class="scroll__band" aria-hidden="true"></i>
+          <div class="scroll__sheet">
+            <header class="scroll__head">
+              <span class="seal" aria-hidden="true"></span>
+              <h2 class="scroll__title" id="scroll-title"></h2>
+              <button type="button" class="icon-btn scroll__close" aria-label="Close scroll (Esc)">${ICONS.close}</button>
+            </header>
+            <div class="scroll__tabs" role="tablist" aria-label="Scrolls"></div>
+            <div class="scroll__body prose" tabindex="0"></div>
+            <footer class="scroll__foot">
+              <span>Esc to close, ← → to turn to another scroll</span>
+              <span class="scroll__stamp" aria-hidden="true">${esc(content.site.seal)}</span>
+            </footer>
+          </div>
+          <i class="scroll__band" aria-hidden="true"></i>
         </div>
         <div class="scroll__roller scroll__roller--bottom" aria-hidden="true"></div>
       </div>`;
     root.appendChild(this.el);
     this.title = this.el.querySelector('.scroll__title')!;
     this.glyph = this.el.querySelector('.scroll__head .seal')!;
+    this.sheet = this.el.querySelector('.scroll__sheet')!;
     this.tabs = this.el.querySelector('.scroll__tabs')!;
     this.body = this.el.querySelector('.scroll__body')!;
     this.el.querySelector('.scroll__close')!.addEventListener('click', () => this.close());
@@ -179,7 +194,8 @@ export class ScrollPanel extends Emitter<ScrollEvents> {
   private roll(): void {
     if (!this.el.classList.contains('overlay--rolled')) return;
     const scroll = this.el.querySelector<HTMLElement>('.scroll')!;
-    scroll.style.setProperty('--roll', `${Math.max(0, scroll.offsetHeight / 2 - 22)}px`);
+    const paper = this.el.querySelector<HTMLElement>('.scroll__paper')!;
+    scroll.style.setProperty('--roll', `${Math.max(0, paper.offsetHeight / 2)}px`);
   }
 
   /** Ends a rise at once: the scroll is where it rests, unrolled. */
@@ -218,6 +234,8 @@ export class ScrollPanel extends Emitter<ScrollEvents> {
   private render(): void {
     const meta = sectionMeta(this.section);
     this.glyph.textContent = meta.glyph;
+    // the section's character, large and faint in the paper, like a watermark
+    this.sheet.dataset.glyph = meta.glyph;
     this.title.textContent = sectionTitle(this.section, this.content);
     this.renderTabs();
     if (this.progress.has(this.section)) {
