@@ -1,4 +1,4 @@
-# Design document — Valley of Whispering Bamboo 竹
+# Design document — Valley of Peace 和
 
 > A portfolio you can walk through. Guide a panda through a misty valley of bamboo,
 > blossoms and pagodas; every landmark holds a scroll with a piece of the author's story.

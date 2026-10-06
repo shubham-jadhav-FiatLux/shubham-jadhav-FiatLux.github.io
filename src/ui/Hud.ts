@@ -42,7 +42,7 @@ export class Hud extends Emitter<HudEvents> {
     this.el.className = 'hud';
     this.el.innerHTML = `
       <div class="hud__brand">
-        <span class="seal" aria-hidden="true">竹</span>
+        <span class="seal" aria-hidden="true">${esc(content.site.seal)}</span>
         <div><span class="hud__title">${esc(content.site.title)}</span>
         ${named ? `<span class="hud__owner">${esc(content.owner.name)}</span>` : ''}</div>
       </div>

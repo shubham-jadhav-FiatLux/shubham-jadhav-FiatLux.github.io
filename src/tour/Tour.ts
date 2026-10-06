@@ -141,7 +141,7 @@ export class Tour extends Emitter<{ start: void; end: TourEnd }> {
     this.autopilot = new Autopilot(app.controller);
     this.director = new Director(app.rig, (x, z) => app.terrain.heightAt(x, z));
     this.director.reducedMotion = app.rig.reducedMotion;
-    this.overlay = new TourOverlay(root, app.content.site.title);
+    this.overlay = new TourOverlay(root, app.content.site);
     const o = this.overlay;
     o.on('pause', () => this.togglePause());
     o.on('next', () => this.next());

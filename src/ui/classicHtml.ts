@@ -19,7 +19,7 @@ export function classicHtml(content: PortfolioContent, o: ClassicHtmlOptions): s
   const sections = SECTIONS.filter((s) => s.id !== 'welcome');
   return `
     <header class="classic__hero">
-      <span class="seal seal--lg" aria-hidden="true">竹</span>
+      <span class="seal seal--lg" aria-hidden="true">${esc(content.site.seal)}</span>
       <h1>${esc(named ? content.owner.name : content.site.title)}</h1>
       <p class="classic__role">${esc(content.owner.role)}</p>
       <p class="classic__intro">${esc(content.owner.intro)}</p>

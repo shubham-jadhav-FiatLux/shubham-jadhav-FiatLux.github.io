@@ -24,6 +24,8 @@ export class Loader {
     this.classicBtn = el.querySelector('.loader__classic')!;
     this.tourBtn = el.querySelector('.loader__tour')!;
     el.querySelector('.loader__title')!.textContent = content.site.title;
+    const seal = el.querySelector('.loader__seal');
+    if (seal) seal.textContent = content.site.seal;
     el.querySelector('.loader__tagline')!.textContent = content.site.tagline;
     if (window.matchMedia?.('(pointer: coarse)').matches) {
       this.hint.textContent = 'Sound on · Joystick to walk · Headphones recommended';

@@ -1,4 +1,4 @@
-# Valley of Whispering Bamboo 竹
+# Valley of Peace 和
 
 ![A painted valley with a pagoda on a hill, a lake with a zig-zag bridge, a waterfall and a village](public/og-image.jpg)
 
@@ -6,8 +6,9 @@ An explorable 3D portfolio. Guide a panda through a misty valley of bamboo grove
 blossom trees, a koi lake fed by a mountain waterfall and a hilltop pagoda, with
 butterflies drifting over the meadows and lanterns glowing in the evening light. Every
 landmark holds a scroll with a piece of the author's story: who they are, what they can
-do, what they have built and how to reach them. Finding a scroll for the first time is a small ceremony: the panda bows, a
-ring of golden ink spreads through the grass, a seal is stamped and the scroll unrolls.
+do, what they have built and how to reach them. Finding a scroll for the first time is a
+small ceremony: the panda bows, a ring of golden ink spreads through the grass, a seal is
+stamped, and the scroll rises out of the panda and unrolls.
 
 Built with **three.js**, **TypeScript** and hand-written **GLSL**. Every model, texture,
 sound and note of music is generated in code; there are no downloaded assets besides fonts.
@@ -37,7 +38,7 @@ page. Browsers without WebGL 2 or JavaScript get that page automatically.
 
 ### Watch the tour
 
-![The tour's opening title over the valley, framed by letterbox bars and the chapter seals](docs/images/tour.jpg)
+![The tour's opening title over the waterfall and the bell tower, framed by letterbox bars and the chapter seals](docs/images/tour.jpg)
 
 Rather sit back? **Watch the tour** (on the title screen, or in the menu) plays the valley
 as a short film of a little over five minutes. It opens with a flight from the waterfall
@@ -67,8 +68,9 @@ ending in `?tour` to make the tour the first choice on the title screen.
 3. **Preview image.** Shared links unfurl with [`public/og-image.jpg`](public/og-image.jpg).
    After filling in your name, run `npm run dev` and then `npm run og-image` to render a
    fresh one with your name on it.
-4. **Gate lettering.** `site.gateGlyphs` must use characters from the brush-font subset;
-   add new ones with [`scripts/subset-font.py`](scripts/subset-font.py).
+4. **Gate lettering and seal.** `site.gateGlyphs` (the gate's signboard) and `site.seal`
+   (the red seal) must use characters from the brush-font subset; add new ones with
+   [`scripts/subset-font.py`](scripts/subset-font.py).
 5. **Tour narration.** The tour's captions have friendly defaults; write your own in
    `tour.captions` (one line per scene: `prologue`, the six sections, `epilogue`). The
    chapters themselves live in [`src/tour/script.ts`](src/tour/script.ts).
@@ -118,6 +120,9 @@ Read more in the [design document](docs/DESIGN.md), the [roadmap](docs/ROADMAP.m
 
 - Inspired by playful explorable portfolios such as Bruno Simon's, and by classical
   Chinese landscape painting.
+- The name is a fan's nod to the Valley of Peace of DreamWorks' _Kung Fu Panda_ films.
+  This is a personal, non-commercial project, not affiliated with DreamWorks; the panda,
+  the valley, the music and the code are original.
 - Brush lettering: [Ma Shan Zheng](https://fonts.google.com/specimen/Ma+Shan+Zheng) (OFL).
   Text: [Cormorant Garamond](https://fonts.google.com/specimen/Cormorant+Garamond) and
   [Lora](https://fonts.google.com/specimen/Lora) (OFL).
