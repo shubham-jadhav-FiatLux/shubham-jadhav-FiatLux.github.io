@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The panda's gear in detail: a red silk scarf wound round its neck like a collar, folded
+  and pleated, hemmed in gold and tied in a knot, its tails ending in gold bands and
+  fringes; a bamboo scroll case with nodes, cord bindings, brass caps, a tassel and the
+  scroll inside tied with red cord, slung on a leather strap with a brass buckle.
 - The scroll is mounted like a real hanging scroll: a cord and a lacquered rod with a
   silk tassel and jade bead, a pine-green brocade woven with gold coins, the two hanging
   strips of the "heaven" panel, fret-patterned bands either side of aged, fibrous paper

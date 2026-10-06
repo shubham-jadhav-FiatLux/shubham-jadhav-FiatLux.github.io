@@ -34,8 +34,8 @@ export class ScarfTails {
     material: Material,
   ) {
     this.chains = [
-      { seg: 0.07, width: 0.075, anchorOffset: new Vector3(0.02, 0, 0) },
-      { seg: 0.058, width: 0.065, anchorOffset: new Vector3(-0.03, -0.02, 0.01) },
+      { seg: 0.07, width: 0.088, anchorOffset: new Vector3(0.02, 0, 0) },
+      { seg: 0.058, width: 0.078, anchorOffset: new Vector3(-0.03, -0.02, 0.01) },
     ].map((c) => ({
       ...c,
       pos: Array.from({ length: SEGMENTS }, () => new Vector3()),
@@ -51,8 +51,18 @@ export class ScarfTails {
         index.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
       }
     });
+    // u across a tail, v along it from the knot to the fringed end
+    const uv = new Float32Array(this.chains.length * vertsPerChain * 2);
+    this.chains.forEach((_, ci) => {
+      for (let i = 0; i < SEGMENTS; i++) {
+        const k = (ci * vertsPerChain + i * 2) * 2;
+        const v = i / (SEGMENTS - 1);
+        uv.set([0, v, 1, v], k);
+      }
+    });
     this.geometry = new BufferGeometry();
     this.geometry.setAttribute('position', new BufferAttribute(this.positions, 3));
+    this.geometry.setAttribute('uv', new BufferAttribute(uv, 2));
     this.geometry.setIndex(index);
     this.mesh = new Mesh(this.geometry, material);
     this.mesh.name = 'scarf-tails';
@@ -143,7 +153,7 @@ export class ScarfTails {
         tmp.subVectors(next, prev).normalize();
         // Side vector: the panda's right axis made perpendicular to the ribbon.
         tmp2.copy(right).addScaledVector(tmp, -right.dot(tmp)).normalize();
-        const w = c.width * (1 - (i / (SEGMENTS - 1)) * 0.35) * 0.5;
+        const w = c.width * (1 - (i / (SEGMENTS - 1)) * 0.2) * 0.5;
         this.positions[o++] = p.x - tmp2.x * w;
         this.positions[o++] = p.y - tmp2.y * w;
         this.positions[o++] = p.z - tmp2.z * w;
