@@ -5,108 +5,115 @@
 import { clamp01, smin, smoothstep, lerp } from '../utils/math';
 import { SimplexNoise } from '../utils/noise';
 import {
-  CLIFF,
-  FALLS,
-  FLAT_ZONES,
-  LAKE_ELLIPSES,
-  PAGODA_HILL,
-  RIM,
-  RIVER,
-  TERRAIN_ORIGIN,
-  TERRAIN_RES,
-  TERRAIN_SIZE,
-  WATER_LEVEL,
+  sj_CLIFF,
+  sj_FALLS,
+  sj_FLAT_ZONES,
+  sj_LAKE_ELLIPSES,
+  sj_PAGODA_HILL,
+  sj_RIM,
+  sj_RIVER,
+  sj_TERRAIN_ORIGIN,
+  sj_TERRAIN_RES,
+  sj_TERRAIN_SIZE,
+  sj_WATER_LEVEL,
   type Ellipse,
   type Vec2,
 } from './layout';
 
-const noise = new SimplexNoise(20260929);
+const sj_noise = new SimplexNoise(20260929);
 
-function ellipseSdf(x: number, z: number, e: Ellipse): number {
-  const dx = x - e.x;
-  const dz = z - e.z;
-  const c = Math.cos(e.rot);
-  const s = Math.sin(e.rot);
-  const lx = dx * c + dz * s;
-  const lz = -dx * s + dz * c;
-  const q = Math.hypot(lx / e.rx, lz / e.rz);
-  return (q - 1) * Math.min(e.rx, e.rz);
+function ellipseSdf(sj_x: number, sj_z: number, sj_e: Ellipse): number {
+  const sj_dx = sj_x - sj_e.x;
+  const sj_dz = sj_z - sj_e.z;
+  const sj_c = Math.cos(sj_e.rot);
+  const sj_s = Math.sin(sj_e.rot);
+  const sj_lx = sj_dx * sj_c + sj_dz * sj_s;
+  const sj_lz = -sj_dx * sj_s + sj_dz * sj_c;
+  const sj_q = Math.hypot(sj_lx / sj_e.rx, sj_lz / sj_e.rz);
+  return (sj_q - 1) * Math.min(sj_e.rx, sj_e.rz);
 }
 
 /**
  * Approximate signed distance (metres) to the lake shoreline.
  * Negative inside the water, positive on land.
  */
-export function lakeSdf(x: number, z: number): number {
-  let d = ellipseSdf(x, z, LAKE_ELLIPSES[0]!);
-  for (let i = 1; i < LAKE_ELLIPSES.length; i++) {
-    d = smin(d, ellipseSdf(x, z, LAKE_ELLIPSES[i]!), 6);
+export function lakeSdf(sj_x: number, sj_z: number): number {
+  let sj_d = ellipseSdf(sj_x, sj_z, sj_LAKE_ELLIPSES[0]!);
+  for (let sj_i = 1; sj_i < sj_LAKE_ELLIPSES.length; sj_i++) {
+    sj_d = smin(sj_d, ellipseSdf(sj_x, sj_z, sj_LAKE_ELLIPSES[sj_i]!), 6);
   }
   // Organic, wobbly shoreline (held steady at the foot of the falls).
-  const calm = 1 - smoothstep(6, 12, Math.hypot(x - FALLS.foot.x, z - FALLS.foot.z));
-  return d + noise.noise2(x * 0.08, z * 0.08) * 1.6 * (1 - 0.85 * calm);
+  const sj_calm = 1 - smoothstep(6, 12, Math.hypot(sj_x - sj_FALLS.foot.x, sj_z - sj_FALLS.foot.z));
+  return sj_d + sj_noise.noise2(sj_x * 0.08, sj_z * 0.08) * 1.6 * (1 - 0.85 * sj_calm);
 }
 
 /** Rolling valley floor with the rim, the pagoda hill and the waterfall cliff. */
-function landHeight(x: number, z: number): number {
+function landHeight(sj_x: number, sj_z: number): number {
   // Gentle meadows.
-  let h =
-    1.7 + noise.fbm2(x * 0.022, z * 0.022, 4) * 1.1 + noise.fbm2(x * 0.09, z * 0.09, 2) * 0.22;
-  h = Math.max(h, 0.6);
+  let sj_h =
+    1.7 +
+    sj_noise.fbm2(sj_x * 0.022, sj_z * 0.022, 4) * 1.1 +
+    sj_noise.fbm2(sj_x * 0.09, sj_z * 0.09, 2) * 0.22;
+  sj_h = Math.max(sj_h, 0.6);
 
   // Valley rim: hills rise beyond the playable ellipse.
-  const rr = Math.hypot((x - RIM.x) / RIM.rx, (z - RIM.z) / RIM.rz);
-  const rim = smoothstep(0.8, 1.32, rr);
-  if (rim > 0) {
-    const ridge = noise.ridged2(x * 0.009 + 7.3, z * 0.009 - 2.1, 2);
-    h += rim * (18 + ridge * 14 + noise.fbm2(x * 0.02, z * 0.02, 2) * 7);
+  const sj_rr = Math.hypot((sj_x - sj_RIM.x) / sj_RIM.rx, (sj_z - sj_RIM.z) / sj_RIM.rz);
+  const sj_rim = smoothstep(0.8, 1.32, sj_rr);
+  if (sj_rim > 0) {
+    const sj_ridge = sj_noise.ridged2(sj_x * 0.009 + 7.3, sj_z * 0.009 - 2.1, 2);
+    sj_h += sj_rim * (18 + sj_ridge * 14 + sj_noise.fbm2(sj_x * 0.02, sj_z * 0.02, 2) * 7);
   }
 
   // Pagoda hill: a smooth dome with a flat top.
-  const ph = Math.hypot(x - PAGODA_HILL.x, z - PAGODA_HILL.z) / PAGODA_HILL.radius;
-  if (ph < 1) {
-    h += PAGODA_HILL.height * (1 - smoothstep(PAGODA_HILL.plateau, 1, ph));
+  const sj_ph =
+    Math.hypot(sj_x - sj_PAGODA_HILL.x, sj_z - sj_PAGODA_HILL.z) / sj_PAGODA_HILL.radius;
+  if (sj_ph < 1) {
+    sj_h += sj_PAGODA_HILL.height * (1 - smoothstep(sj_PAGODA_HILL.plateau, 1, sj_ph));
   }
 
   // North-east plateau whose edge becomes the waterfall cliff. Around the falls the cliff
   // steps back into a steep alcove.
-  const cd = Math.hypot(x - CLIFF.x, z - CLIFF.z);
-  if (cd < CLIFF.radius + 1) {
-    const alcove = fallsAlcove(x, z);
-    const radius = CLIFF.radius - FALLS.recess * alcove;
-    const edge = lerp(CLIFF.edge, FALLS.edge, alcove);
-    const t = smoothstep(radius, radius - edge, cd);
-    const rough = noise.fbm2(x * 0.12, z * 0.12, 2) * 1.2 * (1 - alcove * 0.6);
-    h += t * (CLIFF.height + rough);
+  const sj_cd = Math.hypot(sj_x - sj_CLIFF.x, sj_z - sj_CLIFF.z);
+  if (sj_cd < sj_CLIFF.radius + 1) {
+    const sj_alcove = fallsAlcove(sj_x, sj_z);
+    const sj_radius = sj_CLIFF.radius - sj_FALLS.recess * sj_alcove;
+    const sj_edge = lerp(sj_CLIFF.edge, sj_FALLS.edge, sj_alcove);
+    const sj_t = smoothstep(sj_radius, sj_radius - sj_edge, sj_cd);
+    const sj_rough = sj_noise.fbm2(sj_x * 0.12, sj_z * 0.12, 2) * 1.2 * (1 - sj_alcove * 0.6);
+    sj_h += sj_t * (sj_CLIFF.height + sj_rough);
   }
 
-  return h;
+  return sj_h;
 }
 
 /** 1 on the fall line, fading to 0 at the sides of the alcove. */
-function fallsAlcove(x: number, z: number): number {
-  const across = Math.abs((x - CLIFF.x) * FALLS.across.x + (z - CLIFF.z) * FALLS.across.z);
-  const wobble = noise.noise2(x * 0.35, z * 0.35) * 0.8;
-  return 1 - smoothstep(FALLS.alcoveHalfWidth * 0.4, FALLS.alcoveHalfWidth, across + wobble);
+function fallsAlcove(sj_x: number, sj_z: number): number {
+  const sj_across = Math.abs(
+    (sj_x - sj_CLIFF.x) * sj_FALLS.across.x + (sj_z - sj_CLIFF.z) * sj_FALLS.across.z,
+  );
+  const sj_wobble = sj_noise.noise2(sj_x * 0.35, sj_z * 0.35) * 0.8;
+  return (
+    1 - smoothstep(sj_FALLS.alcoveHalfWidth * 0.4, sj_FALLS.alcoveHalfWidth, sj_across + sj_wobble)
+  );
 }
 
 /* ------------------------------------------------------------------ River */
 
 /** Chaikin corner cutting; keeps the end points. */
-function smoothLine(pts: readonly Vec2[], iterations: number): Vec2[] {
-  let out = pts.slice();
-  for (let k = 0; k < iterations; k++) {
-    const next: Vec2[] = [out[0]!];
-    for (let i = 0; i < out.length - 1; i++) {
-      const a = out[i]!;
-      const b = out[i + 1]!;
-      next.push([a[0] * 0.75 + b[0] * 0.25, a[1] * 0.75 + b[1] * 0.25]);
-      next.push([a[0] * 0.25 + b[0] * 0.75, a[1] * 0.25 + b[1] * 0.75]);
+function smoothLine(sj_pts: readonly Vec2[], sj_iterations: number): Vec2[] {
+  let sj_out = sj_pts.slice();
+  for (let sj_k = 0; sj_k < sj_iterations; sj_k++) {
+    const sj_next: Vec2[] = [sj_out[0]!];
+    for (let sj_i = 0; sj_i < sj_out.length - 1; sj_i++) {
+      const sj_a = sj_out[sj_i]!;
+      const sj_b = sj_out[sj_i + 1]!;
+      sj_next.push([sj_a[0] * 0.75 + sj_b[0] * 0.25, sj_a[1] * 0.75 + sj_b[1] * 0.25]);
+      sj_next.push([sj_a[0] * 0.25 + sj_b[0] * 0.75, sj_a[1] * 0.25 + sj_b[1] * 0.75]);
     }
-    next.push(out[out.length - 1]!);
-    out = next;
+    sj_next.push(sj_out[sj_out.length - 1]!);
+    sj_out = sj_next;
   }
-  return out;
+  return sj_out;
 }
 
 export interface RiverPoint {
@@ -121,181 +128,198 @@ export interface RiverPoint {
 }
 
 /** Depth of the water in the stream (m). */
-export const RIVER_DEPTH = 0.42;
-const RIVER_BANK = 2.4;
-const SPRING_RADIUS = 3.2;
+export const sj_RIVER_DEPTH = 0.42;
+const sj_RIVER_BANK = 2.4;
+const sj_SPRING_RADIUS = 3.2;
 
 /**
  * The stream, densely sampled: its bed only ever runs downhill (a running minimum of the
  * ground along the course), so the water surface never climbs.
  */
-export const riverCourse: { points: RiverPoint[]; length: number } = (() => {
-  const line = smoothLine(RIVER, 3);
+export const sj_riverCourse: { points: RiverPoint[]; length: number } = (() => {
+  const sj_line = smoothLine(sj_RIVER, 3);
   // resample evenly every ~0.6 m
-  const dense: Vec2[] = [];
-  for (let i = 0; i < line.length - 1; i++) {
-    const a = line[i]!;
-    const b = line[i + 1]!;
-    const n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / 0.6));
-    for (let k = 0; k < n; k++) {
-      const t = k / n;
-      dense.push([lerp(a[0], b[0], t), lerp(a[1], b[1], t)]);
+  const sj_dense: Vec2[] = [];
+  for (let sj_i = 0; sj_i < sj_line.length - 1; sj_i++) {
+    const sj_a = sj_line[sj_i]!;
+    const sj_b = sj_line[sj_i + 1]!;
+    const sj_n = Math.max(1, Math.ceil(Math.hypot(sj_b[0] - sj_a[0], sj_b[1] - sj_a[1]) / 0.6));
+    for (let sj_k = 0; sj_k < sj_n; sj_k++) {
+      const sj_t = sj_k / sj_n;
+      sj_dense.push([lerp(sj_a[0], sj_b[0], sj_t), lerp(sj_a[1], sj_b[1], sj_t)]);
     }
   }
-  dense.push(line[line.length - 1]!);
-  const points: RiverPoint[] = [];
-  let s = 0;
-  let bed = Infinity;
-  dense.forEach(([x, z], i) => {
-    if (i > 0) s += Math.hypot(x - dense[i - 1]![0], z - dense[i - 1]![1]);
-    points.push({ x, z, s, bed: 0, halfWidth: 0 });
+  sj_dense.push(sj_line[sj_line.length - 1]!);
+  const sj_points: RiverPoint[] = [];
+  let sj_s = 0;
+  let sj_bed = Infinity;
+  sj_dense.forEach(([sj_x, sj_z], sj_i) => {
+    if (sj_i > 0) sj_s += Math.hypot(sj_x - sj_dense[sj_i - 1]![0], sj_z - sj_dense[sj_i - 1]![1]);
+    sj_points.push({ x: sj_x, z: sj_z, s: sj_s, bed: 0, halfWidth: 0 });
   });
-  const length = s;
-  for (const p of points) {
-    const f = p.s / length;
-    p.halfWidth = lerp(0.95, 1.75, smoothstep(0, 0.7, f));
-    const depth = lerp(0.9, 1.25, f);
-    bed = Math.min(bed, landHeight(p.x, p.z) - depth);
-    p.bed = bed;
+  const sj_length = sj_s;
+  for (const sj_p of sj_points) {
+    const sj_f = sj_p.s / sj_length;
+    sj_p.halfWidth = lerp(0.95, 1.75, smoothstep(0, 0.7, sj_f));
+    const sj_depth = lerp(0.9, 1.25, sj_f);
+    sj_bed = Math.min(sj_bed, landHeight(sj_p.x, sj_p.z) - sj_depth);
+    sj_p.bed = sj_bed;
   }
-  return { points, length };
+  return { points: sj_points, length: sj_length };
 })();
 
-const riverBox = (() => {
-  const m = RIVER_BANK + 3 + SPRING_RADIUS;
-  let x0 = Infinity;
-  let z0 = Infinity;
-  let x1 = -Infinity;
-  let z1 = -Infinity;
-  for (const p of riverCourse.points) {
-    x0 = Math.min(x0, p.x - m);
-    z0 = Math.min(z0, p.z - m);
-    x1 = Math.max(x1, p.x + m);
-    z1 = Math.max(z1, p.z + m);
+const sj_riverBox = (() => {
+  const sj_m = sj_RIVER_BANK + 3 + sj_SPRING_RADIUS;
+  let sj_x0 = Infinity;
+  let sj_z0 = Infinity;
+  let sj_x1 = -Infinity;
+  let sj_z1 = -Infinity;
+  for (const sj_p of sj_riverCourse.points) {
+    sj_x0 = Math.min(sj_x0, sj_p.x - sj_m);
+    sj_z0 = Math.min(sj_z0, sj_p.z - sj_m);
+    sj_x1 = Math.max(sj_x1, sj_p.x + sj_m);
+    sj_z1 = Math.max(sj_z1, sj_p.z + sj_m);
   }
-  return { x0, z0, x1, z1 };
+  return { x0: sj_x0, z0: sj_z0, x1: sj_x1, z1: sj_z1 };
 })();
 
 /** Closest point of the stream's centre line: distance, bed height and half-width there. */
 export function riverAt(
-  x: number,
-  z: number,
+  sj_x: number,
+  sj_z: number,
 ): { dist: number; bed: number; halfWidth: number; s: number } | null {
-  if (x < riverBox.x0 || x > riverBox.x1 || z < riverBox.z0 || z > riverBox.z1) return null;
-  const pts = riverCourse.points;
-  let best = Infinity;
-  let bi = 0;
-  let bt = 0;
-  for (let i = 0; i < pts.length - 1; i++) {
-    const a = pts[i]!;
-    const b = pts[i + 1]!;
-    const abx = b.x - a.x;
-    const abz = b.z - a.z;
-    const len2 = abx * abx + abz * abz;
-    const t = len2 > 0 ? clamp01(((x - a.x) * abx + (z - a.z) * abz) / len2) : 0;
-    const dx = x - (a.x + abx * t);
-    const dz = z - (a.z + abz * t);
-    const d2 = dx * dx + dz * dz;
-    if (d2 < best) {
-      best = d2;
-      bi = i;
-      bt = t;
+  if (
+    sj_x < sj_riverBox.x0 ||
+    sj_x > sj_riverBox.x1 ||
+    sj_z < sj_riverBox.z0 ||
+    sj_z > sj_riverBox.z1
+  )
+    return null;
+  const sj_pts = sj_riverCourse.points;
+  let sj_best = Infinity;
+  let sj_bi = 0;
+  let sj_bt = 0;
+  for (let sj_i = 0; sj_i < sj_pts.length - 1; sj_i++) {
+    const sj_a = sj_pts[sj_i]!;
+    const sj_b = sj_pts[sj_i + 1]!;
+    const sj_abx = sj_b.x - sj_a.x;
+    const sj_abz = sj_b.z - sj_a.z;
+    const sj_len2 = sj_abx * sj_abx + sj_abz * sj_abz;
+    const sj_t =
+      sj_len2 > 0 ? clamp01(((sj_x - sj_a.x) * sj_abx + (sj_z - sj_a.z) * sj_abz) / sj_len2) : 0;
+    const sj_dx = sj_x - (sj_a.x + sj_abx * sj_t);
+    const sj_dz = sj_z - (sj_a.z + sj_abz * sj_t);
+    const sj_d2 = sj_dx * sj_dx + sj_dz * sj_dz;
+    if (sj_d2 < sj_best) {
+      sj_best = sj_d2;
+      sj_bi = sj_i;
+      sj_bt = sj_t;
     }
   }
-  const a = pts[bi]!;
-  const b = pts[bi + 1]!;
+  const sj_a = sj_pts[sj_bi]!;
+  const sj_b = sj_pts[sj_bi + 1]!;
   return {
-    dist: Math.sqrt(best),
-    bed: lerp(a.bed, b.bed, bt),
-    halfWidth: lerp(a.halfWidth, b.halfWidth, bt),
-    s: lerp(a.s, b.s, bt),
+    dist: Math.sqrt(sj_best),
+    bed: lerp(sj_a.bed, sj_b.bed, sj_bt),
+    halfWidth: lerp(sj_a.halfWidth, sj_b.halfWidth, sj_bt),
+    s: lerp(sj_a.s, sj_b.s, sj_bt),
   };
 }
 
 /** Cuts the stream bed (with gently sloping banks) and the spring pool into the ground. */
-function applyRiver(x: number, z: number, h: number): number {
-  const r = riverAt(x, z);
-  if (!r) return h;
-  let target = lerp(r.bed, h, smoothstep(r.halfWidth, r.halfWidth + RIVER_BANK, r.dist));
-  const spring = riverCourse.points[0]!;
-  const ds = Math.hypot(x - spring.x, z - spring.z);
-  if (ds < SPRING_RADIUS + RIVER_BANK) {
-    const bowl = lerp(spring.bed - 0.35, h, smoothstep(SPRING_RADIUS - 1, SPRING_RADIUS + 1.6, ds));
-    target = Math.min(target, bowl);
+function applyRiver(sj_x: number, sj_z: number, sj_h: number): number {
+  const sj_r = riverAt(sj_x, sj_z);
+  if (!sj_r) return sj_h;
+  let sj_target = lerp(
+    sj_r.bed,
+    sj_h,
+    smoothstep(sj_r.halfWidth, sj_r.halfWidth + sj_RIVER_BANK, sj_r.dist),
+  );
+  const sj_spring = sj_riverCourse.points[0]!;
+  const sj_ds = Math.hypot(sj_x - sj_spring.x, sj_z - sj_spring.z);
+  if (sj_ds < sj_SPRING_RADIUS + sj_RIVER_BANK) {
+    const sj_bowl = lerp(
+      sj_spring.bed - 0.35,
+      sj_h,
+      smoothstep(sj_SPRING_RADIUS - 1, sj_SPRING_RADIUS + 1.6, sj_ds),
+    );
+    sj_target = Math.min(sj_target, sj_bowl);
   }
-  return Math.min(h, target);
+  return Math.min(sj_h, sj_target);
 }
 
 /**
  * Carves the lake basin: a shallow sandy shelf dropping to ~3 m deep. At the waterfall
  * the cliff drops straight into a deep plunge pool instead of a beach.
  */
-function applyLake(x: number, z: number, h: number): number {
-  const sd = lakeSdf(x, z);
-  if (sd > 7) return h;
-  const toFoot = Math.hypot(x - FALLS.foot.x, z - FALLS.foot.z);
-  const nearFalls = 1 - smoothstep(9, 17, toFoot);
-  let profile: number;
-  if (sd < 0) {
-    const depth = smoothstep(0, lerp(11, 4, nearFalls), -sd);
-    profile = 0.25 - 3.3 * depth + noise.noise2(x * 0.15, z * 0.15) * 0.25 * depth;
+function applyLake(sj_x: number, sj_z: number, sj_h: number): number {
+  const sj_sd = lakeSdf(sj_x, sj_z);
+  if (sj_sd > 7) return sj_h;
+  const sj_toFoot = Math.hypot(sj_x - sj_FALLS.foot.x, sj_z - sj_FALLS.foot.z);
+  const sj_nearFalls = 1 - smoothstep(9, 17, sj_toFoot);
+  let sj_profile: number;
+  if (sj_sd < 0) {
+    const sj_depth = smoothstep(0, lerp(11, 4, sj_nearFalls), -sj_sd);
+    sj_profile =
+      0.25 - 3.3 * sj_depth + sj_noise.noise2(sj_x * 0.15, sj_z * 0.15) * 0.25 * sj_depth;
     // the plunge pool is scoured deeper right under the falls
-    profile -= 1.6 * (1 - smoothstep(1, 6.5, toFoot));
+    sj_profile -= 1.6 * (1 - smoothstep(1, 6.5, sj_toFoot));
   } else {
-    profile = 0.25 + sd * 0.18;
+    sj_profile = 0.25 + sj_sd * 0.18;
   }
-  let w = 1 - smoothstep(0, lerp(7, 1.2, nearFalls), sd);
+  let sj_w = 1 - smoothstep(0, lerp(7, 1.2, sj_nearFalls), sj_sd);
   // Keep the plateau whole up to just past the lip, so the cliff edge is exactly where the
   // stream pours over (the pool's shore blend would otherwise eat into it).
-  const along = (x - FALLS.lip.x) * FALLS.dir.x + (z - FALLS.lip.z) * FALLS.dir.z;
-  w *= 1 - nearFalls * (1 - smoothstep(0.4, 1.4, along));
-  return lerp(h, Math.min(h, profile), w);
+  const sj_along =
+    (sj_x - sj_FALLS.lip.x) * sj_FALLS.dir.x + (sj_z - sj_FALLS.lip.z) * sj_FALLS.dir.z;
+  sj_w *= 1 - sj_nearFalls * (1 - smoothstep(0.4, 1.4, sj_along));
+  return lerp(sj_h, Math.min(sj_h, sj_profile), sj_w);
 }
 
 /** Terrain height before flattening. */
-function rawHeight(x: number, z: number): number {
-  return applyLake(x, z, applyRiver(x, z, landHeight(x, z)));
+function rawHeight(sj_x: number, sj_z: number): number {
+  return applyLake(sj_x, sj_z, applyRiver(sj_x, sj_z, landHeight(sj_x, sj_z)));
 }
 
 /** Height of the stream's water surface at the lip, where the waterfall starts. */
-export const FALLS_TOP = (() => {
-  const pts = riverCourse.points;
-  return pts[pts.length - 1]!.bed + RIVER_DEPTH;
+export const sj_FALLS_TOP = (() => {
+  const sj_pts = sj_riverCourse.points;
+  return sj_pts[sj_pts.length - 1]!.bed + sj_RIVER_DEPTH;
 })();
 
 /** Water level at the foot of the falls. */
-export const FALLS_BOTTOM = WATER_LEVEL;
+export const sj_FALLS_BOTTOM = sj_WATER_LEVEL;
 
-const flatTargets = FLAT_ZONES.map((f) => rawHeight(f.x, f.z));
+const sj_flatTargets = sj_FLAT_ZONES.map((sj_f) => rawHeight(sj_f.x, sj_f.z));
 
 /** Final analytic terrain height at world position (x, z). */
-export function terrainHeight(x: number, z: number): number {
-  let h = rawHeight(x, z);
-  for (let i = 0; i < FLAT_ZONES.length; i++) {
-    const f = FLAT_ZONES[i]!;
-    const d = Math.hypot(x - f.x, z - f.z);
-    if (d > f.radius + f.falloff) continue;
-    const w = 1 - smoothstep(f.radius, f.radius + f.falloff, d);
-    h = lerp(h, flatTargets[i]!, w);
+export function terrainHeight(sj_x: number, sj_z: number): number {
+  let sj_h = rawHeight(sj_x, sj_z);
+  for (let sj_i = 0; sj_i < sj_FLAT_ZONES.length; sj_i++) {
+    const sj_f = sj_FLAT_ZONES[sj_i]!;
+    const sj_d = Math.hypot(sj_x - sj_f.x, sj_z - sj_f.z);
+    if (sj_d > sj_f.radius + sj_f.falloff) continue;
+    const sj_w = 1 - smoothstep(sj_f.radius, sj_f.radius + sj_f.falloff, sj_d);
+    sj_h = lerp(sj_h, sj_flatTargets[sj_i]!, sj_w);
   }
-  return h;
+  return sj_h;
 }
 
 /** Grid spacing of the sampled terrain. */
-export const CELL = TERRAIN_SIZE / (TERRAIN_RES - 1);
+export const sj_CELL = sj_TERRAIN_SIZE / (sj_TERRAIN_RES - 1);
 
 /** Samples the analytic height function on the terrain grid (row-major, z rows). */
 export function buildHeightGrid(): Float32Array {
-  const n = TERRAIN_RES;
-  const out = new Float32Array(n * n);
-  for (let j = 0; j < n; j++) {
-    const z = TERRAIN_ORIGIN + j * CELL;
-    for (let i = 0; i < n; i++) {
-      const x = TERRAIN_ORIGIN + i * CELL;
-      out[j * n + i] = terrainHeight(x, z);
+  const sj_n = sj_TERRAIN_RES;
+  const sj_out = new Float32Array(sj_n * sj_n);
+  for (let sj_j = 0; sj_j < sj_n; sj_j++) {
+    const sj_z = sj_TERRAIN_ORIGIN + sj_j * sj_CELL;
+    for (let sj_i = 0; sj_i < sj_n; sj_i++) {
+      const sj_x = sj_TERRAIN_ORIGIN + sj_i * sj_CELL;
+      sj_out[sj_j * sj_n + sj_i] = terrainHeight(sj_x, sj_z);
     }
   }
-  return out;
+  return sj_out;
 }
 
 /**
@@ -303,41 +327,41 @@ export function buildHeightGrid(): Float32Array {
  * rendered mesh, so the panda's feet always touch the visible ground.
  * Cell triangles: (00, 01, 10) and (01, 11, 10).
  */
-export function sampleGrid(grid: Float32Array, x: number, z: number): number {
-  const n = TERRAIN_RES;
-  const fx = (x - TERRAIN_ORIGIN) / CELL;
-  const fz = (z - TERRAIN_ORIGIN) / CELL;
-  const i = Math.min(Math.max(Math.floor(fx), 0), n - 2);
-  const j = Math.min(Math.max(Math.floor(fz), 0), n - 2);
-  const u = clamp01(fx - i);
-  const v = clamp01(fz - j);
-  const h00 = grid[j * n + i]!;
-  const h10 = grid[j * n + i + 1]!;
-  const h01 = grid[(j + 1) * n + i]!;
-  const h11 = grid[(j + 1) * n + i + 1]!;
-  if (u + v <= 1) {
-    return h00 + (h10 - h00) * u + (h01 - h00) * v;
+export function sampleGrid(sj_grid: Float32Array, sj_x: number, sj_z: number): number {
+  const sj_n = sj_TERRAIN_RES;
+  const sj_fx = (sj_x - sj_TERRAIN_ORIGIN) / sj_CELL;
+  const sj_fz = (sj_z - sj_TERRAIN_ORIGIN) / sj_CELL;
+  const sj_i = Math.min(Math.max(Math.floor(sj_fx), 0), sj_n - 2);
+  const sj_j = Math.min(Math.max(Math.floor(sj_fz), 0), sj_n - 2);
+  const sj_u = clamp01(sj_fx - sj_i);
+  const sj_v = clamp01(sj_fz - sj_j);
+  const sj_h00 = sj_grid[sj_j * sj_n + sj_i]!;
+  const sj_h10 = sj_grid[sj_j * sj_n + sj_i + 1]!;
+  const sj_h01 = sj_grid[(sj_j + 1) * sj_n + sj_i]!;
+  const sj_h11 = sj_grid[(sj_j + 1) * sj_n + sj_i + 1]!;
+  if (sj_u + sj_v <= 1) {
+    return sj_h00 + (sj_h10 - sj_h00) * sj_u + (sj_h01 - sj_h00) * sj_v;
   }
-  return h11 + (h01 - h11) * (1 - u) + (h10 - h11) * (1 - v);
+  return sj_h11 + (sj_h01 - sj_h11) * (1 - sj_u) + (sj_h10 - sj_h11) * (1 - sj_v);
 }
 
 /** Surface normal of the sampled grid via central differences (unnormalised y = 1). */
 export function gridNormal(
-  grid: Float32Array,
-  x: number,
-  z: number,
-  out: { x: number; y: number; z: number },
+  sj_grid: Float32Array,
+  sj_x: number,
+  sj_z: number,
+  sj_out: { x: number; y: number; z: number },
 ) {
-  const e = CELL;
-  const hl = sampleGrid(grid, x - e, z);
-  const hr = sampleGrid(grid, x + e, z);
-  const hd = sampleGrid(grid, x, z - e);
-  const hu = sampleGrid(grid, x, z + e);
-  const nx = (hl - hr) / (2 * e);
-  const nz = (hd - hu) / (2 * e);
-  const len = Math.hypot(nx, 1, nz);
-  out.x = nx / len;
-  out.y = 1 / len;
-  out.z = nz / len;
-  return out;
+  const sj_e = sj_CELL;
+  const sj_hl = sampleGrid(sj_grid, sj_x - sj_e, sj_z);
+  const sj_hr = sampleGrid(sj_grid, sj_x + sj_e, sj_z);
+  const sj_hd = sampleGrid(sj_grid, sj_x, sj_z - sj_e);
+  const sj_hu = sampleGrid(sj_grid, sj_x, sj_z + sj_e);
+  const sj_nx = (sj_hl - sj_hr) / (2 * sj_e);
+  const sj_nz = (sj_hd - sj_hu) / (2 * sj_e);
+  const sj_len = Math.hypot(sj_nx, 1, sj_nz);
+  sj_out.x = sj_nx / sj_len;
+  sj_out.y = 1 / sj_len;
+  sj_out.z = sj_nz / sj_len;
+  return sj_out;
 }

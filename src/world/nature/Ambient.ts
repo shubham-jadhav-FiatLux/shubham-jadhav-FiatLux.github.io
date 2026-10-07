@@ -11,41 +11,41 @@ import {
   UniformsUtils,
   type Scene,
 } from 'three';
-import { globalUniforms } from '../../render/uniforms';
-import { NOISE_GLSL, TERRAIN_GLSL } from '../../render/glsl';
+import { sj_globalUniforms } from '../../render/uniforms';
+import { sj_NOISE_GLSL, sj_TERRAIN_GLSL } from '../../render/glsl';
 import { Random } from '../../utils/random';
 
 function petalSprite(): CanvasTexture {
-  const s = 64;
-  const c = document.createElement('canvas');
-  c.width = c.height = s;
-  const ctx = c.getContext('2d')!;
-  ctx.translate(s / 2, s / 2);
-  ctx.fillStyle = '#fff';
-  ctx.beginPath();
-  ctx.moveTo(0, -s * 0.42);
-  ctx.bezierCurveTo(s * 0.32, -s * 0.28, s * 0.26, s * 0.3, 0, s * 0.4);
-  ctx.bezierCurveTo(-s * 0.26, s * 0.3, -s * 0.32, -s * 0.28, 0, -s * 0.42);
-  ctx.fill();
-  const t = new CanvasTexture(c);
-  t.needsUpdate = true;
-  return t;
+  const sj_s = 64;
+  const sj_c = document.createElement('canvas');
+  sj_c.width = sj_c.height = sj_s;
+  const sj_ctx = sj_c.getContext('2d')!;
+  sj_ctx.translate(sj_s / 2, sj_s / 2);
+  sj_ctx.fillStyle = '#fff';
+  sj_ctx.beginPath();
+  sj_ctx.moveTo(0, -sj_s * 0.42);
+  sj_ctx.bezierCurveTo(sj_s * 0.32, -sj_s * 0.28, sj_s * 0.26, sj_s * 0.3, 0, sj_s * 0.4);
+  sj_ctx.bezierCurveTo(-sj_s * 0.26, sj_s * 0.3, -sj_s * 0.32, -sj_s * 0.28, 0, -sj_s * 0.42);
+  sj_ctx.fill();
+  const sj_t = new CanvasTexture(sj_c);
+  sj_t.needsUpdate = true;
+  return sj_t;
 }
 
 function glowSprite(): CanvasTexture {
-  const s = 64;
-  const c = document.createElement('canvas');
-  c.width = c.height = s;
-  const ctx = c.getContext('2d')!;
-  const g = ctx.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
-  g.addColorStop(0, 'rgba(255,255,255,1)');
-  g.addColorStop(0.25, 'rgba(255,255,255,0.5)');
-  g.addColorStop(1, 'rgba(255,255,255,0)');
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, s, s);
-  const t = new CanvasTexture(c);
-  t.needsUpdate = true;
-  return t;
+  const sj_s = 64;
+  const sj_c = document.createElement('canvas');
+  sj_c.width = sj_c.height = sj_s;
+  const sj_ctx = sj_c.getContext('2d')!;
+  const sj_g = sj_ctx.createRadialGradient(sj_s / 2, sj_s / 2, 0, sj_s / 2, sj_s / 2, sj_s / 2);
+  sj_g.addColorStop(0, 'rgba(255,255,255,1)');
+  sj_g.addColorStop(0.25, 'rgba(255,255,255,0.5)');
+  sj_g.addColorStop(1, 'rgba(255,255,255,0)');
+  sj_ctx.fillStyle = sj_g;
+  sj_ctx.fillRect(0, 0, sj_s, sj_s);
+  const sj_t = new CanvasTexture(sj_c);
+  sj_t.needsUpdate = true;
+  return sj_t;
 }
 
 /**
@@ -58,35 +58,37 @@ export class Ambient {
   private scaleUniform = { value: 800 };
 
   constructor(
-    blossomBlobs: { x: number; y: number; z: number; r: number }[],
-    petalCount: number,
-    moteCount: number,
+    sj_blossomBlobs: { x: number; y: number; z: number; r: number }[],
+    sj_petalCount: number,
+    sj_moteCount: number,
   ) {
-    const rand = new Random(77);
+    const sj_rand = new Random(77);
     // ---- petals ----
-    const spawn = new Float32Array(petalCount * 3);
-    const params = new Float32Array(petalCount * 4);
-    const colors = new Float32Array(petalCount * 3);
-    const palette = ['#fbd3e0', '#f6b3c9', '#f29ab7', '#fde9ef'].map((c) => new Color(c));
-    for (let i = 0; i < petalCount; i++) {
-      const b = blossomBlobs.length ? rand.pick(blossomBlobs) : { x: 0, y: 5, z: 20, r: 2 };
-      const a = rand.range(0, Math.PI * 2);
-      const r = Math.sqrt(rand.float()) * b.r;
-      spawn[i * 3] = b.x + Math.cos(a) * r;
-      spawn[i * 3 + 1] = b.y - rand.range(0, b.r * 0.4);
-      spawn[i * 3 + 2] = b.z + Math.sin(a) * r;
-      params[i * 4] = rand.float();
-      params[i * 4 + 1] = rand.range(0.35, 0.65);
-      params[i * 4 + 2] = rand.range(0.2, 0.6);
-      params[i * 4 + 3] = rand.range(-3, 3);
-      const c = rand.pick(palette);
-      colors.set([c.r, c.g, c.b], i * 3);
+    const sj_spawn = new Float32Array(sj_petalCount * 3);
+    const sj_params = new Float32Array(sj_petalCount * 4);
+    const sj_colors = new Float32Array(sj_petalCount * 3);
+    const sj_palette = ['#fbd3e0', '#f6b3c9', '#f29ab7', '#fde9ef'].map((sj_c) => new Color(sj_c));
+    for (let sj_i = 0; sj_i < sj_petalCount; sj_i++) {
+      const sj_b = sj_blossomBlobs.length
+        ? sj_rand.pick(sj_blossomBlobs)
+        : { x: 0, y: 5, z: 20, r: 2 };
+      const sj_a = sj_rand.range(0, Math.PI * 2);
+      const sj_r = Math.sqrt(sj_rand.float()) * sj_b.r;
+      sj_spawn[sj_i * 3] = sj_b.x + Math.cos(sj_a) * sj_r;
+      sj_spawn[sj_i * 3 + 1] = sj_b.y - sj_rand.range(0, sj_b.r * 0.4);
+      sj_spawn[sj_i * 3 + 2] = sj_b.z + Math.sin(sj_a) * sj_r;
+      sj_params[sj_i * 4] = sj_rand.float();
+      sj_params[sj_i * 4 + 1] = sj_rand.range(0.35, 0.65);
+      sj_params[sj_i * 4 + 2] = sj_rand.range(0.2, 0.6);
+      sj_params[sj_i * 4 + 3] = sj_rand.range(-3, 3);
+      const sj_c = sj_rand.pick(sj_palette);
+      sj_colors.set([sj_c.r, sj_c.g, sj_c.b], sj_i * 3);
     }
-    const pg = new BufferGeometry();
-    pg.setAttribute('position', new BufferAttribute(spawn, 3));
-    pg.setAttribute('aParams', new BufferAttribute(params, 4));
-    pg.setAttribute('aColor', new BufferAttribute(colors, 3));
-    const petalMat = new ShaderMaterial({
+    const sj_pg = new BufferGeometry();
+    sj_pg.setAttribute('position', new BufferAttribute(sj_spawn, 3));
+    sj_pg.setAttribute('aParams', new BufferAttribute(sj_params, 4));
+    sj_pg.setAttribute('aColor', new BufferAttribute(sj_colors, 3));
+    const sj_petalMat = new ShaderMaterial({
       transparent: true,
       depthWrite: false,
       blending: NormalBlending,
@@ -100,8 +102,8 @@ export class Ambient {
         varying vec3 vColor;
         varying float vAlpha;
         varying float vRot;
-        ${NOISE_GLSL}
-        ${TERRAIN_GLSL}
+        ${sj_NOISE_GLSL}
+        ${sj_TERRAIN_GLSL}
         uniform float uTime;
         #include <fog_pars_vertex>
         void main() {
@@ -143,45 +145,45 @@ export class Ambient {
         }
       `,
     });
-    Object.assign(petalMat.uniforms, {
-      uTime: globalUniforms.uTime,
-      uWindDir: globalUniforms.uWindDir,
-      uHeightMap: globalUniforms.uHeightMap,
-      uMaskMap: globalUniforms.uMaskMap,
-      uTerrain: globalUniforms.uTerrain,
+    Object.assign(sj_petalMat.uniforms, {
+      uTime: sj_globalUniforms.uTime,
+      uWindDir: sj_globalUniforms.uWindDir,
+      uHeightMap: sj_globalUniforms.uHeightMap,
+      uMaskMap: sj_globalUniforms.uMaskMap,
+      uTerrain: sj_globalUniforms.uTerrain,
       uScale: this.scaleUniform,
       uSprite: { value: petalSprite() },
     });
-    this.petals = new Points(pg, petalMat);
+    this.petals = new Points(sj_pg, sj_petalMat);
     this.petals.frustumCulled = false;
     this.petals.name = 'petals';
     this.petals.renderOrder = 4;
 
     // ---- golden motes around the panda ----
-    const mpos = new Float32Array(moteCount * 3);
-    const mpar = new Float32Array(moteCount * 2);
-    for (let i = 0; i < moteCount; i++) {
-      mpos[i * 3] = rand.range(-14, 14);
-      mpos[i * 3 + 1] = rand.range(0.4, 4.5);
-      mpos[i * 3 + 2] = rand.range(-14, 14);
-      mpar[i * 2] = rand.float();
-      mpar[i * 2 + 1] = rand.range(0.5, 1.3);
+    const sj_mpos = new Float32Array(sj_moteCount * 3);
+    const sj_mpar = new Float32Array(sj_moteCount * 2);
+    for (let sj_i = 0; sj_i < sj_moteCount; sj_i++) {
+      sj_mpos[sj_i * 3] = sj_rand.range(-14, 14);
+      sj_mpos[sj_i * 3 + 1] = sj_rand.range(0.4, 4.5);
+      sj_mpos[sj_i * 3 + 2] = sj_rand.range(-14, 14);
+      sj_mpar[sj_i * 2] = sj_rand.float();
+      sj_mpar[sj_i * 2 + 1] = sj_rand.range(0.5, 1.3);
     }
-    const mg = new BufferGeometry();
-    mg.setAttribute('position', new BufferAttribute(mpos, 3));
-    mg.setAttribute('aParams', new BufferAttribute(mpar, 2));
-    const moteMat = new ShaderMaterial({
+    const sj_mg = new BufferGeometry();
+    sj_mg.setAttribute('position', new BufferAttribute(sj_mpos, 3));
+    sj_mg.setAttribute('aParams', new BufferAttribute(sj_mpar, 2));
+    const sj_moteMat = new ShaderMaterial({
       transparent: true,
       depthWrite: false,
       blending: AdditiveBlending,
       uniforms: {
-        uTime: globalUniforms.uTime,
-        uPlayerPos: globalUniforms.uPlayerPos,
+        uTime: sj_globalUniforms.uTime,
+        uPlayerPos: sj_globalUniforms.uPlayerPos,
         uScale: this.scaleUniform,
         uSprite: { value: glowSprite() },
-        uHeightMap: globalUniforms.uHeightMap,
-        uMaskMap: globalUniforms.uMaskMap,
-        uTerrain: globalUniforms.uTerrain,
+        uHeightMap: sj_globalUniforms.uHeightMap,
+        uMaskMap: sj_globalUniforms.uMaskMap,
+        uTerrain: sj_globalUniforms.uTerrain,
       },
       vertexShader: /* glsl */ `
         attribute vec2 aParams;
@@ -189,7 +191,7 @@ export class Ambient {
         uniform vec3 uPlayerPos;
         uniform float uScale;
         varying float vAlpha;
-        ${TERRAIN_GLSL}
+        ${sj_TERRAIN_GLSL}
         void main() {
           float box = 28.0;
           vec3 p = position;
@@ -216,17 +218,17 @@ export class Ambient {
         }
       `,
     });
-    this.motes = new Points(mg, moteMat);
+    this.motes = new Points(sj_mg, sj_moteMat);
     this.motes.frustumCulled = false;
     this.motes.name = 'motes';
     this.motes.renderOrder = 6;
   }
 
-  addTo(scene: Scene): void {
-    scene.add(this.petals, this.motes);
+  addTo(sj_scene: Scene): void {
+    sj_scene.add(this.petals, this.motes);
   }
 
-  setViewport(heightPx: number, fovDeg: number): void {
-    this.scaleUniform.value = heightPx / (2 * Math.tan((fovDeg * Math.PI) / 360));
+  setViewport(sj_heightPx: number, sj_fovDeg: number): void {
+    this.scaleUniform.value = sj_heightPx / (2 * Math.tan((sj_fovDeg * Math.PI) / 360));
   }
 }

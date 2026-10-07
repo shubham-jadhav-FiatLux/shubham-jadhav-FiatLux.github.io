@@ -11,16 +11,16 @@ import {
   Vector3,
   type Scene,
 } from 'three';
-import { globalUniforms } from '../../render/uniforms';
-import { NOISE_GLSL } from '../../render/glsl';
-import { FALLS, WATER_LEVEL } from '../layout';
-import { FALLS_TOP, riverCourse } from '../heightfield';
+import { sj_globalUniforms } from '../../render/uniforms';
+import { sj_NOISE_GLSL } from '../../render/glsl';
+import { sj_FALLS, sj_WATER_LEVEL } from '../layout';
+import { sj_FALLS_TOP, sj_riverCourse } from '../heightfield';
 import type { Particles } from '../../effects/Particles';
-import { SPRITE } from '../../effects/Particles';
+import { sj_SPRITE } from '../../effects/Particles';
 
-const MIST = new Color('#f2f6f3');
-const SPRAY = new Color('#ffffff');
-const GRAVITY = 9.81;
+const sj_MIST = new Color('#f2f6f3');
+const sj_SPRAY = new Color('#ffffff');
+const sj_GRAVITY = 9.81;
 
 /**
  * The waterfall. The stream leaves the lip of the plateau and follows a ballistic arc
@@ -37,40 +37,42 @@ export class Waterfall {
   private sprayTimer = 0;
 
   constructor() {
-    const pts = riverCourse.points;
-    const lip = pts[pts.length - 1]!;
-    const out = new Vector3(FALLS.dir.x, 0, FALLS.dir.z);
-    const side = new Vector3(FALLS.across.x, 0, FALLS.across.z);
-    this.top.set(lip.x, FALLS_TOP, lip.z);
-    this.bottom.set(FALLS.foot.x, WATER_LEVEL, FALLS.foot.z);
+    const sj_pts = sj_riverCourse.points;
+    const sj_lip = sj_pts[sj_pts.length - 1]!;
+    const sj_out = new Vector3(sj_FALLS.dir.x, 0, sj_FALLS.dir.z);
+    const sj_side = new Vector3(sj_FALLS.across.x, 0, sj_FALLS.across.z);
+    this.top.set(sj_lip.x, sj_FALLS_TOP, sj_lip.z);
+    this.bottom.set(sj_FALLS.foot.x, sj_WATER_LEVEL, sj_FALLS.foot.z);
 
     // Path: along the last metres of the stream, over the lip, then free fall.
-    const path: Vector3[] = [];
-    for (const back of [2.4, 1.6, 0.8]) {
-      path.push(this.top.clone().addScaledVector(out, -back));
+    const sj_path: Vector3[] = [];
+    for (const sj_back of [2.4, 1.6, 0.8]) {
+      sj_path.push(this.top.clone().addScaledVector(sj_out, -sj_back));
     }
-    const height = FALLS_TOP - WATER_LEVEL;
-    const fallTime = Math.sqrt((2 * height) / GRAVITY);
-    const reach = Math.hypot(FALLS.foot.x - lip.x, FALLS.foot.z - lip.z);
-    const vOut = reach / fallTime;
-    const steps = 30;
-    for (let i = 0; i <= steps; i++) {
+    const sj_height = sj_FALLS_TOP - sj_WATER_LEVEL;
+    const sj_fallTime = Math.sqrt((2 * sj_height) / sj_GRAVITY);
+    const sj_reach = Math.hypot(sj_FALLS.foot.x - sj_lip.x, sj_FALLS.foot.z - sj_lip.z);
+    const sj_vOut = sj_reach / sj_fallTime;
+    const sj_steps = 30;
+    for (let sj_i = 0; sj_i <= sj_steps; sj_i++) {
       // denser near the top where the curve bends most
-      const t = fallTime * Math.pow(i / steps, 1.4);
-      const q = this.top.clone().addScaledVector(out, vOut * t);
-      q.y = FALLS_TOP - 0.5 * GRAVITY * t * t;
-      path.push(q);
+      const sj_t = sj_fallTime * Math.pow(sj_i / sj_steps, 1.4);
+      const sj_q = this.top.clone().addScaledVector(sj_out, sj_vOut * sj_t);
+      sj_q.y = sj_FALLS_TOP - 0.5 * sj_GRAVITY * sj_t * sj_t;
+      sj_path.push(sj_q);
     }
-    path[path.length - 1]!.y = WATER_LEVEL - 0.05;
+    sj_path[sj_path.length - 1]!.y = sj_WATER_LEVEL - 0.05;
 
-    const width = (lip.halfWidth + 0.15) * 2;
-    this.group.push(this.makeSheet(path, side, width, width * 1.25, false));
+    const sj_width = (sj_lip.halfWidth + 0.15) * 2;
+    this.group.push(this.makeSheet(sj_path, sj_side, sj_width, sj_width * 1.25, false));
     this.group.push(
       this.makeSheet(
-        path.map((q, i) => q.clone().addScaledVector(out, 0.18 + (0.6 * i) / path.length)),
-        side,
-        width * 1.25,
-        width * 1.7,
+        sj_path.map((sj_q, sj_i) =>
+          sj_q.clone().addScaledVector(sj_out, 0.18 + (0.6 * sj_i) / sj_path.length),
+        ),
+        sj_side,
+        sj_width * 1.25,
+        sj_width * 1.7,
         true,
       ),
     );
@@ -78,49 +80,49 @@ export class Waterfall {
   }
 
   private makeSheet(
-    path: Vector3[],
-    side: Vector3,
-    widthTop: number,
-    widthBottom: number,
-    veil: boolean,
+    sj_path: Vector3[],
+    sj_side: Vector3,
+    sj_widthTop: number,
+    sj_widthBottom: number,
+    sj_veil: boolean,
   ): Mesh {
-    const pos: number[] = [];
-    const uv: number[] = [];
-    const fall: number[] = [];
-    const idx: number[] = [];
-    let len = 0;
-    const lens = [0];
-    for (let i = 1; i < path.length; i++) {
-      len += path[i]!.distanceTo(path[i - 1]!);
-      lens.push(len);
+    const sj_pos: number[] = [];
+    const sj_uv: number[] = [];
+    const sj_fall: number[] = [];
+    const sj_idx: number[] = [];
+    let sj_len = 0;
+    const sj_lens = [0];
+    for (let sj_i = 1; sj_i < sj_path.length; sj_i++) {
+      sj_len += sj_path[sj_i]!.distanceTo(sj_path[sj_i - 1]!);
+      sj_lens.push(sj_len);
     }
-    const drop = path[0]!.y - path[path.length - 1]!.y;
-    path.forEach((q, i) => {
+    const sj_drop = sj_path[0]!.y - sj_path[sj_path.length - 1]!.y;
+    sj_path.forEach((sj_q, sj_i) => {
       // 0 while still on the stream, then 0..1 down the fall
-      const f = Math.max(0, Math.min(1, (FALLS_TOP - q.y) / drop));
-      const w = widthTop + (widthBottom - widthTop) * Math.pow(f, 0.8);
-      pos.push(q.x - side.x * w * 0.5, q.y, q.z - side.z * w * 0.5);
-      pos.push(q.x + side.x * w * 0.5, q.y, q.z + side.z * w * 0.5);
-      uv.push(0, lens[i]!, 1, lens[i]!);
-      fall.push(f, f);
-      if (i < path.length - 1) {
-        const a = i * 2;
-        idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+      const sj_f = Math.max(0, Math.min(1, (sj_FALLS_TOP - sj_q.y) / sj_drop));
+      const sj_w = sj_widthTop + (sj_widthBottom - sj_widthTop) * Math.pow(sj_f, 0.8);
+      sj_pos.push(sj_q.x - sj_side.x * sj_w * 0.5, sj_q.y, sj_q.z - sj_side.z * sj_w * 0.5);
+      sj_pos.push(sj_q.x + sj_side.x * sj_w * 0.5, sj_q.y, sj_q.z + sj_side.z * sj_w * 0.5);
+      sj_uv.push(0, sj_lens[sj_i]!, 1, sj_lens[sj_i]!);
+      sj_fall.push(sj_f, sj_f);
+      if (sj_i < sj_path.length - 1) {
+        const sj_a = sj_i * 2;
+        sj_idx.push(sj_a, sj_a + 1, sj_a + 2, sj_a + 1, sj_a + 3, sj_a + 2);
       }
     });
-    const geo = new BufferGeometry();
-    geo.setAttribute('position', new BufferAttribute(new Float32Array(pos), 3));
-    geo.setAttribute('uv', new BufferAttribute(new Float32Array(uv), 2));
-    geo.setAttribute('aFall', new BufferAttribute(new Float32Array(fall), 1));
-    geo.setIndex(idx);
-    geo.computeBoundingSphere();
-    const mat = new ShaderMaterial({
+    const sj_geo = new BufferGeometry();
+    sj_geo.setAttribute('position', new BufferAttribute(new Float32Array(sj_pos), 3));
+    sj_geo.setAttribute('uv', new BufferAttribute(new Float32Array(sj_uv), 2));
+    sj_geo.setAttribute('aFall', new BufferAttribute(new Float32Array(sj_fall), 1));
+    sj_geo.setIndex(sj_idx);
+    sj_geo.computeBoundingSphere();
+    const sj_mat = new ShaderMaterial({
       transparent: true,
       depthWrite: false,
       side: DoubleSide,
       fog: true,
-      defines: veil ? { VEIL: '' } : {},
-      uniforms: UniformsUtils.merge([UniformsLib.fog, { uSeed: { value: veil ? 7.3 : 0 } }]),
+      defines: sj_veil ? { VEIL: '' } : {},
+      uniforms: UniformsUtils.merge([UniformsLib.fog, { uSeed: { value: sj_veil ? 7.3 : 0 } }]),
       vertexShader: /* glsl */ `
         attribute float aFall;
         varying vec2 vUv;
@@ -140,7 +142,7 @@ export class Waterfall {
         uniform vec3 uSunDir;
         varying vec2 vUv;
         varying float vFall;
-        ${NOISE_GLSL}
+        ${sj_NOISE_GLSL}
         #include <fog_pars_fragment>
         void main() {
           float x = vUv.x;
@@ -177,24 +179,24 @@ export class Waterfall {
         }
       `,
     });
-    mat.uniforms.uTime = globalUniforms.uTime;
-    mat.uniforms.uSunDir = globalUniforms.uSunDir;
-    const mesh = new Mesh(geo, mat);
-    mesh.name = veil ? 'waterfall-veil' : 'waterfall-sheet';
-    mesh.renderOrder = veil ? 4 : 3;
-    return mesh;
+    sj_mat.uniforms.uTime = sj_globalUniforms.uTime;
+    sj_mat.uniforms.uSunDir = sj_globalUniforms.uSunDir;
+    const sj_mesh = new Mesh(sj_geo, sj_mat);
+    sj_mesh.name = sj_veil ? 'waterfall-veil' : 'waterfall-sheet';
+    sj_mesh.renderOrder = sj_veil ? 4 : 3;
+    return sj_mesh;
   }
 
   /** White water churning where the fall hits the pool. */
-  private makeChurn(at: Vector3): Mesh {
-    const radius = 3.2;
-    const geo = new CircleGeometry(radius, 48);
-    geo.rotateX(-Math.PI / 2);
-    const mat = new ShaderMaterial({
+  private makeChurn(sj_at: Vector3): Mesh {
+    const sj_radius = 3.2;
+    const sj_geo = new CircleGeometry(sj_radius, 48);
+    sj_geo.rotateX(-Math.PI / 2);
+    const sj_mat = new ShaderMaterial({
       transparent: true,
       depthWrite: false,
       fog: true,
-      uniforms: UniformsUtils.merge([UniformsLib.fog, { uRadius: { value: radius } }]),
+      uniforms: UniformsUtils.merge([UniformsLib.fog, { uRadius: { value: sj_radius } }]),
       vertexShader: /* glsl */ `
         varying vec2 vLocal;
         #include <fog_pars_vertex>
@@ -209,7 +211,7 @@ export class Waterfall {
         uniform float uTime;
         uniform float uRadius;
         varying vec2 vLocal;
-        ${NOISE_GLSL}
+        ${sj_NOISE_GLSL}
         #include <fog_pars_fragment>
         void main() {
           float r = length(vLocal) / uRadius;
@@ -225,62 +227,62 @@ export class Waterfall {
         }
       `,
     });
-    mat.uniforms.uTime = globalUniforms.uTime;
-    const mesh = new Mesh(geo, mat);
-    mesh.position.set(at.x, WATER_LEVEL + 0.04, at.z);
-    mesh.name = 'waterfall-churn';
-    mesh.renderOrder = 2;
-    return mesh;
+    sj_mat.uniforms.uTime = sj_globalUniforms.uTime;
+    const sj_mesh = new Mesh(sj_geo, sj_mat);
+    sj_mesh.position.set(sj_at.x, sj_WATER_LEVEL + 0.04, sj_at.z);
+    sj_mesh.name = 'waterfall-churn';
+    sj_mesh.renderOrder = 2;
+    return sj_mesh;
   }
 
-  addTo(scene: Scene): void {
-    for (const m of this.group) scene.add(m);
+  addTo(sj_scene: Scene): void {
+    for (const sj_m of this.group) sj_scene.add(sj_m);
   }
 
   /** Mist rising from the pool, spray thrown up where the water lands. */
-  update(dt: number, particles: Particles, amount: number): void {
-    const out = FALLS.dir;
-    this.mistTimer += dt * 30 * amount;
+  update(sj_dt: number, sj_particles: Particles, sj_amount: number): void {
+    const sj_out = sj_FALLS.dir;
+    this.mistTimer += sj_dt * 30 * sj_amount;
     while (this.mistTimer > 1) {
       this.mistTimer -= 1;
-      const a = Math.random() * Math.PI * 2;
-      const r = Math.random() * 2.2;
-      particles.spawn({
-        x: this.bottom.x + Math.cos(a) * r,
-        y: WATER_LEVEL + 0.3 + Math.random() * 0.8,
-        z: this.bottom.z + Math.sin(a) * r,
-        vx: Math.cos(a) * 0.5 + out.x * 0.9,
+      const sj_a = Math.random() * Math.PI * 2;
+      const sj_r = Math.random() * 2.2;
+      sj_particles.spawn({
+        x: this.bottom.x + Math.cos(sj_a) * sj_r,
+        y: sj_WATER_LEVEL + 0.3 + Math.random() * 0.8,
+        z: this.bottom.z + Math.sin(sj_a) * sj_r,
+        vx: Math.cos(sj_a) * 0.5 + sj_out.x * 0.9,
         vy: 0.7 + Math.random() * 1.5,
-        vz: Math.sin(a) * 0.5 + out.z * 0.9,
+        vz: Math.sin(sj_a) * 0.5 + sj_out.z * 0.9,
         life: 2.2 + Math.random() * 1.8,
         size: 1.1,
         sizeEnd: 4.2,
-        color: MIST,
+        color: sj_MIST,
         alpha: 0.26,
         drag: 0.35,
-        sprite: SPRITE.puff,
+        sprite: sj_SPRITE.puff,
       });
     }
-    this.sprayTimer += dt * 40 * amount;
+    this.sprayTimer += sj_dt * 40 * sj_amount;
     while (this.sprayTimer > 1) {
       this.sprayTimer -= 1;
-      const a = Math.random() * Math.PI * 2;
-      const s = 1.5 + Math.random() * 2.5;
-      particles.spawn({
-        x: this.bottom.x + Math.cos(a) * 0.8,
-        y: WATER_LEVEL + 0.1,
-        z: this.bottom.z + Math.sin(a) * 0.8,
-        vx: Math.cos(a) * s * 0.6,
+      const sj_a = Math.random() * Math.PI * 2;
+      const sj_s = 1.5 + Math.random() * 2.5;
+      sj_particles.spawn({
+        x: this.bottom.x + Math.cos(sj_a) * 0.8,
+        y: sj_WATER_LEVEL + 0.1,
+        z: this.bottom.z + Math.sin(sj_a) * 0.8,
+        vx: Math.cos(sj_a) * sj_s * 0.6,
         vy: 2.5 + Math.random() * 2.5,
-        vz: Math.sin(a) * s * 0.6,
+        vz: Math.sin(sj_a) * sj_s * 0.6,
         life: 0.7 + Math.random() * 0.5,
         size: 0.12,
         sizeEnd: 0.05,
-        color: SPRAY,
+        color: sj_SPRAY,
         alpha: 0.8,
         gravity: 9,
         drag: 0.4,
-        sprite: SPRITE.drop,
+        sprite: sj_SPRITE.drop,
       });
     }
   }

@@ -7,58 +7,59 @@ import {
   MeshLambertMaterial,
   type Scene,
 } from 'three';
-import { globalUniforms } from '../../render/uniforms';
+import { sj_globalUniforms } from '../../render/uniforms';
 import {
-  GROUND_WARP_GLSL,
-  NOISE_GLSL,
-  TERRAIN_GLSL,
-  VIEW_CULL_GLSL,
-  WIND_GLSL,
+  sj_GROUND_WARP_GLSL,
+  sj_NOISE_GLSL,
+  sj_TERRAIN_GLSL,
+  sj_VIEW_CULL_GLSL,
+  sj_WIND_GLSL,
 } from '../../render/glsl';
 
 /** Unit flower: a thin stem quad and a five-petal head (position.y = 1 at the head). */
 function createFlowerGeometry(): InstancedBufferGeometry {
-  const pos: number[] = [];
-  const part: number[] = [];
-  const idx: number[] = [];
+  const sj_pos: number[] = [];
+  const sj_part: number[] = [];
+  const sj_idx: number[] = [];
   // stem (part 0): x = side, y = t
-  pos.push(-1, 0, 0, 1, 0, 0, 1, 1, 0, -1, 1, 0);
-  part.push(0, 0, 0, 0);
-  idx.push(0, 1, 2, 0, 2, 3);
-  let vi = 4;
+  sj_pos.push(-1, 0, 0, 1, 0, 0, 1, 1, 0, -1, 1, 0);
+  sj_part.push(0, 0, 0, 0);
+  sj_idx.push(0, 1, 2, 0, 2, 3);
+  let sj_vi = 4;
   // petals (part 1): local xz in the head plane, y = 1
-  for (let p = 0; p < 5; p++) {
-    const a = (p / 5) * Math.PI * 2;
-    const c = [0, 0];
-    const l = [Math.cos(a - 0.42) * 0.42, Math.sin(a - 0.42) * 0.42];
-    const t = [Math.cos(a), Math.sin(a)];
-    const r = [Math.cos(a + 0.42) * 0.42, Math.sin(a + 0.42) * 0.42];
-    for (const [x, z] of [c, l, t, r]) {
-      pos.push(x!, 1, z!);
-      part.push(1);
+  for (let sj_p = 0; sj_p < 5; sj_p++) {
+    const sj_a = (sj_p / 5) * Math.PI * 2;
+    const sj_c = [0, 0];
+    const sj_l = [Math.cos(sj_a - 0.42) * 0.42, Math.sin(sj_a - 0.42) * 0.42];
+    const sj_t = [Math.cos(sj_a), Math.sin(sj_a)];
+    const sj_r = [Math.cos(sj_a + 0.42) * 0.42, Math.sin(sj_a + 0.42) * 0.42];
+    for (const [sj_x, sj_z] of [sj_c, sj_l, sj_t, sj_r]) {
+      sj_pos.push(sj_x!, 1, sj_z!);
+      sj_part.push(1);
     }
-    idx.push(vi, vi + 1, vi + 2, vi, vi + 2, vi + 3);
-    vi += 4;
+    sj_idx.push(sj_vi, sj_vi + 1, sj_vi + 2, sj_vi, sj_vi + 2, sj_vi + 3);
+    sj_vi += 4;
   }
   // centre (part 2): small triangle fan
-  const n = 6;
-  pos.push(0, 1.001, 0);
-  part.push(2);
-  const centre = vi;
-  for (let k = 0; k < n; k++) {
-    const a = (k / n) * Math.PI * 2;
-    pos.push(Math.cos(a) * 0.22, 1.001, Math.sin(a) * 0.22);
-    part.push(2);
+  const sj_n = 6;
+  sj_pos.push(0, 1.001, 0);
+  sj_part.push(2);
+  const sj_centre = sj_vi;
+  for (let sj_k = 0; sj_k < sj_n; sj_k++) {
+    const sj_a = (sj_k / sj_n) * Math.PI * 2;
+    sj_pos.push(Math.cos(sj_a) * 0.22, 1.001, Math.sin(sj_a) * 0.22);
+    sj_part.push(2);
   }
-  for (let k = 0; k < n; k++) idx.push(centre, centre + 1 + ((k + 1) % n), centre + 1 + k);
-  const geo = new InstancedBufferGeometry();
-  geo.setAttribute('position', new BufferAttribute(new Float32Array(pos), 3));
-  geo.setAttribute('aPart', new BufferAttribute(new Float32Array(part), 1));
-  const normals = new Float32Array(pos.length);
-  for (let i = 1; i < normals.length; i += 3) normals[i] = 1;
-  geo.setAttribute('normal', new BufferAttribute(normals, 3));
-  geo.setIndex(idx);
-  return geo;
+  for (let sj_k = 0; sj_k < sj_n; sj_k++)
+    sj_idx.push(sj_centre, sj_centre + 1 + ((sj_k + 1) % sj_n), sj_centre + 1 + sj_k);
+  const sj_geo = new InstancedBufferGeometry();
+  sj_geo.setAttribute('position', new BufferAttribute(new Float32Array(sj_pos), 3));
+  sj_geo.setAttribute('aPart', new BufferAttribute(new Float32Array(sj_part), 1));
+  const sj_normals = new Float32Array(sj_pos.length);
+  for (let sj_i = 1; sj_i < sj_normals.length; sj_i += 3) sj_normals[sj_i] = 1;
+  sj_geo.setAttribute('normal', new BufferAttribute(sj_normals, 3));
+  sj_geo.setIndex(sj_idx);
+  return sj_geo;
 }
 
 /**
@@ -69,28 +70,28 @@ export class Flowers {
   readonly mesh: Mesh<InstancedBufferGeometry, MeshLambertMaterial>;
   private uniforms = { uPatch: { value: 60 }, uSide: { value: 80 } };
 
-  constructor(count: number) {
-    const geometry = createFlowerGeometry();
-    const side = Math.floor(Math.sqrt(count));
-    this.uniforms.uSide.value = side;
-    geometry.instanceCount = side * side;
-    const palette = ['#f7f3ea', '#f3a9c4', '#f4d04d', '#b8a2e6', '#ee7d45', '#ffffff'].map(
-      (c) => new Color(c),
+  constructor(sj_count: number) {
+    const sj_geometry = createFlowerGeometry();
+    const sj_side = Math.floor(Math.sqrt(sj_count));
+    this.uniforms.uSide.value = sj_side;
+    sj_geometry.instanceCount = sj_side * sj_side;
+    const sj_palette = ['#f7f3ea', '#f3a9c4', '#f4d04d', '#b8a2e6', '#ee7d45', '#ffffff'].map(
+      (sj_c) => new Color(sj_c),
     );
-    const material = new MeshLambertMaterial({ side: DoubleSide });
-    material.onBeforeCompile = (shader) => {
-      Object.assign(shader.uniforms, this.uniforms, {
-        uTime: globalUniforms.uTime,
-        uWindDir: globalUniforms.uWindDir,
-        uWindStrength: globalUniforms.uWindStrength,
-        uPlayerPos: globalUniforms.uPlayerPos,
-        uHeightMap: globalUniforms.uHeightMap,
-        uMaskMap: globalUniforms.uMaskMap,
-        uDetailMap: globalUniforms.uDetailMap,
-        uTerrain: globalUniforms.uTerrain,
-        uPalette: { value: palette },
+    const sj_material = new MeshLambertMaterial({ side: DoubleSide });
+    sj_material.onBeforeCompile = (sj_shader) => {
+      Object.assign(sj_shader.uniforms, this.uniforms, {
+        uTime: sj_globalUniforms.uTime,
+        uWindDir: sj_globalUniforms.uWindDir,
+        uWindStrength: sj_globalUniforms.uWindStrength,
+        uPlayerPos: sj_globalUniforms.uPlayerPos,
+        uHeightMap: sj_globalUniforms.uHeightMap,
+        uMaskMap: sj_globalUniforms.uMaskMap,
+        uDetailMap: sj_globalUniforms.uDetailMap,
+        uTerrain: sj_globalUniforms.uTerrain,
+        uPalette: { value: sj_palette },
       });
-      shader.vertexShader = shader.vertexShader
+      sj_shader.vertexShader = sj_shader.vertexShader
         .replace(
           '#include <common>',
           /* glsl */ `#include <common>
@@ -100,11 +101,11 @@ uniform float uSide;
 uniform vec3 uPlayerPos;
 uniform vec3 uPalette[6];
 varying vec3 vFlowerColor;
-${NOISE_GLSL}
-${GROUND_WARP_GLSL}
-${TERRAIN_GLSL}
-${WIND_GLSL}
-${VIEW_CULL_GLSL}`,
+${sj_NOISE_GLSL}
+${sj_GROUND_WARP_GLSL}
+${sj_TERRAIN_GLSL}
+${sj_WIND_GLSL}
+${sj_VIEW_CULL_GLSL}`,
         )
         .replace(
           '#include <beginnormal_vertex>',
@@ -161,7 +162,7 @@ ${VIEW_CULL_GLSL}`,
 `,
         )
         .replace('#include <begin_vertex>', 'vec3 transformed = p;');
-      shader.fragmentShader = shader.fragmentShader
+      sj_shader.fragmentShader = sj_shader.fragmentShader
         .replace('#include <common>', '#include <common>\nvarying vec3 vFlowerColor;')
         .replace('#include <color_fragment>', 'diffuseColor.rgb = vFlowerColor;')
         .replace(
@@ -172,14 +173,14 @@ vec3 normal = normalize(vNormal);
 vec3 nonPerturbedNormal = normal;`,
         );
     };
-    material.customProgramCacheKey = () => 'flowers-v3';
-    this.mesh = new Mesh(geometry, material);
+    sj_material.customProgramCacheKey = () => 'flowers-v3';
+    this.mesh = new Mesh(sj_geometry, sj_material);
     this.mesh.frustumCulled = false;
     this.mesh.receiveShadow = true;
     this.mesh.name = 'flowers';
   }
 
-  addTo(scene: Scene): void {
-    scene.add(this.mesh);
+  addTo(sj_scene: Scene): void {
+    sj_scene.add(this.mesh);
   }
 }

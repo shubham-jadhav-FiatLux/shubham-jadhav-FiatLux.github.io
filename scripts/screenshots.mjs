@@ -11,13 +11,13 @@
 import { chromium } from 'playwright-core';
 import { mkdirSync } from 'node:fs';
 
-const url = process.argv[2] ?? 'http://localhost:5173/';
-const only = process.argv.slice(3);
-const outDir = new URL('../screenshots/', import.meta.url);
-mkdirSync(outDir, { recursive: true });
+const sj_url = process.argv[2] ?? 'http://localhost:5173/';
+const sj_only = process.argv.slice(3);
+const sj_outDir = new URL('../screenshots/', import.meta.url);
+mkdirSync(sj_outDir, { recursive: true });
 
 /** Each shot places the panda and the follow camera. */
-const SHOTS = [
+const sj_SHOTS = [
   { name: 'title', title: true },
   { name: 'spawn', x: 0, z: 58, yaw: Math.PI, cam: { yaw: 0.25, pitch: 0.32, distance: 10 } },
   { name: 'panda-front', x: 0, z: 40, yaw: 0, cam: { yaw: 0.35, pitch: 0.18, distance: 4.2 } },
@@ -115,61 +115,62 @@ const SHOTS = [
   },
 ];
 
-const browser = await chromium.launch({
+const sj_browser = await chromium.launch({
   executablePath: process.env.CHROMIUM_PATH ?? '/opt/pw-browsers/chromium',
   args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
 });
-const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
-page.setDefaultTimeout(180_000);
-page.on('console', (m) => {
-  if (m.type() === 'error' || m.type() === 'warning') console.log(`[${m.type()}]`, m.text());
+const sj_page = await sj_browser.newPage({ viewport: { width: 1280, height: 720 } });
+sj_page.setDefaultTimeout(180_000);
+sj_page.on('console', (sj_m) => {
+  if (sj_m.type() === 'error' || sj_m.type() === 'warning')
+    console.log(`[${sj_m.type()}]`, sj_m.text());
 });
-page.on('pageerror', (e) => console.log('[pageerror]', e.message));
+sj_page.on('pageerror', (sj_e) => console.log('[pageerror]', sj_e.message));
 
-const sep = url.includes('?') ? '&' : '?';
-await page.goto(`${url}${sep}quality=${process.env.QUALITY ?? 'high'}&adaptive=0`);
-await page.waitForSelector('.loader--ready', { timeout: 180_000 });
+const sj_sep = sj_url.includes('?') ? '&' : '?';
+await sj_page.goto(`${sj_url}${sj_sep}quality=${process.env.QUALITY ?? 'high'}&adaptive=0`);
+await sj_page.waitForSelector('.loader--ready', { timeout: 180_000 });
 // Software rendering is slow: skip UI transitions so captures show the final state.
-await page.addStyleTag({
+await sj_page.addStyleTag({
   content:
     '.overlay, .hud, .map, .menu, .scroll__paper, .scroll__roller { transition: none !important; }',
 });
-await page.waitForTimeout(1500);
+await sj_page.waitForTimeout(1500);
 
-for (const shot of SHOTS) {
-  if (only.length && !only.includes(shot.name)) continue;
-  if (shot.title) {
-    await page.screenshot({ path: new URL(`${shot.name}.png`, outDir).pathname });
-    console.log('captured', shot.name);
+for (const sj_shot of sj_SHOTS) {
+  if (sj_only.length && !sj_only.includes(sj_shot.name)) continue;
+  if (sj_shot.title) {
+    await sj_page.screenshot({ path: new URL(`${sj_shot.name}.png`, sj_outDir).pathname });
+    console.log('captured', sj_shot.name);
     continue;
   }
-  await page.evaluate((s) => {
-    const app = window.__valley;
-    if (!app.started) {
+  await sj_page.evaluate((sj_s) => {
+    const sj_app = window.__valley;
+    if (!sj_app.started) {
       document.querySelector('.loader__begin')?.click();
     }
-    app.controller.teleport(s.x, s.z, s.yaw);
-    app.scarf.snap();
-    app.rig.startFollow(app.controller.position, s.yaw, 0.01);
-    app.rig.targetYaw = app.rig.yaw = s.cam.yaw;
-    app.rig.targetPitch = app.rig.pitch = s.cam.pitch;
-    app.rig.targetDistance = app.rig.distance = s.cam.distance;
-    app.input.lastActivity = performance.now();
-    const g = window.__game;
-    if (g) {
-      g.scroll.close();
-      g.map.close();
-      g.menu.close();
-      if (g.classic.isOpen) g.classic.close();
+    sj_app.controller.teleport(sj_s.x, sj_s.z, sj_s.yaw);
+    sj_app.scarf.snap();
+    sj_app.rig.startFollow(sj_app.controller.position, sj_s.yaw, 0.01);
+    sj_app.rig.targetYaw = sj_app.rig.yaw = sj_s.cam.yaw;
+    sj_app.rig.targetPitch = sj_app.rig.pitch = sj_s.cam.pitch;
+    sj_app.rig.targetDistance = sj_app.rig.distance = sj_s.cam.distance;
+    sj_app.input.lastActivity = performance.now();
+    const sj_g = window.__game;
+    if (sj_g) {
+      sj_g.scroll.close();
+      sj_g.map.close();
+      sj_g.menu.close();
+      if (sj_g.classic.isOpen) sj_g.classic.close();
     }
-  }, shot);
-  if (shot.action) {
-    await page.waitForTimeout(shot.actionDelay ?? 0);
-    await page.evaluate((code) => new Function(code)(), shot.action);
+  }, sj_shot);
+  if (sj_shot.action) {
+    await sj_page.waitForTimeout(sj_shot.actionDelay ?? 0);
+    await sj_page.evaluate((sj_code) => new Function(sj_code)(), sj_shot.action);
   }
-  await page.waitForTimeout(shot.settle ?? Number(process.env.SETTLE ?? 2500));
-  await page.screenshot({ path: new URL(`${shot.name}.png`, outDir).pathname });
-  console.log('captured', shot.name);
+  await sj_page.waitForTimeout(sj_shot.settle ?? Number(process.env.SETTLE ?? 2500));
+  await sj_page.screenshot({ path: new URL(`${sj_shot.name}.png`, sj_outDir).pathname });
+  console.log('captured', sj_shot.name);
 }
 
-await browser.close();
+await sj_browser.close();

@@ -16,10 +16,10 @@ import {
   type Texture,
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { globalUniforms } from '../../render/uniforms';
-import { BUMP_GLSL, NOISE3_GLSL, NOISE_GLSL, TERRAIN_GLSL } from '../../render/glsl';
-import { WATER_LEVEL } from '../layout';
-import { FINISH_ID, finishFor, type Finish } from './palette';
+import { sj_globalUniforms } from '../../render/uniforms';
+import { sj_BUMP_GLSL, sj_NOISE3_GLSL, sj_NOISE_GLSL, sj_TERRAIN_GLSL } from '../../render/glsl';
+import { sj_WATER_LEVEL } from '../layout';
+import { sj_FINISH_ID, finishFor, type Finish } from './palette';
 
 /** Material buckets: every structure in the valley is merged into one mesh per bucket. */
 export type Bucket = 'paint' | 'roof' | 'glow' | 'lattice';
@@ -34,71 +34,85 @@ export interface LightSpot {
   kind: 'paper' | 'stone' | 'altar';
 }
 
-const q = new Quaternion();
-const tmpSize = new Vector3();
-const tmpCentre = new Vector3();
+const sj_q = new Quaternion();
+const sj_tmpSize = new Vector3();
+const sj_tmpCentre = new Vector3();
 /**
  * Edge (m) of the cells the big buckets are split into: each cell is its own mesh, so
  * the camera, and the sun's shadow camera round the panda, skip the far ones. The small
  * buckets (glow, lattice) stay whole: a few more triangles cost less than more draw calls.
  */
-const CELL = 40;
-const SPLIT: Record<Bucket, boolean> = { paint: true, roof: true, glow: false, lattice: false };
-const grain = new Vector3();
-const AXIS_X = new Vector3(1, 0, 0);
-const AXIS_Y = new Vector3(0, 1, 0);
-const AXIS_Z = new Vector3(0, 0, 1);
+const sj_CELL = 40;
+const sj_SPLIT: Record<Bucket, boolean> = { paint: true, roof: true, glow: false, lattice: false };
+const sj_grain = new Vector3();
+const sj_AXIS_X = new Vector3(1, 0, 0);
+const sj_AXIS_Y = new Vector3(0, 1, 0);
+const sj_AXIS_Z = new Vector3(0, 0, 1);
 
 /** Deterministic 0..1 hash of an integer. */
-function hash01(n: number): number {
-  const s = Math.sin(n * 127.1 + 311.7) * 43758.5453;
-  return s - Math.floor(s);
+function hash01(sj_n: number): number {
+  const sj_s = Math.sin(sj_n * 127.1 + 311.7) * 43758.5453;
+  return sj_s - Math.floor(sj_s);
 }
 
 /** Local transform helper: position, Euler rotation (rad) and scale. */
-export function T(x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, sx = 1, sy = sx, sz = sx): Matrix4 {
-  q.setFromEuler(new Euler(rx, ry, rz));
-  return new Matrix4().compose(new Vector3(x, y, z), q, new Vector3(sx, sy, sz));
+export function T(
+  sj_x = 0,
+  sj_y = 0,
+  sj_z = 0,
+  sj_rx = 0,
+  sj_ry = 0,
+  sj_rz = 0,
+  sj_sx = 1,
+  sj_sy = sj_sx,
+  sj_sz = sj_sx,
+): Matrix4 {
+  sj_q.setFromEuler(new Euler(sj_rx, sj_ry, sj_rz));
+  return new Matrix4().compose(
+    new Vector3(sj_x, sj_y, sj_z),
+    sj_q,
+    new Vector3(sj_sx, sj_sy, sj_sz),
+  );
 }
 
 /** parent × child */
-export function mul(parent: Matrix4, child: Matrix4): Matrix4 {
-  return new Matrix4().multiplyMatrices(parent, child);
+export function mul(sj_parent: Matrix4, sj_child: Matrix4): Matrix4 {
+  return new Matrix4().multiplyMatrices(sj_parent, sj_child);
 }
 
 function createLatticeTexture(): CanvasTexture {
-  const s = 128;
-  const c = document.createElement('canvas');
-  c.width = c.height = s;
-  const ctx = c.getContext('2d')!;
-  ctx.fillStyle = '#e9dcc0'; // paper behind the lattice
-  ctx.fillRect(0, 0, s, s);
-  ctx.strokeStyle = '#4e2f1f';
-  ctx.lineWidth = 7;
-  ctx.strokeRect(0, 0, s, s);
-  ctx.lineWidth = 4;
+  const sj_s = 128;
+  const sj_c = document.createElement('canvas');
+  sj_c.width = sj_c.height = sj_s;
+  const sj_ctx = sj_c.getContext('2d')!;
+  sj_ctx.fillStyle = '#e9dcc0'; // paper behind the lattice
+  sj_ctx.fillRect(0, 0, sj_s, sj_s);
+  sj_ctx.strokeStyle = '#4e2f1f';
+  sj_ctx.lineWidth = 7;
+  sj_ctx.strokeRect(0, 0, sj_s, sj_s);
+  sj_ctx.lineWidth = 4;
   // "cracked ice" + grid lattice
-  for (let i = 1; i < 4; i++) {
-    ctx.beginPath();
-    ctx.moveTo((i * s) / 4, 0);
-    ctx.lineTo((i * s) / 4, s);
-    ctx.moveTo(0, (i * s) / 4);
-    ctx.lineTo(s, (i * s) / 4);
-    ctx.stroke();
+  for (let sj_i = 1; sj_i < 4; sj_i++) {
+    sj_ctx.beginPath();
+    sj_ctx.moveTo((sj_i * sj_s) / 4, 0);
+    sj_ctx.lineTo((sj_i * sj_s) / 4, sj_s);
+    sj_ctx.moveTo(0, (sj_i * sj_s) / 4);
+    sj_ctx.lineTo(sj_s, (sj_i * sj_s) / 4);
+    sj_ctx.stroke();
   }
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(s * 0.25, s * 0.5);
-  ctx.lineTo(s * 0.5, s * 0.25);
-  ctx.lineTo(s * 0.75, s * 0.5);
-  ctx.lineTo(s * 0.5, s * 0.75);
-  ctx.closePath();
-  ctx.stroke();
-  const t = new CanvasTexture(c);
-  t.colorSpace = SRGBColorSpace;
-  t.wrapS = t.wrapT = RepeatWrapping;
-  t.needsUpdate = true;
-  return t;
+  sj_ctx.lineWidth = 3;
+  sj_ctx.beginPath();
+  sj_ctx.moveTo(sj_s * 0.25, sj_s * 0.5);
+  sj_ctx.lineTo(sj_s * 0.5, sj_s * 0.25);
+  sj_ctx.lineTo(sj_s * 0.75, sj_s * 0.5);
+  sj_ctx.lineTo(sj_s * 0.5, sj_s * 0.75);
+  sj_ctx.closePath();
+  sj_ctx.stroke();
+  const sj_t = new CanvasTexture(sj_c);
+  sj_t.colorSpace = SRGBColorSpace;
+  sj_t.wrapS = sj_t.wrapT = RepeatWrapping;
+  sj_t.needsUpdate = true;
+  return sj_t;
 }
 
 /**
@@ -109,17 +123,17 @@ function createLatticeTexture(): CanvasTexture {
  * meets the ground, and gets a wet algae band just above the lake.
  */
 function createPaintMaterial(): MeshStandardMaterial {
-  const paint = new MeshStandardMaterial({ vertexColors: true, roughness: 0.78, metalness: 0 });
-  paint.name = 'arch-paint';
-  paint.onBeforeCompile = (shader) => {
-    Object.assign(shader.uniforms, {
-      uWaterLevel: { value: WATER_LEVEL },
-      uHeightMap: globalUniforms.uHeightMap,
-      uMaskMap: globalUniforms.uMaskMap,
-      uDetailMap: globalUniforms.uDetailMap,
-      uTerrain: globalUniforms.uTerrain,
+  const sj_paint = new MeshStandardMaterial({ vertexColors: true, roughness: 0.78, metalness: 0 });
+  sj_paint.name = 'arch-paint';
+  sj_paint.onBeforeCompile = (sj_shader) => {
+    Object.assign(sj_shader.uniforms, {
+      uWaterLevel: { value: sj_WATER_LEVEL },
+      uHeightMap: sj_globalUniforms.uHeightMap,
+      uMaskMap: sj_globalUniforms.uMaskMap,
+      uDetailMap: sj_globalUniforms.uDetailMap,
+      uTerrain: sj_globalUniforms.uTerrain,
     });
-    shader.vertexShader = shader.vertexShader
+    sj_shader.vertexShader = sj_shader.vertexShader
       .replace(
         '#include <common>',
         /* glsl */ `#include <common>
@@ -138,7 +152,7 @@ vGrain = aGrain;
 vArchWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;
 vArchNormal = normalize(mat3(modelMatrix) * objectNormal);`,
       );
-    shader.fragmentShader = shader.fragmentShader
+    sj_shader.fragmentShader = sj_shader.fragmentShader
       .replace(
         '#include <common>',
         /* glsl */ `#include <common>
@@ -147,10 +161,10 @@ varying vec2 vFinish;
 varying vec3 vGrain;
 varying vec3 vArchWorld;
 varying vec3 vArchNormal;
-${NOISE_GLSL}
-${NOISE3_GLSL}
-${BUMP_GLSL}
-${TERRAIN_GLSL}`,
+${sj_NOISE_GLSL}
+${sj_NOISE3_GLSL}
+${sj_BUMP_GLSL}
+${sj_TERRAIN_GLSL}`,
       )
       .replace(
         '#include <color_fragment>',
@@ -228,23 +242,27 @@ float archMetal = 0.0;
         '#include <normal_fragment_maps>\nnormal = bumpFromHeight(-vViewPosition, normal, archH);',
       );
   };
-  paint.customProgramCacheKey = () => 'arch-paint-v2';
-  return paint;
+  sj_paint.customProgramCacheKey = () => 'arch-paint-v2';
+  return sj_paint;
 }
 
 function createMaterials(): Record<Bucket, Material> {
-  const paint = createPaintMaterial();
+  const sj_paint = createPaintMaterial();
 
-  const roof = new MeshStandardMaterial({ vertexColors: true, roughness: 0.46, metalness: 0.05 });
-  roof.name = 'arch-roof';
-  roof.onBeforeCompile = (shader) => {
-    shader.vertexShader = shader.vertexShader
+  const sj_roof = new MeshStandardMaterial({
+    vertexColors: true,
+    roughness: 0.46,
+    metalness: 0.05,
+  });
+  sj_roof.name = 'arch-roof';
+  sj_roof.onBeforeCompile = (sj_shader) => {
+    sj_shader.vertexShader = sj_shader.vertexShader
       .replace(
         '#include <common>',
         '#include <common>\nattribute vec2 aRoofUv;\nvarying vec2 vRoofUv;',
       )
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvRoofUv = aRoofUv;');
-    shader.fragmentShader = shader.fragmentShader
+    sj_shader.fragmentShader = sj_shader.fragmentShader
       .replace('#include <common>', '#include <common>\nvarying vec2 vRoofUv;')
       .replace(
         '#include <color_fragment>',
@@ -265,22 +283,22 @@ function createMaterials(): Record<Bucket, Material> {
         }`,
       );
   };
-  roof.customProgramCacheKey = () => 'arch-roof-v2';
+  sj_roof.customProgramCacheKey = () => 'arch-roof-v2';
 
-  const glow = new MeshStandardMaterial({ vertexColors: true, roughness: 0.7, metalness: 0 });
-  glow.name = 'arch-glow';
-  glow.onBeforeCompile = (shader) => {
-    shader.uniforms.uTime = globalUniforms.uTime;
-    shader.vertexShader = shader.vertexShader
+  const sj_glow = new MeshStandardMaterial({ vertexColors: true, roughness: 0.7, metalness: 0 });
+  sj_glow.name = 'arch-glow';
+  sj_glow.onBeforeCompile = (sj_shader) => {
+    sj_shader.uniforms.uTime = sj_globalUniforms.uTime;
+    sj_shader.vertexShader = sj_shader.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 vGlowWorld;')
       .replace(
         '#include <begin_vertex>',
         '#include <begin_vertex>\nvGlowWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;',
       );
-    shader.fragmentShader = shader.fragmentShader
+    sj_shader.fragmentShader = sj_shader.fragmentShader
       .replace(
         '#include <common>',
-        `#include <common>\nuniform float uTime;\nvarying vec3 vGlowWorld;\n${NOISE_GLSL}`,
+        `#include <common>\nuniform float uTime;\nvarying vec3 vGlowWorld;\n${sj_NOISE_GLSL}`,
       )
       // lit from within: the sun barely touches the paper
       .replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.rgb *= 0.3;')
@@ -297,15 +315,15 @@ function createMaterials(): Record<Bucket, Material> {
 }`,
       );
   };
-  glow.customProgramCacheKey = () => 'arch-glow';
+  sj_glow.customProgramCacheKey = () => 'arch-glow';
 
-  const lattice = new MeshStandardMaterial({
+  const sj_lattice = new MeshStandardMaterial({
     map: createLatticeTexture(),
     vertexColors: true,
     roughness: 0.85,
   });
-  lattice.name = 'arch-lattice';
-  return { paint, roof, glow, lattice };
+  sj_lattice.name = 'arch-lattice';
+  return { paint: sj_paint, roof: sj_roof, glow: sj_glow, lattice: sj_lattice };
 }
 
 /**
@@ -320,130 +338,141 @@ export class ArchBuilder {
   readonly lights: LightSpot[] = [];
   private serial = 0;
 
-  light(spot: LightSpot): void {
-    this.lights.push(spot);
+  light(sj_spot: LightSpot): void {
+    this.lights.push(sj_spot);
   }
 
   /** Sky reflections on lacquer, glazed tiles and gilding. */
-  setEnvironment(env: Texture): void {
-    const intensity: Partial<Record<Bucket, number>> = { paint: 0.45, roof: 0.35, lattice: 0.25 };
-    for (const [bucket, k] of Object.entries(intensity) as [Bucket, number][]) {
-      const m = this.materials[bucket] as MeshStandardMaterial;
-      m.envMap = env;
-      m.envMapIntensity = k;
-      m.needsUpdate = true;
+  setEnvironment(sj_env: Texture): void {
+    const sj_intensity: Partial<Record<Bucket, number>> = {
+      paint: 0.45,
+      roof: 0.35,
+      lattice: 0.25,
+    };
+    for (const [sj_bucket, sj_k] of Object.entries(sj_intensity) as [Bucket, number][]) {
+      const sj_m = this.materials[sj_bucket] as MeshStandardMaterial;
+      sj_m.envMap = sj_env;
+      sj_m.envMapIntensity = sj_k;
+      sj_m.needsUpdate = true;
     }
   }
 
   /**
    * Adds a part in world space. In the 'paint' bucket the part's finish (lacquer, wood,
-   * stone, gilding) is taken from `finish` or implied by the palette colour, each part gets
+   * stone, gilding) is taken from `sj_finish` or implied by the palette colour, each part gets
    * its own slight tone, and wood grain follows the part's longest axis.
    */
   add(
-    bucket: Bucket,
-    geometry: BufferGeometry,
-    color: ColorRepresentation | null,
-    matrix: Matrix4,
-    finish?: Finish,
+    sj_bucket: Bucket,
+    sj_geometry: BufferGeometry,
+    sj_color: ColorRepresentation | null,
+    sj_matrix: Matrix4,
+    sj_finish?: Finish,
   ): void {
     // Parts keep their shared vertices (indexed geometry): far fewer vertices to shade
     // than one copy per triangle corner. A part without normals of its own is shaded
     // flat, one normal per face, so it is split into separate triangles first.
-    let g =
-      geometry.index && !geometry.attributes.normal ? geometry.toNonIndexed() : geometry.clone();
-    if (bucket === 'roof') {
-      const uv = g.getAttribute('uv');
-      if (uv) g.setAttribute('aRoofUv', uv.clone());
+    let sj_g =
+      sj_geometry.index && !sj_geometry.attributes.normal
+        ? sj_geometry.toNonIndexed()
+        : sj_geometry.clone();
+    if (sj_bucket === 'roof') {
+      const sj_uv = sj_g.getAttribute('uv');
+      if (sj_uv) sj_g.setAttribute('aRoofUv', sj_uv.clone());
       else
-        g.setAttribute(
+        sj_g.setAttribute(
           'aRoofUv',
-          new BufferAttribute(new Float32Array(g.attributes.position!.count * 2), 2),
+          new BufferAttribute(new Float32Array(sj_g.attributes.position!.count * 2), 2),
         );
     }
-    for (const name of Object.keys(g.attributes)) {
-      const keep =
-        name === 'position' ||
-        name === 'normal' ||
-        name === 'color' ||
-        (bucket === 'roof' && name === 'aRoofUv') ||
-        (bucket === 'lattice' && name === 'uv');
-      if (!keep) g.deleteAttribute(name);
+    for (const sj_name of Object.keys(sj_g.attributes)) {
+      const sj_keep =
+        sj_name === 'position' ||
+        sj_name === 'normal' ||
+        sj_name === 'color' ||
+        (sj_bucket === 'roof' && sj_name === 'aRoofUv') ||
+        (sj_bucket === 'lattice' && sj_name === 'uv');
+      if (!sj_keep) sj_g.deleteAttribute(sj_name);
     }
-    if (!g.attributes.normal) g.computeVertexNormals();
-    if (color !== null || !g.attributes.color) {
-      const c = new Color(color ?? '#ffffff');
-      const arr = new Float32Array(g.attributes.position!.count * 3);
-      for (let i = 0; i < arr.length; i += 3) arr.set([c.r, c.g, c.b], i);
-      g.setAttribute('color', new BufferAttribute(arr, 3));
+    if (!sj_g.attributes.normal) sj_g.computeVertexNormals();
+    if (sj_color !== null || !sj_g.attributes.color) {
+      const sj_c = new Color(sj_color ?? '#ffffff');
+      const sj_arr = new Float32Array(sj_g.attributes.position!.count * 3);
+      for (let sj_i = 0; sj_i < sj_arr.length; sj_i += 3)
+        sj_arr.set([sj_c.r, sj_c.g, sj_c.b], sj_i);
+      sj_g.setAttribute('color', new BufferAttribute(sj_arr, 3));
     }
-    if (bucket === 'paint') {
-      const id = FINISH_ID[finish ?? finishFor(color)];
-      const tone = hash01(this.serial++) * 2 - 1;
-      g.computeBoundingBox();
-      const size = g.boundingBox!.getSize(tmpSize);
-      const axis =
-        size.x >= size.y && size.x >= size.z ? AXIS_X : size.y >= size.z ? AXIS_Y : AXIS_Z;
-      grain.copy(axis).transformDirection(matrix);
-      const n = g.attributes.position!.count;
-      const fin = new Float32Array(n * 2);
-      const gr = new Float32Array(n * 3);
-      for (let i = 0; i < n; i++) {
-        fin[i * 2] = id;
-        fin[i * 2 + 1] = tone;
-        gr[i * 3] = grain.x;
-        gr[i * 3 + 1] = grain.y;
-        gr[i * 3 + 2] = grain.z;
+    if (sj_bucket === 'paint') {
+      const sj_id = sj_FINISH_ID[sj_finish ?? finishFor(sj_color)];
+      const sj_tone = hash01(this.serial++) * 2 - 1;
+      sj_g.computeBoundingBox();
+      const sj_size = sj_g.boundingBox!.getSize(sj_tmpSize);
+      const sj_axis =
+        sj_size.x >= sj_size.y && sj_size.x >= sj_size.z
+          ? sj_AXIS_X
+          : sj_size.y >= sj_size.z
+            ? sj_AXIS_Y
+            : sj_AXIS_Z;
+      sj_grain.copy(sj_axis).transformDirection(sj_matrix);
+      const sj_n = sj_g.attributes.position!.count;
+      const sj_fin = new Float32Array(sj_n * 2);
+      const sj_gr = new Float32Array(sj_n * 3);
+      for (let sj_i = 0; sj_i < sj_n; sj_i++) {
+        sj_fin[sj_i * 2] = sj_id;
+        sj_fin[sj_i * 2 + 1] = sj_tone;
+        sj_gr[sj_i * 3] = sj_grain.x;
+        sj_gr[sj_i * 3 + 1] = sj_grain.y;
+        sj_gr[sj_i * 3 + 2] = sj_grain.z;
       }
-      g.setAttribute('aFinish', new BufferAttribute(fin, 2));
-      g.setAttribute('aGrain', new BufferAttribute(gr, 3));
+      sj_g.setAttribute('aFinish', new BufferAttribute(sj_fin, 2));
+      sj_g.setAttribute('aGrain', new BufferAttribute(sj_gr, 3));
     }
-    g = g.applyMatrix4(matrix);
-    if (!g.index) {
-      const n = g.attributes.position!.count;
-      const index = new (n > 65535 ? Uint32Array : Uint16Array)(n);
-      for (let i = 0; i < n; i++) index[i] = i;
-      g.setIndex(new BufferAttribute(index, 1));
+    sj_g = sj_g.applyMatrix4(sj_matrix);
+    if (!sj_g.index) {
+      const sj_n = sj_g.attributes.position!.count;
+      const sj_index = new (sj_n > 65535 ? Uint32Array : Uint16Array)(sj_n);
+      for (let sj_i = 0; sj_i < sj_n; sj_i++) sj_index[sj_i] = sj_i;
+      sj_g.setIndex(new BufferAttribute(sj_index, 1));
     }
-    this.parts[bucket].push(g);
+    this.parts[sj_bucket].push(sj_g);
   }
 
   /** Merges the parts: one mesh per material bucket and cell of the valley. */
   build(): Mesh[] {
-    const meshes: Mesh[] = [];
-    for (const bucket of Object.keys(this.parts) as Bucket[]) {
-      const cells = new Map<string, BufferGeometry[]>();
-      for (const g of this.parts[bucket]) {
-        g.computeBoundingBox();
-        g.boundingBox!.getCenter(tmpCentre);
-        const key = SPLIT[bucket]
-          ? `${Math.floor(tmpCentre.x / CELL)},${Math.floor(tmpCentre.z / CELL)}`
+    const sj_meshes: Mesh[] = [];
+    for (const sj_bucket of Object.keys(this.parts) as Bucket[]) {
+      const sj_cells = new Map<string, BufferGeometry[]>();
+      for (const sj_g of this.parts[sj_bucket]) {
+        sj_g.computeBoundingBox();
+        sj_g.boundingBox!.getCenter(sj_tmpCentre);
+        const sj_key = sj_SPLIT[sj_bucket]
+          ? `${Math.floor(sj_tmpCentre.x / sj_CELL)},${Math.floor(sj_tmpCentre.z / sj_CELL)}`
           : 'all';
-        let list = cells.get(key);
-        if (!list) cells.set(key, (list = []));
-        list.push(g);
+        let sj_list = sj_cells.get(sj_key);
+        if (!sj_list) sj_cells.set(sj_key, (sj_list = []));
+        sj_list.push(sj_g);
       }
-      for (const [key, list] of cells) {
-        const merged = mergeGeometries(list, false);
-        list.forEach((g) => g.dispose());
-        if (!merged) {
-          console.warn(`architecture: could not merge ${bucket} @${key}`);
+      for (const [sj_key, sj_list] of sj_cells) {
+        const sj_merged = mergeGeometries(sj_list, false);
+        sj_list.forEach((sj_g) => sj_g.dispose());
+        if (!sj_merged) {
+          console.warn(`architecture: could not merge ${sj_bucket} @${sj_key}`);
           continue;
         }
         // centred on its own middle, so the renderer can sort it by distance
-        merged.computeBoundingSphere();
-        const centre = merged.boundingSphere!.center.clone();
-        merged.translate(-centre.x, -centre.y, -centre.z);
-        const mesh = new Mesh(merged, this.materials[bucket]);
-        mesh.name = `architecture-${bucket}@${key}`;
-        mesh.position.copy(centre);
-        mesh.castShadow = bucket !== 'glow';
-        mesh.receiveShadow = true;
-        mesh.matrixAutoUpdate = false;
-        mesh.updateMatrix();
-        meshes.push(mesh);
+        sj_merged.computeBoundingSphere();
+        const sj_centre = sj_merged.boundingSphere!.center.clone();
+        sj_merged.translate(-sj_centre.x, -sj_centre.y, -sj_centre.z);
+        const sj_mesh = new Mesh(sj_merged, this.materials[sj_bucket]);
+        sj_mesh.name = `architecture-${sj_bucket}@${sj_key}`;
+        sj_mesh.position.copy(sj_centre);
+        sj_mesh.castShadow = sj_bucket !== 'glow';
+        sj_mesh.receiveShadow = true;
+        sj_mesh.matrixAutoUpdate = false;
+        sj_mesh.updateMatrix();
+        sj_meshes.push(sj_mesh);
       }
     }
-    return meshes;
+    return sj_meshes;
   }
 }

@@ -27,10 +27,10 @@ import {
   createTailMaterial,
 } from './pandaGear';
 
-const WHITE = new Color('#f4efe4');
-const CREAM = new Color('#f8f2e4');
-const BLACK = new Color('#242226');
-const NOSE = new Color('#19181a');
+const sj_WHITE = new Color('#f4efe4');
+const sj_CREAM = new Color('#f8f2e4');
+const sj_BLACK = new Color('#242226');
+const sj_NOSE = new Color('#19181a');
 
 /**
  * Builds the pear-shaped torso with the panda's black shoulder band baked into vertex
@@ -39,8 +39,8 @@ const NOSE = new Color('#19181a');
  */
 function createTorsoGeometry(): BufferGeometry {
   type P = [r: number, y: number, black: boolean];
-  const eps = 0.004;
-  const profile: P[] = [
+  const sj_eps = 0.004;
+  const sj_profile: P[] = [
     [0.001, 0.25, false],
     [0.17, 0.27, false],
     [0.29, 0.33, false],
@@ -49,35 +49,35 @@ function createTorsoGeometry(): BufferGeometry {
     [0.43, 0.62, false],
     [0.418, 0.69, false],
     [0.398, 0.745, false],
-    [0.396, 0.745 + eps, true],
+    [0.396, 0.745 + sj_eps, true],
     [0.37, 0.8, true],
     [0.33, 0.87, true],
     [0.28, 0.93, true],
     [0.24, 0.965, true],
-    [0.238, 0.965 + eps, false],
+    [0.238, 0.965 + sj_eps, false],
     [0.17, 1.01, false],
     [0.001, 1.04, false],
   ];
-  const geo = new LatheGeometry(
-    profile.map(([r, y]) => new Vector2(r, y)),
+  const sj_geo = new LatheGeometry(
+    sj_profile.map(([sj_r, sj_y]) => new Vector2(sj_r, sj_y)),
     40,
   );
-  const pos = geo.attributes.position as BufferAttribute;
-  const colors = new Float32Array(pos.count * 3);
+  const sj_pos = sj_geo.attributes.position as BufferAttribute;
+  const sj_colors = new Float32Array(sj_pos.count * 3);
   // LatheGeometry emits (segments + 1) columns of `profile.length` vertices.
-  for (let i = 0; i < pos.count; i++) {
-    const c = profile[i % profile.length]![2] ? BLACK : WHITE;
-    colors[i * 3] = c.r;
-    colors[i * 3 + 1] = c.g;
-    colors[i * 3 + 2] = c.b;
-    pos.setZ(i, pos.getZ(i) * 0.9); // slightly flatter front-to-back
+  for (let sj_i = 0; sj_i < sj_pos.count; sj_i++) {
+    const sj_c = sj_profile[sj_i % sj_profile.length]![2] ? sj_BLACK : sj_WHITE;
+    sj_colors[sj_i * 3] = sj_c.r;
+    sj_colors[sj_i * 3 + 1] = sj_c.g;
+    sj_colors[sj_i * 3 + 2] = sj_c.b;
+    sj_pos.setZ(sj_i, sj_pos.getZ(sj_i) * 0.9); // slightly flatter front-to-back
   }
-  geo.setAttribute('color', new BufferAttribute(colors, 3));
-  geo.deleteAttribute('uv');
-  geo.deleteAttribute('normal');
-  const merged = mergeVertices(geo);
-  merged.computeVertexNormals();
-  return merged;
+  sj_geo.setAttribute('color', new BufferAttribute(sj_colors, 3));
+  sj_geo.deleteAttribute('uv');
+  sj_geo.deleteAttribute('normal');
+  const sj_merged = mergeVertices(sj_geo);
+  sj_merged.computeVertexNormals();
+  return sj_merged;
 }
 
 interface Part {
@@ -88,40 +88,41 @@ interface Part {
   scale?: [number, number, number];
 }
 
-const m4 = new Matrix4();
-const q = new Quaternion();
+const sj_m4 = new Matrix4();
+const sj_q = new Quaternion();
 
 /** Merges primitive parts into one vertex-coloured geometry (one draw call). */
-function bake(parts: Part[]): BufferGeometry {
-  const geos = parts.map((p) => {
-    const g = p.geo.index ? p.geo.toNonIndexed() : p.geo.clone();
-    g.deleteAttribute('uv');
-    if (!g.attributes.color) {
-      const c = new Color(p.color ?? '#ffffff');
-      const arr = new Float32Array(g.attributes.position!.count * 3);
-      for (let i = 0; i < arr.length; i += 3) arr.set([c.r, c.g, c.b], i);
-      g.setAttribute('color', new BufferAttribute(arr, 3));
+function bake(sj_parts: Part[]): BufferGeometry {
+  const sj_geos = sj_parts.map((sj_p) => {
+    const sj_g = sj_p.geo.index ? sj_p.geo.toNonIndexed() : sj_p.geo.clone();
+    sj_g.deleteAttribute('uv');
+    if (!sj_g.attributes.color) {
+      const sj_c = new Color(sj_p.color ?? '#ffffff');
+      const sj_arr = new Float32Array(sj_g.attributes.position!.count * 3);
+      for (let sj_i = 0; sj_i < sj_arr.length; sj_i += 3)
+        sj_arr.set([sj_c.r, sj_c.g, sj_c.b], sj_i);
+      sj_g.setAttribute('color', new BufferAttribute(sj_arr, 3));
     }
-    q.setFromEuler(new Euler(...(p.rotation ?? [0, 0, 0])));
-    m4.compose(
-      new Vector3(...(p.position ?? [0, 0, 0])),
-      q,
-      new Vector3(...(p.scale ?? [1, 1, 1])),
+    sj_q.setFromEuler(new Euler(...(sj_p.rotation ?? [0, 0, 0])));
+    sj_m4.compose(
+      new Vector3(...(sj_p.position ?? [0, 0, 0])),
+      sj_q,
+      new Vector3(...(sj_p.scale ?? [1, 1, 1])),
     );
-    g.applyMatrix4(m4);
-    return g;
+    sj_g.applyMatrix4(sj_m4);
+    return sj_g;
   });
-  const merged = mergeGeometries(geos, false)!;
-  geos.forEach((g) => g.dispose());
-  return merged;
+  const sj_merged = mergeGeometries(sj_geos, false)!;
+  sj_geos.forEach((sj_g) => sj_g.dispose());
+  return sj_merged;
 }
 
-function meshOf(geo: BufferGeometry, mat: Material, name: string, shadow = true): Mesh {
-  const m = new Mesh(geo, mat);
-  m.name = name;
-  m.castShadow = shadow;
-  m.receiveShadow = true;
-  return m;
+function meshOf(sj_geo: BufferGeometry, sj_mat: Material, sj_name: string, sj_shadow = true): Mesh {
+  const sj_m = new Mesh(sj_geo, sj_mat);
+  sj_m.name = sj_name;
+  sj_m.castShadow = sj_shadow;
+  sj_m.receiveShadow = true;
+  return sj_m;
 }
 
 /**
@@ -148,147 +149,149 @@ export class Panda {
 
   constructor() {
     this.root.name = 'panda';
-    const fur = createFurMaterial('#ffffff', { rim: 0.34 });
-    fur.vertexColors = true;
-    const gloss = new MeshStandardMaterial({ vertexColors: true, roughness: 0.18 });
+    const sj_fur = createFurMaterial('#ffffff', { rim: 0.34 });
+    sj_fur.vertexColors = true;
+    const sj_gloss = new MeshStandardMaterial({ vertexColors: true, roughness: 0.18 });
 
     this.root.add(this.body);
     this.body.rotation.order = 'YXZ';
 
     // --- body: torso and tail; the scarf, the scroll case and its strap ---
-    const bodyGeo = mergeGeometries([
+    const sj_bodyGeo = mergeGeometries([
       createTorsoGeometry().toNonIndexed(),
-      bake([{ geo: new SphereGeometry(0.085, 12, 10), color: WHITE, position: [0, 0.38, -0.37] }]),
+      bake([
+        { geo: new SphereGeometry(0.085, 12, 10), color: sj_WHITE, position: [0, 0.38, -0.37] },
+      ]),
     ])!;
-    this.body.add(meshOf(bodyGeo, fur, 'panda-body'));
+    this.body.add(meshOf(sj_bodyGeo, sj_fur, 'panda-body'));
     this.scarfKnot.position.set(-0.2, 0.71, 0.31);
     this.body.add(this.scarfKnot);
     this.body.add(
       meshOf(createScarfGeometry(this.scarfKnot.position), createScarfMaterial(), 'panda-scarf'),
     );
-    const caseMatrix = new Matrix4().compose(
+    const sj_caseMatrix = new Matrix4().compose(
       new Vector3(0.02, 0.7, -0.35),
       new Quaternion().setFromEuler(new Euler(0.12, 0, 0.72)),
       new Vector3(1, 1, 1),
     );
     this.body.add(
       meshOf(
-        createGearGeometry(caseMatrix),
+        createGearGeometry(sj_caseMatrix),
         new MeshStandardMaterial({ vertexColors: true, roughness: 0.62, metalness: 0.05 }),
         'panda-gear',
       ),
     );
 
     // --- legs ---
-    const legGeo = bake([
-      { geo: new CapsuleGeometry(0.125, 0.12, 6, 14), color: BLACK, position: [0, -0.165, 0] },
+    const sj_legGeo = bake([
+      { geo: new CapsuleGeometry(0.125, 0.12, 6, 14), color: sj_BLACK, position: [0, -0.165, 0] },
       {
         geo: new SphereGeometry(0.13, 16, 12),
-        color: BLACK,
+        color: sj_BLACK,
         position: [0, -0.285, 0.05],
         scale: [1, 0.6, 1.28],
       },
       {
         geo: new SphereGeometry(0.075, 12, 8),
-        color: NOSE,
+        color: sj_NOSE,
         position: [0, -0.33, 0.07],
         scale: [1, 0.35, 1.2],
       },
     ]);
-    for (const [leg, side] of [
+    for (const [sj_leg, sj_side] of [
       [this.legL, 1],
       [this.legR, -1],
     ] as const) {
-      leg.position.set(0.195 * side, 0.36, 0.02);
-      leg.add(meshOf(legGeo, fur, 'panda-leg'));
-      this.body.add(leg);
+      sj_leg.position.set(0.195 * sj_side, 0.36, 0.02);
+      sj_leg.add(meshOf(sj_legGeo, sj_fur, 'panda-leg'));
+      this.body.add(sj_leg);
     }
 
     // --- arms ---
-    const armGeo = bake([
-      { geo: new CapsuleGeometry(0.1, 0.24, 6, 14), color: BLACK, position: [0, -0.18, 0] },
-      { geo: new SphereGeometry(0.108, 14, 10), color: BLACK, position: [0, -0.34, 0.01] },
+    const sj_armGeo = bake([
+      { geo: new CapsuleGeometry(0.1, 0.24, 6, 14), color: sj_BLACK, position: [0, -0.18, 0] },
+      { geo: new SphereGeometry(0.108, 14, 10), color: sj_BLACK, position: [0, -0.34, 0.01] },
     ]);
-    for (const [arm, side] of [
+    for (const [sj_arm, sj_side] of [
       [this.armL, 1],
       [this.armR, -1],
     ] as const) {
-      arm.position.set(0.33 * side, 0.855, 0.03);
-      arm.rotation.z = 0.22 * side;
-      arm.add(meshOf(armGeo, fur, 'panda-arm'));
-      this.body.add(arm);
+      sj_arm.position.set(0.33 * sj_side, 0.855, 0.03);
+      sj_arm.rotation.z = 0.22 * sj_side;
+      sj_arm.add(meshOf(sj_armGeo, sj_fur, 'panda-arm'));
+      this.body.add(sj_arm);
     }
 
     // --- head ---
     this.head.position.set(0, 1.11, 0.03);
     this.body.add(this.head);
-    const patch = (side: number): Part => ({
+    const sj_patch = (sj_side: number): Part => ({
       geo: new SphereGeometry(0.105, 20, 16),
-      color: BLACK,
-      position: [0.142 * side, 0.035, 0.33],
-      rotation: [0.1, 0.38 * side, 0.52 * side],
+      color: sj_BLACK,
+      position: [0.142 * sj_side, 0.035, 0.33],
+      rotation: [0.1, 0.38 * sj_side, 0.52 * sj_side],
       scale: [0.9, 1.32, 0.55],
     });
-    const headGeo = bake([
-      { geo: new SphereGeometry(0.38, 36, 28), color: WHITE, scale: [1.08, 0.94, 1] },
+    const sj_headGeo = bake([
+      { geo: new SphereGeometry(0.38, 36, 28), color: sj_WHITE, scale: [1.08, 0.94, 1] },
       {
         geo: new SphereGeometry(0.16, 24, 16),
-        color: CREAM,
+        color: sj_CREAM,
         position: [0, -0.1, 0.27],
         scale: [1.2, 0.82, 0.95],
       },
       {
         geo: new SphereGeometry(0.058, 16, 12),
-        color: NOSE,
+        color: sj_NOSE,
         position: [0, -0.04, 0.405],
         scale: [1.35, 0.85, 1],
       },
       {
         geo: new TorusGeometry(0.04, 0.009, 6, 16, Math.PI),
-        color: NOSE,
+        color: sj_NOSE,
         position: [0, -0.115, 0.4],
         rotation: [-0.35, 0, Math.PI],
       },
-      patch(1),
-      patch(-1),
+      sj_patch(1),
+      sj_patch(-1),
     ]);
-    this.head.add(meshOf(headGeo, fur, 'panda-head'));
+    this.head.add(meshOf(sj_headGeo, sj_fur, 'panda-head'));
 
-    const earGeo = bake([
-      { geo: new SphereGeometry(0.12, 18, 14), color: BLACK, scale: [1, 1, 0.58] },
+    const sj_earGeo = bake([
+      { geo: new SphereGeometry(0.12, 18, 14), color: sj_BLACK, scale: [1, 1, 0.58] },
     ]);
-    for (const [ear, side] of [
+    for (const [sj_ear, sj_side] of [
       [this.earL, 1],
       [this.earR, -1],
     ] as const) {
-      ear.position.set(0.265 * side, 0.27, -0.03);
-      ear.rotation.z = -0.38 * side;
-      ear.add(meshOf(earGeo, fur, 'panda-ear'));
-      this.head.add(ear);
+      sj_ear.position.set(0.265 * sj_side, 0.27, -0.03);
+      sj_ear.rotation.z = -0.38 * sj_side;
+      sj_ear.add(meshOf(sj_earGeo, sj_fur, 'panda-ear'));
+      this.head.add(sj_ear);
     }
 
-    for (const [eye, side] of [
+    for (const [sj_eye, sj_side] of [
       [this.eyeL, 1],
       [this.eyeR, -1],
     ] as const) {
-      const eyeGeo = bake([
+      const sj_eyeGeo = bake([
         { geo: new SphereGeometry(0.05, 18, 14), color: '#fbf8f2', scale: [1, 1.1, 0.6] },
         {
           geo: new SphereGeometry(0.036, 16, 12),
           color: '#241710',
-          position: [-0.006 * side, 0.002, 0.02],
+          position: [-0.006 * sj_side, 0.002, 0.02],
           scale: [1, 1.1, 0.7],
         },
         {
           geo: new SphereGeometry(0.012, 8, 6),
           color: '#ffffff',
-          position: [0.006 * side + 0.004, 0.02, 0.043],
+          position: [0.006 * sj_side + 0.004, 0.02, 0.043],
         },
       ]);
-      eye.position.set(0.138 * side, 0.05, 0.372);
-      eye.rotation.y = 0.33 * side;
-      eye.add(meshOf(eyeGeo, gloss, 'panda-eye', false));
-      this.head.add(eye);
+      sj_eye.position.set(0.138 * sj_side, 0.05, 0.372);
+      sj_eye.rotation.y = 0.33 * sj_side;
+      sj_eye.add(meshOf(sj_eyeGeo, sj_gloss, 'panda-eye', false));
+      this.head.add(sj_eye);
     }
   }
 

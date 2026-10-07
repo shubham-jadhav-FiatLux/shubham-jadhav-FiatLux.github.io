@@ -1,6 +1,6 @@
 import { MeshStandardMaterial } from 'three';
-import { BUMP_GLSL, NOISE3_GLSL } from '../../render/glsl';
-import { WATER_LEVEL } from '../layout';
+import { sj_BUMP_GLSL, sj_NOISE3_GLSL } from '../../render/glsl';
+import { sj_WATER_LEVEL } from '../layout';
 
 export interface RockMaterialOptions {
   /** strength of the pixel-level bump (m) */
@@ -16,17 +16,17 @@ export interface RockMaterialOptions {
  * Noise runs in object space scaled by the instance size, so big and small rocks share
  * the same grain size. Works with InstancedMesh (and instance colours).
  */
-export function createRockMaterial(o: RockMaterialOptions = {}): MeshStandardMaterial {
-  const mat = new MeshStandardMaterial({ vertexColors: true, roughness: 0.88, metalness: 0 });
-  mat.name = 'rock';
-  const uniforms = {
-    uRockBump: { value: o.bump ?? 0.022 },
-    uLichen: { value: o.lichen ?? 1 },
-    uWaterLevel: { value: WATER_LEVEL },
+export function createRockMaterial(sj_o: RockMaterialOptions = {}): MeshStandardMaterial {
+  const sj_mat = new MeshStandardMaterial({ vertexColors: true, roughness: 0.88, metalness: 0 });
+  sj_mat.name = 'rock';
+  const sj_uniforms = {
+    uRockBump: { value: sj_o.bump ?? 0.022 },
+    uLichen: { value: sj_o.lichen ?? 1 },
+    uWaterLevel: { value: sj_WATER_LEVEL },
   };
-  mat.onBeforeCompile = (shader) => {
-    Object.assign(shader.uniforms, uniforms);
-    shader.vertexShader = shader.vertexShader
+  sj_mat.onBeforeCompile = (sj_shader) => {
+    Object.assign(sj_shader.uniforms, sj_uniforms);
+    sj_shader.vertexShader = sj_shader.vertexShader
       .replace(
         '#include <common>',
         /* glsl */ `#include <common>
@@ -51,7 +51,7 @@ varying float vRockUp;`,
   vRockUp = normalize(mat3(modelMatrix) * rockN).y;
 }`,
       );
-    shader.fragmentShader = shader.fragmentShader
+    sj_shader.fragmentShader = sj_shader.fragmentShader
       .replace(
         '#include <common>',
         /* glsl */ `#include <common>
@@ -61,8 +61,8 @@ uniform float uWaterLevel;
 varying vec3 vRockLocal;
 varying vec3 vRockWorld;
 varying float vRockUp;
-${NOISE3_GLSL}
-${BUMP_GLSL}`,
+${sj_NOISE3_GLSL}
+${sj_BUMP_GLSL}`,
       )
       .replace(
         '#include <color_fragment>',
@@ -107,6 +107,6 @@ normal = bumpFromHeight(-vViewPosition, normal,
   (rockMid * 0.55 + rockFine * 0.3 - rockCrack * 0.5) * uRockBump);`,
       );
   };
-  mat.customProgramCacheKey = () => 'rock-v2';
-  return mat;
+  sj_mat.customProgramCacheKey = () => 'rock-v2';
+  return sj_mat;
 }

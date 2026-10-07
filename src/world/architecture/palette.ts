@@ -1,7 +1,7 @@
 import type { ColorRepresentation } from 'three';
 
 /** Architectural palette. */
-export const PAL = {
+export const sj_PAL = {
   vermilion: '#a8352a',
   vermilionDark: '#7d2620',
   beamTeal: '#2f6f72',
@@ -30,12 +30,12 @@ export const PAL = {
  */
 export type Finish = 'paint' | 'wood' | 'stone' | 'metal';
 
-export const FINISH_ID: Record<Finish, number> = { paint: 0, wood: 1, stone: 2, metal: 3 };
+export const sj_FINISH_ID: Record<Finish, number> = { paint: 0, wood: 1, stone: 2, metal: 3 };
 
-const BY_COLOR = new Map<string, Finish>([
-  [PAL.wood, 'wood'],
-  [PAL.woodLight, 'wood'],
-  [PAL.woodDeck, 'wood'],
+const sj_BY_COLOR = new Map<string, Finish>([
+  [sj_PAL.wood, 'wood'],
+  [sj_PAL.woodLight, 'wood'],
+  [sj_PAL.woodDeck, 'wood'],
   ['#2a1a12', 'wood'],
   ['#3a2416', 'wood'],
   ['#3a2a1c', 'wood'],
@@ -45,13 +45,15 @@ const BY_COLOR = new Map<string, Finish>([
   ['#8a5a36', 'wood'],
   ['#9c6b3e', 'wood'],
   ['#b98a55', 'wood'],
-  [PAL.stone, 'stone'],
-  [PAL.stoneDark, 'stone'],
-  [PAL.gold, 'metal'],
-  [PAL.bronze, 'metal'],
+  [sj_PAL.stone, 'stone'],
+  [sj_PAL.stoneDark, 'stone'],
+  [sj_PAL.gold, 'metal'],
+  [sj_PAL.bronze, 'metal'],
 ]);
 
 /** The finish a colour implies when a part does not name one. */
-export function finishFor(color: ColorRepresentation | null): Finish {
-  return typeof color === 'string' ? (BY_COLOR.get(color.toLowerCase()) ?? 'paint') : 'paint';
+export function finishFor(sj_color: ColorRepresentation | null): Finish {
+  return typeof sj_color === 'string'
+    ? (sj_BY_COLOR.get(sj_color.toLowerCase()) ?? 'paint')
+    : 'paint';
 }

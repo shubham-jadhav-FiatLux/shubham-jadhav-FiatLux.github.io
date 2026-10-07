@@ -1,4 +1,4 @@
-import { SECTIONS } from '../content/sections';
+import { sj_SECTIONS } from '../content/sections';
 import type { PortfolioContent } from '../content/types';
 import { esc, renderSection, sectionTitle } from './render';
 
@@ -14,34 +14,34 @@ export interface ClassicHtmlOptions {
  * the same markup serves the in-game page view and the build-time `<noscript>` copy that
  * search engines, link unfurlers and visitors without JavaScript see.
  */
-export function classicHtml(content: PortfolioContent, o: ClassicHtmlOptions): string {
-  const named = !content.owner.name.includes('[');
-  const sections = SECTIONS.filter((s) => s.id !== 'welcome');
+export function classicHtml(sj_content: PortfolioContent, sj_o: ClassicHtmlOptions): string {
+  const sj_named = !sj_content.owner.name.includes('[');
+  const sj_sections = sj_SECTIONS.filter((sj_s) => sj_s.id !== 'welcome');
   return `
     <header class="classic__hero">
-      <span class="seal seal--lg" aria-hidden="true">${esc(content.site.seal)}</span>
-      <h1>${esc(named ? content.owner.name : content.site.title)}</h1>
-      <p class="classic__role">${esc(content.owner.role)}</p>
-      <p class="classic__intro">${esc(content.owner.intro)}</p>
-      ${o.note ? `<p class="classic__note">${esc(o.note)}</p>` : ''}
+      <span class="seal seal--lg" aria-hidden="true">${esc(sj_content.site.seal)}</span>
+      <h1>${esc(sj_named ? sj_content.owner.name : sj_content.site.title)}</h1>
+      <p class="classic__role">${esc(sj_content.owner.role)}</p>
+      <p class="classic__intro">${esc(sj_content.owner.intro)}</p>
+      ${sj_o.note ? `<p class="classic__note">${esc(sj_o.note)}</p>` : ''}
       <nav class="classic__nav" aria-label="Sections">
-        ${sections.map((s) => `<a href="#classic-${s.id}">${esc(s.label)}</a>`).join('')}
+        ${sj_sections.map((sj_s) => `<a href="#classic-${sj_s.id}">${esc(sj_s.label)}</a>`).join('')}
       </nav>
-      ${o.canPlay ? '<button type="button" class="btn btn--seal classic__play">Walk the valley instead</button>' : ''}
+      ${sj_o.canPlay ? '<button type="button" class="btn btn--seal classic__play">Walk the valley instead</button>' : ''}
     </header>
     <main class="classic__main prose">
-      ${sections
+      ${sj_sections
         .map(
           (
-            s,
-          ) => `<section id="classic-${s.id}" class="classic__section" aria-labelledby="classic-${s.id}-h">
-            <h2 id="classic-${s.id}-h"><span class="seal" aria-hidden="true">${s.glyph}</span>${esc(sectionTitle(s.id, content))}</h2>
-            ${renderSection(s.id, content)}
+            sj_s,
+          ) => `<section id="classic-${sj_s.id}" class="classic__section" aria-labelledby="classic-${sj_s.id}-h">
+            <h2 id="classic-${sj_s.id}-h"><span class="seal" aria-hidden="true">${sj_s.glyph}</span>${esc(sectionTitle(sj_s.id, sj_content))}</h2>
+            ${renderSection(sj_s.id, sj_content)}
           </section>`,
         )
         .join('')}
     </main>
     <footer class="classic__foot">
-      <p>${esc(content.site.title)} · ${esc(content.site.tagline)}</p>
+      <p>${esc(sj_content.site.title)} · ${esc(sj_content.site.tagline)}</p>
     </footer>`;
 }

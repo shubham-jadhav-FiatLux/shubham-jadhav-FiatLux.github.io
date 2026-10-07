@@ -18,7 +18,7 @@ import { App } from './app/App';
 import { createContext } from './render/context';
 import { Game } from './app/Game';
 import { GameAudio } from './audio/GameAudio';
-import { portfolio } from './content/portfolio';
+import { sj_portfolio } from './content/portfolio';
 import { Loader } from './ui/Loader';
 import { ClassicView } from './ui/ClassicView';
 import { notice } from './ui/notice';
@@ -32,59 +32,65 @@ declare global {
 }
 
 async function boot(): Promise<void> {
-  const named = !portfolio.owner.name.includes('[');
-  document.title = `${portfolio.site.title} · ${named ? portfolio.owner.name : 'Portfolio'}`;
-  const canvas = document.getElementById('scene') as HTMLCanvasElement;
-  const context = createContext(canvas);
-  const webgl = context !== null;
-  const ui = document.getElementById('ui')!;
-  const loaderEl = document.getElementById('loader')!;
-  const classic = new ClassicView(document.body, portfolio, webgl, [canvas, ui, loaderEl]);
-  const loader = new Loader(loaderEl, portfolio);
-  loader.onClassic(() => classic.open());
-  if (!context) {
-    loader.showError('Your browser does not support WebGL 2, so here is the portfolio as a page.');
-    window.setTimeout(() => classic.open(), 1200);
+  const sj_named = !sj_portfolio.owner.name.includes('[');
+  document.title = `${sj_portfolio.site.title} · ${sj_named ? sj_portfolio.owner.name : 'Portfolio'}`;
+  const sj_canvas = document.getElementById('scene') as HTMLCanvasElement;
+  const sj_context = createContext(sj_canvas);
+  const sj_webgl = sj_context !== null;
+  const sj_ui = document.getElementById('ui')!;
+  const sj_loaderEl = document.getElementById('loader')!;
+  const sj_classic = new ClassicView(document.body, sj_portfolio, sj_webgl, [
+    sj_canvas,
+    sj_ui,
+    sj_loaderEl,
+  ]);
+  const sj_loader = new Loader(sj_loaderEl, sj_portfolio);
+  sj_loader.onClassic(() => sj_classic.open());
+  if (!sj_context) {
+    sj_loader.showError(
+      'Your browser does not support WebGL 2, so here is the portfolio as a page.',
+    );
+    window.setTimeout(() => sj_classic.open(), 1200);
     return;
   }
-  const app = new App(canvas, portfolio, context);
-  const audio = new GameAudio();
-  window.__valley = app;
+  const sj_app = new App(sj_canvas, sj_portfolio, sj_context);
+  const sj_audio = new GameAudio();
+  window.__valley = sj_app;
   // GPUs reset now and then (driver updates, sleeping laptops, too many tabs).
-  let dismissLost: (() => void) | null = null;
-  canvas.addEventListener('webglcontextlost', (e) => {
-    e.preventDefault(); // allows the browser to restore the context
-    dismissLost ??= notice('The graphics card took a break.', {
+  let sj_dismissLost: (() => void) | null = null;
+  sj_canvas.addEventListener('webglcontextlost', (sj_e) => {
+    sj_e.preventDefault(); // allows the browser to restore the context
+    sj_dismissLost ??= notice('The graphics card took a break.', {
       label: 'Reload the valley',
       run: () => window.location.reload(),
     });
   });
-  canvas.addEventListener('webglcontextrestored', () => {
-    dismissLost?.();
-    dismissLost = null;
+  sj_canvas.addEventListener('webglcontextrestored', () => {
+    sj_dismissLost?.();
+    sj_dismissLost = null;
   });
-  let game: Game;
+  let sj_game: Game;
   try {
-    const progress = (f: number, label: string) => loader.setProgress(f, label);
-    await app.load(progress);
-    game = new Game(app, audio, ui, classic);
-    window.__game = game;
-    await app.prepare(progress);
-  } catch (err) {
-    console.error(err);
-    loader.showError('Something went wrong while building the valley. Please reload.');
-    window.setTimeout(() => classic.open(), 1500);
+    const sj_progress = (sj_f: number, sj_label: string) => sj_loader.setProgress(sj_f, sj_label);
+    await sj_app.load(sj_progress);
+    sj_game = new Game(sj_app, sj_audio, sj_ui, sj_classic);
+    window.__game = sj_game;
+    await sj_app.prepare(sj_progress);
+  } catch (sj_err) {
+    console.error(sj_err);
+    sj_loader.showError('Something went wrong while building the valley. Please reload.');
+    window.setTimeout(() => sj_classic.open(), 1500);
     return;
   }
-  const preferTour = new URLSearchParams(window.location.search).has('tour');
-  loader.ready(
-    (tour) => {
-      void audio.unlock();
-      app.begin({ quiet: tour });
-      game.start({ tour });
+  const sj_preferTour = new URLSearchParams(window.location.search).has('tour');
+  sj_loader.ready(
+    (sj_tour) => {
+      void sj_audio.unlock();
+      sj_app.begin({ quiet: sj_tour });
+      sj_game.start({ tour: sj_tour });
     },
-    () => !classic.isOpen,
-    preferTour,
+    () => !sj_classic.isOpen,
+    sj_preferTour,
   );
 }
 

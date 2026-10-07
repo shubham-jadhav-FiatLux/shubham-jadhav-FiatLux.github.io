@@ -1,16 +1,16 @@
 import { Emitter } from '../core/Emitter';
-import { SECTIONS, type SectionId } from '../content/sections';
+import { sj_SECTIONS, type SectionId } from '../content/sections';
 import type { Progress } from '../zones/Progress';
 import type { Terrain } from '../world/Terrain';
 import { releaseFocus, trapFocus } from './focus';
-import { ICONS } from './icons';
+import { sj_ICONS } from './icons';
 import { esc } from './render';
 import { whenIdle } from '../utils/idle';
-import { BRUSH_FONT } from '../world/architecture/textures';
-import { riverCourse } from '../world/heightfield';
-import { BRIDGE_POINTS, FALLS } from '../world/layout';
+import { sj_BRUSH_FONT } from '../world/architecture/textures';
+import { sj_riverCourse } from '../world/heightfield';
+import { sj_BRIDGE_POINTS, sj_FALLS } from '../world/layout';
 
-const EXTENT = 92; // map covers [-EXTENT, EXTENT] in x and z
+const sj_EXTENT = 92; // map covers [-EXTENT, EXTENT] in x and z
 
 export interface MapMarker {
   section: SectionId;
@@ -18,179 +18,191 @@ export interface MapMarker {
   z: number;
 }
 
-function toMap(v: number): number {
-  return ((v + EXTENT) / (EXTENT * 2)) * 100;
+function toMap(sj_v: number): number {
+  return ((sj_v + sj_EXTENT) / (sj_EXTENT * 2)) * 100;
 }
 
 /** Paints the valley as an ink-wash map on rice paper. */
 function paintMap(
-  terrain: Terrain,
-  trees: { x: number; z: number; r: number }[],
-  buildings: MapBuilding[],
+  sj_terrain: Terrain,
+  sj_trees: { x: number; z: number; r: number }[],
+  sj_buildings: MapBuilding[],
 ): HTMLCanvasElement {
-  const size = 512;
-  const c = document.createElement('canvas');
-  c.width = c.height = size;
-  const ctx = c.getContext('2d')!;
-  const img = ctx.createImageData(size, size);
-  const n = { x: 0, y: 1, z: 0 };
-  const mix = (a: number, b: number, t: number) => a + (b - a) * t;
-  for (let j = 0; j < size; j++) {
-    for (let i = 0; i < size; i++) {
-      const x = -EXTENT + ((i + 0.5) / size) * EXTENT * 2;
-      const z = -EXTENT + ((j + 0.5) / size) * EXTENT * 2;
-      const h = terrain.heightAt(x, z);
-      terrain.normalAt(x, z, n);
-      let r: number;
-      let g: number;
-      let b: number;
-      if (h < 0) {
-        const d = Math.min(1, -h / 3);
-        r = mix(150, 64, d);
-        g = mix(205, 138, d);
-        b = mix(186, 138, d);
+  const sj_size = 512;
+  const sj_c = document.createElement('canvas');
+  sj_c.width = sj_c.height = sj_size;
+  const sj_ctx = sj_c.getContext('2d')!;
+  const sj_img = sj_ctx.createImageData(sj_size, sj_size);
+  const sj_n = { x: 0, y: 1, z: 0 };
+  const sj_mix = (sj_a: number, sj_b: number, sj_t: number) => sj_a + (sj_b - sj_a) * sj_t;
+  for (let sj_j = 0; sj_j < sj_size; sj_j++) {
+    for (let sj_i = 0; sj_i < sj_size; sj_i++) {
+      const sj_x = -sj_EXTENT + ((sj_i + 0.5) / sj_size) * sj_EXTENT * 2;
+      const sj_z = -sj_EXTENT + ((sj_j + 0.5) / sj_size) * sj_EXTENT * 2;
+      const sj_h = sj_terrain.heightAt(sj_x, sj_z);
+      sj_terrain.normalAt(sj_x, sj_z, sj_n);
+      let sj_r: number;
+      let sj_g: number;
+      let sj_b: number;
+      if (sj_h < 0) {
+        const sj_d = Math.min(1, -sj_h / 3);
+        sj_r = sj_mix(150, 64, sj_d);
+        sj_g = sj_mix(205, 138, sj_d);
+        sj_b = sj_mix(186, 138, sj_d);
         // painted ripple strokes
-        const ripple = Math.sin(x * 1.1 + z * 0.35) * Math.sin(z * 0.9 - x * 0.2);
-        if (ripple > 0.93) {
-          r += 30;
-          g += 25;
-          b += 20;
+        const sj_ripple = Math.sin(sj_x * 1.1 + sj_z * 0.35) * Math.sin(sj_z * 0.9 - sj_x * 0.2);
+        if (sj_ripple > 0.93) {
+          sj_r += 30;
+          sj_g += 25;
+          sj_b += 20;
         }
       } else {
         // meadow green, washing to ink on the hills
-        r = 176;
-        g = 196;
-        b = 128;
-        const ink = Math.min(1, Math.max(0, (h - 3.5) / 30));
-        r = mix(r, 72, ink * 0.8);
-        g = mix(g, 92, ink * 0.8);
-        b = mix(b, 80, ink * 0.8);
-        const m = terrain.mask.sample(x, z);
-        if (m.stone > 0.45) {
-          r = 218;
-          g = 208;
-          b = 188;
-        } else if (m.dirt > 0.5) {
-          r = 186;
-          g = 140;
-          b = 96;
+        sj_r = 176;
+        sj_g = 196;
+        sj_b = 128;
+        const sj_ink = Math.min(1, Math.max(0, (sj_h - 3.5) / 30));
+        sj_r = sj_mix(sj_r, 72, sj_ink * 0.8);
+        sj_g = sj_mix(sj_g, 92, sj_ink * 0.8);
+        sj_b = sj_mix(sj_b, 80, sj_ink * 0.8);
+        const sj_m = sj_terrain.mask.sample(sj_x, sj_z);
+        if (sj_m.stone > 0.45) {
+          sj_r = 218;
+          sj_g = 208;
+          sj_b = 188;
+        } else if (sj_m.dirt > 0.5) {
+          sj_r = 186;
+          sj_g = 140;
+          sj_b = 96;
         }
-        if (h < 0.4) {
-          r = mix(r, 214, 0.45);
-          g = mix(g, 196, 0.45);
-          b = mix(b, 150, 0.45);
+        if (sj_h < 0.4) {
+          sj_r = sj_mix(sj_r, 214, 0.45);
+          sj_g = sj_mix(sj_g, 196, 0.45);
+          sj_b = sj_mix(sj_b, 150, 0.45);
         }
-        const shade = 1 + (-n.x * 0.6 - n.z * 0.4) * 1.1;
-        r *= shade;
-        g *= shade;
-        b *= shade;
+        const sj_shade = 1 + (-sj_n.x * 0.6 - sj_n.z * 0.4) * 1.1;
+        sj_r *= sj_shade;
+        sj_g *= sj_shade;
+        sj_b *= sj_shade;
       }
-      const o = (j * size + i) * 4;
-      img.data[o] = r;
-      img.data[o + 1] = g;
-      img.data[o + 2] = b;
-      img.data[o + 3] = 255;
+      const sj_o = (sj_j * sj_size + sj_i) * 4;
+      sj_img.data[sj_o] = sj_r;
+      sj_img.data[sj_o + 1] = sj_g;
+      sj_img.data[sj_o + 2] = sj_b;
+      sj_img.data[sj_o + 3] = 255;
     }
   }
-  ctx.putImageData(img, 0, 0);
-  const px = (v: number) => ((v + EXTENT) / (EXTENT * 2)) * size;
-  const pm = (m: number) => (m / (EXTENT * 2)) * size;
+  sj_ctx.putImageData(sj_img, 0, 0);
+  const sj_px = (sj_v: number) => ((sj_v + sj_EXTENT) / (sj_EXTENT * 2)) * sj_size;
+  const sj_pm = (sj_m: number) => (sj_m / (sj_EXTENT * 2)) * sj_size;
   // the stream across the plateau, its spring and the white water of the falls
-  const course = riverCourse.points;
-  const spring = course[0]!;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  for (const [width, color] of [
+  const sj_course = sj_riverCourse.points;
+  const sj_spring = sj_course[0]!;
+  sj_ctx.lineCap = 'round';
+  sj_ctx.lineJoin = 'round';
+  for (const [sj_width, sj_color] of [
     [3.4, 'rgba(58, 104, 98, 0.55)'],
     [2.4, 'rgb(128, 190, 176)'],
   ] as const) {
-    ctx.strokeStyle = ctx.fillStyle = color;
-    ctx.lineWidth = pm(width);
-    ctx.beginPath();
-    course.forEach((p, i) => (i ? ctx.lineTo(px(p.x), px(p.z)) : ctx.moveTo(px(p.x), px(p.z))));
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(px(spring.x), px(spring.z), pm(2.6 + width * 0.3), 0, Math.PI * 2);
-    ctx.fill();
+    sj_ctx.strokeStyle = sj_ctx.fillStyle = sj_color;
+    sj_ctx.lineWidth = sj_pm(sj_width);
+    sj_ctx.beginPath();
+    sj_course.forEach((sj_p, sj_i) =>
+      sj_i
+        ? sj_ctx.lineTo(sj_px(sj_p.x), sj_px(sj_p.z))
+        : sj_ctx.moveTo(sj_px(sj_p.x), sj_px(sj_p.z)),
+    );
+    sj_ctx.stroke();
+    sj_ctx.beginPath();
+    sj_ctx.arc(sj_px(sj_spring.x), sj_px(sj_spring.z), sj_pm(2.6 + sj_width * 0.3), 0, Math.PI * 2);
+    sj_ctx.fill();
   }
-  ctx.strokeStyle = 'rgba(248, 246, 236, 0.9)';
-  ctx.lineWidth = pm(2.2);
-  ctx.beginPath();
-  ctx.moveTo(px(FALLS.lip.x), px(FALLS.lip.z));
-  ctx.lineTo(px(FALLS.foot.x), px(FALLS.foot.z));
-  ctx.stroke();
+  sj_ctx.strokeStyle = 'rgba(248, 246, 236, 0.9)';
+  sj_ctx.lineWidth = sj_pm(2.2);
+  sj_ctx.beginPath();
+  sj_ctx.moveTo(sj_px(sj_FALLS.lip.x), sj_px(sj_FALLS.lip.z));
+  sj_ctx.lineTo(sj_px(sj_FALLS.foot.x), sj_px(sj_FALLS.foot.z));
+  sj_ctx.stroke();
   // the zig-zag bridge, in lacquer red
-  for (const [width, color] of [
+  for (const [sj_width, sj_color] of [
     [3.0, 'rgba(40, 24, 20, 0.6)'],
     [2.0, '#b0463a'],
   ] as const) {
-    ctx.strokeStyle = color;
-    ctx.lineWidth = pm(width);
-    ctx.lineJoin = 'miter';
-    ctx.lineCap = 'butt';
-    ctx.beginPath();
-    BRIDGE_POINTS.forEach(([x, z], i) => (i ? ctx.lineTo(px(x), px(z)) : ctx.moveTo(px(x), px(z))));
-    ctx.stroke();
+    sj_ctx.strokeStyle = sj_color;
+    sj_ctx.lineWidth = sj_pm(sj_width);
+    sj_ctx.lineJoin = 'miter';
+    sj_ctx.lineCap = 'butt';
+    sj_ctx.beginPath();
+    sj_BRIDGE_POINTS.forEach(([sj_x, sj_z], sj_i) =>
+      sj_i ? sj_ctx.lineTo(sj_px(sj_x), sj_px(sj_z)) : sj_ctx.moveTo(sj_px(sj_x), sj_px(sj_z)),
+    );
+    sj_ctx.stroke();
   }
   // trees as ink puffs
-  for (const t of trees) {
-    const rr = Math.max(2.2, pm(t.r) * 0.62);
-    ctx.fillStyle = 'rgba(46, 74, 48, 0.62)';
-    ctx.beginPath();
-    ctx.arc(px(t.x), px(t.z), rr, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = 'rgba(120, 150, 90, 0.35)';
-    ctx.beginPath();
-    ctx.arc(px(t.x) - rr * 0.25, px(t.z) - rr * 0.25, rr * 0.5, 0, Math.PI * 2);
-    ctx.fill();
+  for (const sj_t of sj_trees) {
+    const sj_rr = Math.max(2.2, sj_pm(sj_t.r) * 0.62);
+    sj_ctx.fillStyle = 'rgba(46, 74, 48, 0.62)';
+    sj_ctx.beginPath();
+    sj_ctx.arc(sj_px(sj_t.x), sj_px(sj_t.z), sj_rr, 0, Math.PI * 2);
+    sj_ctx.fill();
+    sj_ctx.fillStyle = 'rgba(120, 150, 90, 0.35)';
+    sj_ctx.beginPath();
+    sj_ctx.arc(
+      sj_px(sj_t.x) - sj_rr * 0.25,
+      sj_px(sj_t.z) - sj_rr * 0.25,
+      sj_rr * 0.5,
+      0,
+      Math.PI * 2,
+    );
+    sj_ctx.fill();
   }
   // buildings as vermilion and slate footprints
-  for (const bld of buildings) {
-    ctx.save();
-    ctx.translate(px(bld.x), px(bld.z));
-    ctx.rotate(-bld.rot);
-    ctx.fillStyle = bld.color;
-    ctx.strokeStyle = 'rgba(30, 26, 24, 0.7)';
-    ctx.lineWidth = 1.2;
-    ctx.beginPath();
-    if (bld.sides) {
-      for (let k = 0; k < bld.sides; k++) {
-        const a = (k / bld.sides) * Math.PI * 2;
-        ctx.lineTo(Math.cos(a) * pm(bld.w / 2), Math.sin(a) * pm(bld.w / 2));
+  for (const sj_bld of sj_buildings) {
+    sj_ctx.save();
+    sj_ctx.translate(sj_px(sj_bld.x), sj_px(sj_bld.z));
+    sj_ctx.rotate(-sj_bld.rot);
+    sj_ctx.fillStyle = sj_bld.color;
+    sj_ctx.strokeStyle = 'rgba(30, 26, 24, 0.7)';
+    sj_ctx.lineWidth = 1.2;
+    sj_ctx.beginPath();
+    if (sj_bld.sides) {
+      for (let sj_k = 0; sj_k < sj_bld.sides; sj_k++) {
+        const sj_a = (sj_k / sj_bld.sides) * Math.PI * 2;
+        sj_ctx.lineTo(Math.cos(sj_a) * sj_pm(sj_bld.w / 2), Math.sin(sj_a) * sj_pm(sj_bld.w / 2));
       }
-      ctx.closePath();
+      sj_ctx.closePath();
     } else {
-      ctx.rect(-pm(bld.w / 2), -pm(bld.d / 2), pm(bld.w), pm(bld.d));
+      sj_ctx.rect(-sj_pm(sj_bld.w / 2), -sj_pm(sj_bld.d / 2), sj_pm(sj_bld.w), sj_pm(sj_bld.d));
     }
-    ctx.fill();
-    ctx.stroke();
-    ctx.restore();
+    sj_ctx.fill();
+    sj_ctx.stroke();
+    sj_ctx.restore();
   }
   // paper vignette
-  const v = ctx.createRadialGradient(
-    size / 2,
-    size / 2,
-    size * 0.32,
-    size / 2,
-    size / 2,
-    size * 0.74,
+  const sj_v = sj_ctx.createRadialGradient(
+    sj_size / 2,
+    sj_size / 2,
+    sj_size * 0.32,
+    sj_size / 2,
+    sj_size / 2,
+    sj_size * 0.74,
   );
-  v.addColorStop(0, 'rgba(243,234,214,0)');
-  v.addColorStop(1, 'rgba(214,194,154,0.8)');
-  ctx.fillStyle = v;
-  ctx.fillRect(0, 0, size, size);
+  sj_v.addColorStop(0, 'rgba(243,234,214,0)');
+  sj_v.addColorStop(1, 'rgba(214,194,154,0.8)');
+  sj_ctx.fillStyle = sj_v;
+  sj_ctx.fillRect(0, 0, sj_size, sj_size);
   // compass
-  ctx.fillStyle = '#3a2f28';
-  ctx.font = `28px ${BRUSH_FONT}`;
-  ctx.textAlign = 'center';
-  ctx.fillText('N', size - 34, 44);
-  ctx.strokeStyle = '#3a2f28';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(size - 34, 52);
-  ctx.lineTo(size - 34, 84);
-  ctx.stroke();
-  return c;
+  sj_ctx.fillStyle = '#3a2f28';
+  sj_ctx.font = `28px ${sj_BRUSH_FONT}`;
+  sj_ctx.textAlign = 'center';
+  sj_ctx.fillText('N', sj_size - 34, 44);
+  sj_ctx.strokeStyle = '#3a2f28';
+  sj_ctx.lineWidth = 2;
+  sj_ctx.beginPath();
+  sj_ctx.moveTo(sj_size - 34, 52);
+  sj_ctx.lineTo(sj_size - 34, 84);
+  sj_ctx.stroke();
+  return sj_c;
 }
 
 export interface MapBuilding {
@@ -217,13 +229,13 @@ export class MapPanel extends Emitter<{ travel: SectionId; close: void }> {
   private paint: (() => void) | null;
 
   constructor(
-    root: HTMLElement,
-    terrain: Terrain,
-    trees: { x: number; z: number; r: number }[],
-    buildings: MapBuilding[],
-    markers: MapMarker[],
+    sj_root: HTMLElement,
+    sj_terrain: Terrain,
+    sj_trees: { x: number; z: number; r: number }[],
+    sj_buildings: MapBuilding[],
+    sj_markers: MapMarker[],
     private readonly progress: Progress,
-    title: string,
+    sj_title: string,
   ) {
     super();
     this.el = document.createElement('div');
@@ -231,55 +243,55 @@ export class MapPanel extends Emitter<{ travel: SectionId; close: void }> {
     this.el.innerHTML = `
       <div class="map" role="dialog" aria-modal="true" aria-labelledby="map-title">
         <header class="map__head">
-          <h2 id="map-title" class="map__title">${esc(title)}</h2>
-          <button type="button" class="icon-btn" aria-label="Close map (Esc)">${ICONS.close}</button>
+          <h2 id="map-title" class="map__title">${esc(sj_title)}</h2>
+          <button type="button" class="icon-btn" aria-label="Close map (Esc)">${sj_ICONS.close}</button>
         </header>
         <div class="map__canvas">
           <div class="map__panda" aria-hidden="true"></div>
         </div>
         <p class="map__hint">Choose a seal to travel there. Faded seals are scrolls you have not found yet.</p>
       </div>`;
-    root.appendChild(this.el);
-    const canvasWrap = this.el.querySelector('.map__canvas')! as HTMLElement;
+    sj_root.appendChild(this.el);
+    const sj_canvasWrap = this.el.querySelector('.map__canvas')! as HTMLElement;
     this.paint = () => {
       this.paint = null;
-      const canvas = paintMap(terrain, trees, buildings);
-      canvas.className = 'map__image';
-      canvas.setAttribute('role', 'img');
-      canvas.setAttribute('aria-label', 'Painted map of the valley');
-      canvasWrap.prepend(canvas);
+      const sj_canvas = paintMap(sj_terrain, sj_trees, sj_buildings);
+      sj_canvas.className = 'map__image';
+      sj_canvas.setAttribute('role', 'img');
+      sj_canvas.setAttribute('aria-label', 'Painted map of the valley');
+      sj_canvasWrap.prepend(sj_canvas);
     };
     // Painting takes a while: do it in a quiet moment after the valley has opened.
     whenIdle(() => this.paint?.(), 6000);
     this.panda = this.el.querySelector('.map__panda')!;
-    for (const m of markers) {
-      const meta = SECTIONS.find((s) => s.id === m.section)!;
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'map__marker';
-      b.style.left = `${toMap(m.x)}%`;
-      b.style.top = `${toMap(m.z)}%`;
-      b.innerHTML = `<span class="seal">${meta.glyph}</span><span class="map__label">${esc(meta.landmark)}</span>`;
-      b.addEventListener('click', () => this.emit('travel', m.section));
-      canvasWrap.appendChild(b);
-      this.markers.set(m.section, b);
+    for (const sj_m of sj_markers) {
+      const sj_meta = sj_SECTIONS.find((sj_s) => sj_s.id === sj_m.section)!;
+      const sj_b = document.createElement('button');
+      sj_b.type = 'button';
+      sj_b.className = 'map__marker';
+      sj_b.style.left = `${toMap(sj_m.x)}%`;
+      sj_b.style.top = `${toMap(sj_m.z)}%`;
+      sj_b.innerHTML = `<span class="seal">${sj_meta.glyph}</span><span class="map__label">${esc(sj_meta.landmark)}</span>`;
+      sj_b.addEventListener('click', () => this.emit('travel', sj_m.section));
+      sj_canvasWrap.appendChild(sj_b);
+      this.markers.set(sj_m.section, sj_b);
     }
     this.el.querySelector('.map__head .icon-btn')!.addEventListener('click', () => this.close());
-    this.el.addEventListener('pointerdown', (e) => {
-      if (e.target === this.el) this.close();
+    this.el.addEventListener('pointerdown', (sj_e) => {
+      if (sj_e.target === this.el) this.close();
     });
     trapFocus(this.el, () => this.isOpen);
   }
 
   open(): void {
     this.paint?.();
-    for (const [id, b] of this.markers) {
-      const found = this.progress.has(id);
-      b.classList.toggle('map__marker--found', found);
-      const meta = SECTIONS.find((s) => s.id === id)!;
-      b.setAttribute(
+    for (const [sj_id, sj_b] of this.markers) {
+      const sj_found = this.progress.has(sj_id);
+      sj_b.classList.toggle('map__marker--found', sj_found);
+      const sj_meta = sj_SECTIONS.find((sj_s) => sj_s.id === sj_id)!;
+      sj_b.setAttribute(
         'aria-label',
-        `${meta.landmark} (${meta.label})${found ? '' : ', not found yet'}. Travel there`,
+        `${sj_meta.landmark} (${sj_meta.label})${sj_found ? '' : ', not found yet'}. Travel there`,
       );
     }
     this.isOpen = true;
@@ -302,10 +314,10 @@ export class MapPanel extends Emitter<{ travel: SectionId; close: void }> {
     else this.open();
   }
 
-  update(x: number, z: number, yaw: number): void {
+  update(sj_x: number, sj_z: number, sj_yaw: number): void {
     if (!this.isOpen) return;
-    this.panda.style.left = `${toMap(x)}%`;
-    this.panda.style.top = `${toMap(z)}%`;
-    this.panda.style.transform = `translate(-50%, -50%) rotate(${-yaw + Math.PI}rad)`;
+    this.panda.style.left = `${toMap(sj_x)}%`;
+    this.panda.style.top = `${toMap(sj_z)}%`;
+    this.panda.style.transform = `translate(-50%, -50%) rotate(${-sj_yaw + Math.PI}rad)`;
   }
 }

@@ -5,20 +5,20 @@ import { Color, MeshStandardMaterial, type ColorRepresentation } from 'three';
  * reads as fur catching the golden-hour sun.
  */
 export function createFurMaterial(
-  color: ColorRepresentation,
-  options: { rim?: number; rimColor?: ColorRepresentation; roughness?: number } = {},
+  sj_color: ColorRepresentation,
+  sj_options: { rim?: number; rimColor?: ColorRepresentation; roughness?: number } = {},
 ): MeshStandardMaterial {
-  const mat = new MeshStandardMaterial({
-    color,
-    roughness: options.roughness ?? 0.88,
+  const sj_mat = new MeshStandardMaterial({
+    color: sj_color,
+    roughness: sj_options.roughness ?? 0.88,
     metalness: 0,
   });
-  const rimColor = new Color(options.rimColor ?? '#ffd9a8');
-  const rim = options.rim ?? 0.35;
-  mat.onBeforeCompile = (shader) => {
-    shader.uniforms.uRimColor = { value: rimColor };
-    shader.uniforms.uRimStrength = { value: rim };
-    shader.fragmentShader = shader.fragmentShader
+  const sj_rimColor = new Color(sj_options.rimColor ?? '#ffd9a8');
+  const sj_rim = sj_options.rim ?? 0.35;
+  sj_mat.onBeforeCompile = (sj_shader) => {
+    sj_shader.uniforms.uRimColor = { value: sj_rimColor };
+    sj_shader.uniforms.uRimStrength = { value: sj_rim };
+    sj_shader.fragmentShader = sj_shader.fragmentShader
       .replace(
         '#include <common>',
         '#include <common>\nuniform vec3 uRimColor;\nuniform float uRimStrength;',
@@ -33,6 +33,6 @@ export function createFurMaterial(
         #include <opaque_fragment>`,
       );
   };
-  mat.customProgramCacheKey = () => `fur-${rim.toFixed(2)}`;
-  return mat;
+  sj_mat.customProgramCacheKey = () => `fur-${sj_rim.toFixed(2)}`;
+  return sj_mat;
 }

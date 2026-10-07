@@ -1,4 +1,4 @@
-const FOCUSABLE = [
+const sj_FOCUSABLE = [
   'a[href]',
   'button:not([disabled])',
   'input:not([disabled])',
@@ -7,10 +7,10 @@ const FOCUSABLE = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(',');
 
-/** Focusable, visible elements inside `root`, in tab order. */
-export function focusables(root: HTMLElement): HTMLElement[] {
-  return [...root.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(
-    (el) => !el.hidden && el.getClientRects().length > 0,
+/** Focusable, visible elements inside `sj_root`, in tab order. */
+export function focusables(sj_root: HTMLElement): HTMLElement[] {
+  return [...sj_root.querySelectorAll<HTMLElement>(sj_FOCUSABLE)].filter(
+    (sj_el) => !sj_el.hidden && sj_el.getClientRects().length > 0,
   );
 }
 
@@ -18,21 +18,21 @@ export function focusables(root: HTMLElement): HTMLElement[] {
  * Keeps Tab and Shift+Tab cycling inside a modal dialog while `isOpen()` holds.
  * Listens on the document so focus that slipped out (e.g. to the body) is pulled back in.
  */
-export function trapFocus(root: HTMLElement, isOpen: () => boolean): void {
-  document.addEventListener('keydown', (e) => {
-    if (e.key !== 'Tab' || !isOpen()) return;
-    const items = focusables(root);
-    if (!items.length) return;
-    const first = items[0]!;
-    const last = items[items.length - 1]!;
-    const active = document.activeElement;
-    const inside = active instanceof Node && root.contains(active);
-    if (e.shiftKey && (!inside || active === first)) {
-      e.preventDefault();
-      last.focus();
-    } else if (!e.shiftKey && (!inside || active === last)) {
-      e.preventDefault();
-      first.focus();
+export function trapFocus(sj_root: HTMLElement, sj_isOpen: () => boolean): void {
+  document.addEventListener('keydown', (sj_e) => {
+    if (sj_e.key !== 'Tab' || !sj_isOpen()) return;
+    const sj_items = focusables(sj_root);
+    if (!sj_items.length) return;
+    const sj_first = sj_items[0]!;
+    const sj_last = sj_items[sj_items.length - 1]!;
+    const sj_active = document.activeElement;
+    const sj_inside = sj_active instanceof Node && sj_root.contains(sj_active);
+    if (sj_e.shiftKey && (!sj_inside || sj_active === sj_first)) {
+      sj_e.preventDefault();
+      sj_last.focus();
+    } else if (!sj_e.shiftKey && (!sj_inside || sj_active === sj_last)) {
+      sj_e.preventDefault();
+      sj_first.focus();
     }
   });
 }
@@ -41,7 +41,7 @@ export function trapFocus(root: HTMLElement, isOpen: () => boolean): void {
  * Drops focus that is still inside a panel being closed, so keys like Space go back to
  * the game instead of a hidden button.
  */
-export function releaseFocus(root: HTMLElement): void {
-  const active = document.activeElement;
-  if (active instanceof HTMLElement && root.contains(active)) active.blur();
+export function releaseFocus(sj_root: HTMLElement): void {
+  const sj_active = document.activeElement;
+  if (sj_active instanceof HTMLElement && sj_root.contains(sj_active)) sj_active.blur();
 }

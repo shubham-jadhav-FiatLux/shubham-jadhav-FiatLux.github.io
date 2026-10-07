@@ -1,12 +1,12 @@
 import { Vector2, Vector3, Vector4, type Texture } from 'three';
-import { SUN_DIRECTION } from './atmosphere';
-import { TERRAIN_ORIGIN, TERRAIN_RES, TERRAIN_SIZE } from '../world/layout';
+import { sj_SUN_DIRECTION } from './atmosphere';
+import { sj_TERRAIN_ORIGIN, sj_TERRAIN_RES, sj_TERRAIN_SIZE } from '../world/layout';
 
 /**
  * Uniforms shared by many materials. three.js uploads uniforms by reference, so every
  * material that includes one of these objects sees updates without extra work.
  */
-export const globalUniforms = {
+export const sj_globalUniforms = {
   uTime: { value: 0 },
   /** normalised wind direction on the ground plane */
   uWindDir: { value: new Vector2(0.8, -0.6).normalize() },
@@ -18,13 +18,13 @@ export const globalUniforms = {
   uShockAge: { value: 99 },
   /** golden ink ripple of a discovery: x, z, age (s), strength */
   uRipple: { value: new Vector4(0, 0, 99, 0) },
-  uSunDir: { value: SUN_DIRECTION.clone() },
+  uSunDir: { value: sj_SUN_DIRECTION.clone() },
   uHeightMap: { value: null as Texture | null },
   uMaskMap: { value: null as Texture | null },
   /** second splat map: lantern light, wet ground, leaf litter, gravel */
   uDetailMap: { value: null as Texture | null },
   /** terrain mapping: x = origin, y = size, z = grid resolution */
-  uTerrain: { value: new Vector3(TERRAIN_ORIGIN, TERRAIN_SIZE, TERRAIN_RES) },
+  uTerrain: { value: new Vector3(sj_TERRAIN_ORIGIN, sj_TERRAIN_SIZE, sj_TERRAIN_RES) },
 };
 
-export type GlobalUniforms = typeof globalUniforms;
+export type GlobalUniforms = typeof sj_globalUniforms;

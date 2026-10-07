@@ -8,27 +8,27 @@ import {
   type Texture,
   type WebGLRenderer,
 } from 'three';
-import { ATMOSPHERE, SUN_DIRECTION } from './atmosphere';
+import { sj_ATMOSPHERE, sj_SUN_DIRECTION } from './atmosphere';
 
 /**
  * A soft golden-hour sky (blue zenith, warm horizon, sun glow, green-brown ground),
  * prefiltered once for image-based reflections: it gives lacquer, glazed roof tiles,
  * gilding and bronze something to reflect.
  */
-export function createSkyEnvironment(renderer: WebGLRenderer): Texture {
-  const scene = new Scene();
-  const geometry = new SphereGeometry(10, 48, 24);
-  const material = new ShaderMaterial({
+export function createSkyEnvironment(sj_renderer: WebGLRenderer): Texture {
+  const sj_scene = new Scene();
+  const sj_geometry = new SphereGeometry(10, 48, 24);
+  const sj_material = new ShaderMaterial({
     side: BackSide,
     depthWrite: false,
     uniforms: {
-      uZenith: { value: ATMOSPHERE.skyZenith },
-      uMid: { value: ATMOSPHERE.skyMid },
-      uHorizon: { value: ATMOSPHERE.skyHorizon },
-      uGround: { value: ATMOSPHERE.hemiGround },
-      uSunGlow: { value: ATMOSPHERE.sunGlow },
-      uSunColor: { value: ATMOSPHERE.sunColor },
-      uSunDir: { value: SUN_DIRECTION },
+      uZenith: { value: sj_ATMOSPHERE.skyZenith },
+      uMid: { value: sj_ATMOSPHERE.skyMid },
+      uHorizon: { value: sj_ATMOSPHERE.skyHorizon },
+      uGround: { value: sj_ATMOSPHERE.hemiGround },
+      uSunGlow: { value: sj_ATMOSPHERE.sunGlow },
+      uSunColor: { value: sj_ATMOSPHERE.sunColor },
+      uSunDir: { value: sj_SUN_DIRECTION },
     },
     vertexShader: /* glsl */ `
       varying vec3 vDir;
@@ -59,11 +59,11 @@ export function createSkyEnvironment(renderer: WebGLRenderer): Texture {
       }
     `,
   });
-  scene.add(new Mesh(geometry, material));
-  const pmrem = new PMREMGenerator(renderer);
-  const target = pmrem.fromScene(scene, 0, 0.1, 100);
-  pmrem.dispose();
-  geometry.dispose();
-  material.dispose();
-  return target.texture;
+  sj_scene.add(new Mesh(sj_geometry, sj_material));
+  const sj_pmrem = new PMREMGenerator(sj_renderer);
+  const sj_target = sj_pmrem.fromScene(sj_scene, 0, 0.1, 100);
+  sj_pmrem.dispose();
+  sj_geometry.dispose();
+  sj_material.dispose();
+  return sj_target.texture;
 }

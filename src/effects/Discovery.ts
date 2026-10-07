@@ -7,15 +7,15 @@ import {
   type Scene,
   type Vector3,
 } from 'three';
-import { globalUniforms } from '../render/uniforms';
+import { sj_globalUniforms } from '../render/uniforms';
 import type { Particles } from './Particles';
-import { SPRITE } from './Particles';
+import { sj_SPRITE } from './Particles';
 
 /** From the start of a discovery to its scroll: the bow and the golden light (ms). */
-export const CEREMONY_MS = 2400;
+export const sj_CEREMONY_MS = 2400;
 
-const PETALS = ['#fbd3e0', '#f6b3c9', '#f29ab7', '#fde9ef'].map((c) => new Color(c));
-const GOLD = new Color('#ffd27a');
+const sj_PETALS = ['#fbd3e0', '#f6b3c9', '#f29ab7', '#fde9ef'].map((sj_c) => new Color(sj_c));
+const sj_GOLD = new Color('#ffd27a');
 
 /**
  * The discovery moment: a column of warm light, a golden ink ring that races across the
@@ -26,16 +26,16 @@ export class DiscoveryFx {
   private age = 99;
 
   constructor(
-    scene: Scene,
+    sj_scene: Scene,
     private readonly particles: Particles,
   ) {
-    const geo = new CylinderGeometry(1.1, 1.6, 14, 24, 1, true);
-    geo.translate(0, 7, 0);
-    const mat = new ShaderMaterial({
+    const sj_geo = new CylinderGeometry(1.1, 1.6, 14, 24, 1, true);
+    sj_geo.translate(0, 7, 0);
+    const sj_mat = new ShaderMaterial({
       transparent: true,
       depthWrite: false,
       blending: AdditiveBlending,
-      uniforms: { uAge: { value: 99 }, uTime: globalUniforms.uTime },
+      uniforms: { uAge: { value: 99 }, uTime: sj_globalUniforms.uTime },
       vertexShader: /* glsl */ `
         varying vec2 vUv;
         varying vec3 vNormalV;
@@ -64,66 +64,66 @@ export class DiscoveryFx {
         }
       `,
     });
-    this.pillar = new Mesh(geo, mat);
+    this.pillar = new Mesh(sj_geo, sj_mat);
     this.pillar.visible = false;
     this.pillar.frustumCulled = false;
     this.pillar.renderOrder = 7;
     this.pillar.name = 'discovery-pillar';
-    scene.add(this.pillar);
+    sj_scene.add(this.pillar);
   }
 
-  play(at: Vector3, strength = 1): void {
+  play(sj_at: Vector3, sj_strength = 1): void {
     this.age = 0;
-    this.pillar.position.copy(at);
+    this.pillar.position.copy(sj_at);
     this.pillar.visible = true;
-    globalUniforms.uRipple.value.set(at.x, at.z, 0, strength);
-    for (let i = 0; i < 70; i++) {
-      const a = Math.random() * Math.PI * 2;
-      const sp = 1.5 + Math.random() * 3.5;
+    sj_globalUniforms.uRipple.value.set(sj_at.x, sj_at.z, 0, sj_strength);
+    for (let sj_i = 0; sj_i < 70; sj_i++) {
+      const sj_a = Math.random() * Math.PI * 2;
+      const sj_sp = 1.5 + Math.random() * 3.5;
       this.particles.spawn({
-        x: at.x + Math.cos(a) * 0.4,
-        y: at.y + 0.6 + Math.random() * 0.8,
-        z: at.z + Math.sin(a) * 0.4,
-        vx: Math.cos(a) * sp,
+        x: sj_at.x + Math.cos(sj_a) * 0.4,
+        y: sj_at.y + 0.6 + Math.random() * 0.8,
+        z: sj_at.z + Math.sin(sj_a) * 0.4,
+        vx: Math.cos(sj_a) * sj_sp,
         vy: 3 + Math.random() * 4,
-        vz: Math.sin(a) * sp,
+        vz: Math.sin(sj_a) * sj_sp,
         life: 2 + Math.random() * 1.5,
         size: 0.14 + Math.random() * 0.08,
-        color: PETALS[i % PETALS.length]!,
+        color: sj_PETALS[sj_i % sj_PETALS.length]!,
         gravity: 3.2,
         drag: 0.35,
         spin: (Math.random() - 0.5) * 8,
         flutter: 0.6,
-        sprite: SPRITE.petal,
+        sprite: sj_SPRITE.petal,
       });
     }
-    for (let i = 0; i < 36; i++) {
-      const a = Math.random() * Math.PI * 2;
-      const sp = 0.6 + Math.random() * 1.6;
+    for (let sj_i = 0; sj_i < 36; sj_i++) {
+      const sj_a = Math.random() * Math.PI * 2;
+      const sj_sp = 0.6 + Math.random() * 1.6;
       this.particles.spawn(
         {
-          x: at.x + Math.cos(a) * 0.6,
-          y: at.y + 0.2 + Math.random() * 2.5,
-          z: at.z + Math.sin(a) * 0.6,
-          vx: Math.cos(a) * sp,
+          x: sj_at.x + Math.cos(sj_a) * 0.6,
+          y: sj_at.y + 0.2 + Math.random() * 2.5,
+          z: sj_at.z + Math.sin(sj_a) * 0.6,
+          vx: Math.cos(sj_a) * sj_sp,
           vy: 1 + Math.random() * 2.5,
-          vz: Math.sin(a) * sp,
+          vz: Math.sin(sj_a) * sj_sp,
           life: 1.2 + Math.random() * 1.2,
           size: 0.22,
           sizeEnd: 0.05,
-          color: GOLD,
+          color: sj_GOLD,
           alpha: 0.9,
           drag: 0.3,
-          sprite: SPRITE.spark,
+          sprite: sj_SPRITE.spark,
         },
         true,
       );
     }
   }
 
-  update(dt: number): void {
-    this.age += dt;
-    globalUniforms.uRipple.value.z += dt;
+  update(sj_dt: number): void {
+    this.age += sj_dt;
+    sj_globalUniforms.uRipple.value.z += sj_dt;
     this.pillar.material.uniforms.uAge!.value = this.age;
     if (this.age > 2.4) this.pillar.visible = false;
   }

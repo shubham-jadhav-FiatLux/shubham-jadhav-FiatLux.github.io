@@ -7,43 +7,43 @@ import {
   MeshLambertMaterial,
   type Scene,
 } from 'three';
-import { globalUniforms } from '../../render/uniforms';
+import { sj_globalUniforms } from '../../render/uniforms';
 import {
-  GROUND_WARP_GLSL,
-  NOISE_GLSL,
-  TERRAIN_GLSL,
-  VIEW_CULL_GLSL,
-  WIND_GLSL,
+  sj_GROUND_WARP_GLSL,
+  sj_NOISE_GLSL,
+  sj_TERRAIN_GLSL,
+  sj_VIEW_CULL_GLSL,
+  sj_WIND_GLSL,
 } from '../../render/glsl';
-import { GRASS_COLORS, GRASS_COLOR_GLSL } from '../palette';
-import { ATMOSPHERE } from '../../render/atmosphere';
+import { sj_GRASS_COLORS, sj_GRASS_COLOR_GLSL } from '../palette';
+import { sj_ATMOSPHERE } from '../../render/atmosphere';
 import type { QualitySettings } from '../../core/Quality';
 
-const SEGMENTS = 4;
+const sj_SEGMENTS = 4;
 
 function createBladeGeometry(): InstancedBufferGeometry {
   // position.x = side (-1..1), position.y = t along the blade (0..1)
-  const verts: number[] = [];
-  for (let i = 0; i < SEGMENTS; i++) {
-    const t = i / SEGMENTS;
-    verts.push(-1, t, 0, 1, t, 0);
+  const sj_verts: number[] = [];
+  for (let sj_i = 0; sj_i < sj_SEGMENTS; sj_i++) {
+    const sj_t = sj_i / sj_SEGMENTS;
+    sj_verts.push(-1, sj_t, 0, 1, sj_t, 0);
   }
-  verts.push(0, 1, 0);
-  const index: number[] = [];
-  for (let i = 0; i < SEGMENTS - 1; i++) {
-    const a = i * 2;
-    index.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+  sj_verts.push(0, 1, 0);
+  const sj_index: number[] = [];
+  for (let sj_i = 0; sj_i < sj_SEGMENTS - 1; sj_i++) {
+    const sj_a = sj_i * 2;
+    sj_index.push(sj_a, sj_a + 1, sj_a + 2, sj_a + 1, sj_a + 3, sj_a + 2);
   }
-  const last = (SEGMENTS - 1) * 2;
-  index.push(last, last + 1, SEGMENTS * 2);
-  const geo = new InstancedBufferGeometry();
-  geo.setAttribute('position', new BufferAttribute(new Float32Array(verts), 3));
+  const sj_last = (sj_SEGMENTS - 1) * 2;
+  sj_index.push(sj_last, sj_last + 1, sj_SEGMENTS * 2);
+  const sj_geo = new InstancedBufferGeometry();
+  sj_geo.setAttribute('position', new BufferAttribute(new Float32Array(sj_verts), 3));
   // Lighting uses an up-facing normal so blades shade like the ground beneath them.
-  const normals = new Float32Array(verts.length);
-  for (let i = 1; i < normals.length; i += 3) normals[i] = 1;
-  geo.setAttribute('normal', new BufferAttribute(normals, 3));
-  geo.setIndex(index);
-  return geo;
+  const sj_normals = new Float32Array(sj_verts.length);
+  for (let sj_i = 1; sj_i < sj_normals.length; sj_i += 3) sj_normals[sj_i] = 1;
+  sj_geo.setAttribute('normal', new BufferAttribute(sj_normals, 3));
+  sj_geo.setIndex(sj_index);
+  return sj_geo;
 }
 
 /**
@@ -59,31 +59,32 @@ export class Grass {
     uSide: { value: 200 },
   };
 
-  constructor(settings: QualitySettings) {
-    const geometry = createBladeGeometry();
-    const material = new MeshLambertMaterial({ side: DoubleSide });
-    const tipColor = GRASS_COLORS.uGrassTip;
-    const sunColor = new Color().copy(ATMOSPHERE.sunColor);
-    material.onBeforeCompile = (shader) => {
-      for (const [k, v] of Object.entries(GRASS_COLORS)) shader.uniforms[k] = { value: v };
-      Object.assign(shader.uniforms, this.uniforms, {
-        uTime: globalUniforms.uTime,
-        uWindDir: globalUniforms.uWindDir,
-        uWindStrength: globalUniforms.uWindStrength,
-        uPlayerPos: globalUniforms.uPlayerPos,
-        uShockwave: globalUniforms.uShockwave,
-        uShockAge: globalUniforms.uShockAge,
-        uRipple: globalUniforms.uRipple,
-        uHeightMap: globalUniforms.uHeightMap,
-        uMaskMap: globalUniforms.uMaskMap,
-        uDetailMap: globalUniforms.uDetailMap,
-        uTerrain: globalUniforms.uTerrain,
-        uTip: { value: tipColor },
-        uSunColor: { value: sunColor },
-        uSunDir: globalUniforms.uSunDir,
-        uLampLight: { value: ATMOSPHERE.lampLight },
+  constructor(sj_settings: QualitySettings) {
+    const sj_geometry = createBladeGeometry();
+    const sj_material = new MeshLambertMaterial({ side: DoubleSide });
+    const sj_tipColor = sj_GRASS_COLORS.uGrassTip;
+    const sj_sunColor = new Color().copy(sj_ATMOSPHERE.sunColor);
+    sj_material.onBeforeCompile = (sj_shader) => {
+      for (const [sj_k, sj_v] of Object.entries(sj_GRASS_COLORS))
+        sj_shader.uniforms[sj_k] = { value: sj_v };
+      Object.assign(sj_shader.uniforms, this.uniforms, {
+        uTime: sj_globalUniforms.uTime,
+        uWindDir: sj_globalUniforms.uWindDir,
+        uWindStrength: sj_globalUniforms.uWindStrength,
+        uPlayerPos: sj_globalUniforms.uPlayerPos,
+        uShockwave: sj_globalUniforms.uShockwave,
+        uShockAge: sj_globalUniforms.uShockAge,
+        uRipple: sj_globalUniforms.uRipple,
+        uHeightMap: sj_globalUniforms.uHeightMap,
+        uMaskMap: sj_globalUniforms.uMaskMap,
+        uDetailMap: sj_globalUniforms.uDetailMap,
+        uTerrain: sj_globalUniforms.uTerrain,
+        uTip: { value: sj_tipColor },
+        uSunColor: { value: sj_sunColor },
+        uSunDir: sj_globalUniforms.uSunDir,
+        uLampLight: { value: sj_ATMOSPHERE.lampLight },
       });
-      shader.vertexShader = shader.vertexShader
+      sj_shader.vertexShader = sj_shader.vertexShader
         .replace(
           '#include <common>',
           /* glsl */ `#include <common>
@@ -98,12 +99,12 @@ uniform vec3 uSunDir;
 varying vec3 vGrassColor;
 varying float vGrassTrans;
 varying float vGrassLamp;
-${NOISE_GLSL}
-${GROUND_WARP_GLSL}
-${TERRAIN_GLSL}
-${WIND_GLSL}
-${GRASS_COLOR_GLSL}
-${VIEW_CULL_GLSL}
+${sj_NOISE_GLSL}
+${sj_GROUND_WARP_GLSL}
+${sj_TERRAIN_GLSL}
+${sj_WIND_GLSL}
+${sj_GRASS_COLOR_GLSL}
+${sj_VIEW_CULL_GLSL}
 `,
         )
         .replace(
@@ -205,7 +206,7 @@ ${VIEW_CULL_GLSL}
         )
         .replace('#include <begin_vertex>', 'vec3 transformed = bladePos;');
 
-      shader.fragmentShader = shader.fragmentShader
+      sj_shader.fragmentShader = sj_shader.fragmentShader
         .replace(
           '#include <common>',
           /* glsl */ `#include <common>
@@ -239,23 +240,23 @@ vec3 nonPerturbedNormal = normal;`,
   #include <opaque_fragment>`,
         );
     };
-    material.customProgramCacheKey = () => 'grass-v5';
-    this.mesh = new Mesh(geometry, material);
+    sj_material.customProgramCacheKey = () => 'grass-v5';
+    this.mesh = new Mesh(sj_geometry, sj_material);
     this.mesh.name = 'grass';
     this.mesh.frustumCulled = false;
     this.mesh.receiveShadow = true;
     this.mesh.castShadow = false;
-    this.applyQuality(settings);
+    this.applyQuality(sj_settings);
   }
 
-  addTo(scene: Scene): void {
-    scene.add(this.mesh);
+  addTo(sj_scene: Scene): void {
+    sj_scene.add(this.mesh);
   }
 
-  applyQuality(settings: QualitySettings): void {
-    const side = Math.floor(Math.sqrt(settings.grassBlades));
-    this.uniforms.uSide.value = side;
-    this.uniforms.uPatch.value = settings.grassPatch;
-    this.mesh.geometry.instanceCount = side * side;
+  applyQuality(sj_settings: QualitySettings): void {
+    const sj_side = Math.floor(Math.sqrt(sj_settings.grassBlades));
+    this.uniforms.uSide.value = sj_side;
+    this.uniforms.uPatch.value = sj_settings.grassPatch;
+    this.mesh.geometry.instanceCount = sj_side * sj_side;
   }
 }

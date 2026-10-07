@@ -13,11 +13,11 @@ describe('math helpers', () => {
   });
 
   it('damps towards the target independently of frame rate', () => {
-    let a = 0;
-    for (let i = 0; i < 60; i++) a = damp(a, 1, 5, 1 / 60);
-    let b = 0;
-    for (let i = 0; i < 30; i++) b = damp(b, 1, 5, 1 / 30);
-    expect(a).toBeCloseTo(b, 6);
+    let sj_a = 0;
+    for (let sj_i = 0; sj_i < 60; sj_i++) sj_a = damp(sj_a, 1, 5, 1 / 60);
+    let sj_b = 0;
+    for (let sj_i = 0; sj_i < 30; sj_i++) sj_b = damp(sj_b, 1, 5, 1 / 30);
+    expect(sj_a).toBeCloseTo(sj_b, 6);
   });
 
   it('computes smoothstep and segment distance', () => {
@@ -28,17 +28,17 @@ describe('math helpers', () => {
 
 describe('random and noise', () => {
   it('is reproducible from a seed', () => {
-    const a = new Random(42);
-    const b = new Random(42);
-    for (let i = 0; i < 5; i++) expect(a.float()).toBe(b.float());
+    const sj_a = new Random(42);
+    const sj_b = new Random(42);
+    for (let sj_i = 0; sj_i < 5; sj_i++) expect(sj_a.float()).toBe(sj_b.float());
   });
 
   it('keeps simplex noise in range', () => {
-    const n = new SimplexNoise(7);
-    for (let i = 0; i < 1000; i++) {
-      const v = n.noise2(i * 0.37, i * 0.11);
-      expect(v).toBeGreaterThanOrEqual(-1.001);
-      expect(v).toBeLessThanOrEqual(1.001);
+    const sj_n = new SimplexNoise(7);
+    for (let sj_i = 0; sj_i < 1000; sj_i++) {
+      const sj_v = sj_n.noise2(sj_i * 0.37, sj_i * 0.11);
+      expect(sj_v).toBeGreaterThanOrEqual(-1.001);
+      expect(sj_v).toBeLessThanOrEqual(1.001);
     }
   });
 });

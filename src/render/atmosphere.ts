@@ -4,9 +4,9 @@ import { Color, Vector3 } from 'three';
  * Golden-hour lighting palette. Sky, fog, sun and water all read from here so the
  * horizon, haze and highlights always agree.
  */
-export const SUN_DIRECTION = new Vector3(-0.74, 0.36, 0.48).normalize();
+export const sj_SUN_DIRECTION = new Vector3(-0.74, 0.36, 0.48).normalize();
 
-export const ATMOSPHERE = {
+export const sj_ATMOSPHERE = {
   sunColor: new Color('#ffd6a0'),
   sunIntensity: 3.1,
   skyZenith: new Color('#79a9d6'),

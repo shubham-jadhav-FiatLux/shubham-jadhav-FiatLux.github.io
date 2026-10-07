@@ -4,7 +4,7 @@ import { Color } from 'three';
  * Shared colours for ground cover so the terrain under the grass and the blades
  * themselves always agree.
  */
-export const GRASS_COLORS = {
+export const sj_GRASS_COLORS = {
   uGrassA: new Color('#5a7f2e'),
   uGrassB: new Color('#8aa640'),
   uGrassDry: new Color('#b7a95a'),
@@ -12,7 +12,7 @@ export const GRASS_COLORS = {
 };
 
 /** GLSL: grass colour at a ground position (needs NOISE_GLSL and the uniforms above). */
-export const GRASS_COLOR_GLSL = /* glsl */ `
+export const sj_GRASS_COLOR_GLSL = /* glsl */ `
 uniform vec3 uGrassA;
 uniform vec3 uGrassB;
 uniform vec3 uGrassDry;

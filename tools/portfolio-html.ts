@@ -11,16 +11,16 @@ export interface PortfolioHtmlOptions {
   siteUrl?: string;
 }
 
-const withSlash = (url: string) => (url.endsWith('/') ? url : `${url}/`);
+const sj_withSlash = (sj_url: string) => (sj_url.endsWith('/') ? sj_url : `${sj_url}/`);
 
 /** Title and description for search results and link previews. */
-function pageMeta(content: PortfolioContent): { title: string; description: string } {
-  const named = !content.owner.name.includes('[');
-  const title = `${content.site.title} · ${named ? content.owner.name : 'An explorable portfolio'}`;
-  const description = named
-    ? `${content.owner.name}, ${content.owner.role}. ${content.owner.intro} Walk through the portfolio as a 3D valley, or read it as a page.`
+function pageMeta(sj_content: PortfolioContent): { title: string; description: string } {
+  const sj_named = !sj_content.owner.name.includes('[');
+  const sj_title = `${sj_content.site.title} · ${sj_named ? sj_content.owner.name : 'An explorable portfolio'}`;
+  const sj_description = sj_named
+    ? `${sj_content.owner.name}, ${sj_content.owner.role}. ${sj_content.owner.intro} Walk through the portfolio as a 3D valley, or read it as a page.`
     : 'An explorable 3D portfolio: guide a panda through a misty valley of bamboo, blossoms and pagodas to discover projects, skills and stories.';
-  return { title, description };
+  return { title: sj_title, description: sj_description };
 }
 
 /**
@@ -28,56 +28,64 @@ function pageMeta(content: PortfolioContent): { title: string; description: stri
  * Graph / Twitter tags, the title screen's name and seal, and the `<noscript>` page.
  * Pure, so it can be unit-tested.
  */
-export function renderIndexHtml(html: string, mod: typeof Prerender, siteUrl?: string): string {
-  const { portfolio: content, classicHtml, esc } = mod;
-  const { title, description } = pageMeta(content);
-  const url = siteUrl || content.site.url;
-  const base = url ? withSlash(url) : undefined;
-  const image = base ? new URL('og-image.jpg', base).href : 'og-image.jpg';
-  const prop = (property: string, value: string) =>
-    `<meta property="${property}" content="${esc(value)}" />`;
-  const head = [
-    prop('og:type', 'website'),
-    prop('og:site_name', content.site.title),
-    prop('og:title', title),
-    prop('og:description', description),
-    prop('og:image', image),
-    prop('og:image:width', '1200'),
-    prop('og:image:height', '630'),
-    prop('og:image:alt', `${content.site.title}: a painted valley with a pagoda and a lake`),
-    ...(base ? [prop('og:url', base), `<link rel="canonical" href="${esc(base)}" />`] : []),
+export function renderIndexHtml(
+  sj_html: string,
+  sj_mod: typeof Prerender,
+  sj_siteUrl?: string,
+): string {
+  const { sj_portfolio: sj_content, classicHtml: sj_classicHtml, esc: sj_esc } = sj_mod;
+  const { title: sj_title, description: sj_description } = pageMeta(sj_content);
+  const sj_url = sj_siteUrl || sj_content.site.url;
+  const sj_base = sj_url ? sj_withSlash(sj_url) : undefined;
+  const sj_image = sj_base ? new URL('og-image.jpg', sj_base).href : 'og-image.jpg';
+  const sj_prop = (sj_property: string, sj_value: string) =>
+    `<meta property="${sj_property}" content="${sj_esc(sj_value)}" />`;
+  const sj_head = [
+    sj_prop('og:type', 'website'),
+    sj_prop('og:site_name', sj_content.site.title),
+    sj_prop('og:title', sj_title),
+    sj_prop('og:description', sj_description),
+    sj_prop('og:image', sj_image),
+    sj_prop('og:image:width', '1200'),
+    sj_prop('og:image:height', '630'),
+    sj_prop('og:image:alt', `${sj_content.site.title}: a painted valley with a pagoda and a lake`),
+    ...(sj_base
+      ? [sj_prop('og:url', sj_base), `<link rel="canonical" href="${sj_esc(sj_base)}" />`]
+      : []),
     '<meta name="twitter:card" content="summary_large_image" />',
     // Without JavaScript the title screen would wait forever: show the page copy.
     '<noscript><style>.loader { display: none !important; }</style></noscript>',
   ]
-    .map((line) => `    ${line}`)
+    .map((sj_line) => `    ${sj_line}`)
     .join('\n');
-  const page = classicHtml(content, {
+  const sj_page = sj_classicHtml(sj_content, {
     canPlay: false,
     note: 'Turn on JavaScript to walk through this portfolio as a 3D valley.',
   });
   // Replacer functions, not strings: content may contain "$&", "$'" and friends, which
   // String.replace would otherwise expand.
   return (
-    html
-      .replace(/<title>[\s\S]*?<\/title>/, () => `<title>${esc(title)}</title>`)
+    sj_html
+      .replace(/<title>[\s\S]*?<\/title>/, () => `<title>${sj_esc(sj_title)}</title>`)
       .replace(
         /<meta\s+name="description"[\s\S]*?\/>/,
-        () => `<meta name="description" content="${esc(description)}" />`,
+        () => `<meta name="description" content="${sj_esc(sj_description)}" />`,
       )
-      .replace('</head>', () => `${head}\n  </head>`)
+      .replace('</head>', () => `${sj_head}\n  </head>`)
       // the title screen shows before any script runs
       .replace(
         /(<h1 id="loader-title" class="loader__title">)[\s\S]*?(<\/h1>)/,
-        (_m, open: string, close: string) => `${open}${esc(content.site.title)}${close}`,
+        (_sj_m, sj_open: string, sj_close: string) =>
+          `${sj_open}${sj_esc(sj_content.site.title)}${sj_close}`,
       )
       .replace(
         /(<div class="seal seal--lg loader__seal" aria-hidden="true">)[\s\S]*?(<\/div>)/,
-        (_m, open: string, close: string) => `${open}${esc(content.site.seal)}${close}`,
+        (_sj_m, sj_open: string, sj_close: string) =>
+          `${sj_open}${sj_esc(sj_content.site.seal)}${sj_close}`,
       )
       .replace(
         /<noscript>\s*<div class="noscript">[\s\S]*?<\/noscript>/,
-        () => `<noscript><div class="classic classic--static">${page}</div></noscript>`,
+        () => `<noscript><div class="classic classic--static">${sj_page}</div></noscript>`,
       )
   );
 }
@@ -88,21 +96,21 @@ export function renderIndexHtml(html: string, mod: typeof Prerender, siteUrl?: s
  * The content is TypeScript, so it is loaded through Vite's module runner rather than
  * imported by the config.
  */
-export function portfolioHtml(options: PortfolioHtmlOptions = {}): Plugin {
-  let root = process.cwd();
+export function portfolioHtml(sj_options: PortfolioHtmlOptions = {}): Plugin {
+  let sj_root = process.cwd();
   return {
     name: 'portfolio-html',
-    configResolved(config) {
-      root = config.root;
+    configResolved(sj_config) {
+      sj_root = sj_config.root;
     },
     transformIndexHtml: {
       order: 'pre',
-      async handler(html) {
-        const { module } = await runnerImport<typeof Prerender>(
-          resolve(root, 'src/ui/prerender.ts'),
-          { configFile: false, logLevel: 'error', root },
+      async handler(sj_html) {
+        const { module: sj_module } = await runnerImport<typeof Prerender>(
+          resolve(sj_root, 'src/ui/prerender.ts'),
+          { configFile: false, logLevel: 'error', root: sj_root },
         );
-        return renderIndexHtml(html, module, options.siteUrl);
+        return renderIndexHtml(sj_html, sj_module, sj_options.siteUrl);
       },
     },
   };

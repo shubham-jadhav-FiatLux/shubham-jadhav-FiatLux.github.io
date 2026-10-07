@@ -9,14 +9,14 @@ interface Chain {
   anchorOffset: Vector3;
 }
 
-const SEGMENTS = 7;
-const GRAVITY = new Vector3(0, -9.8, 0);
-const tmp = new Vector3();
-const tmp2 = new Vector3();
-const right = new Vector3();
-const anchor = new Vector3();
-const bodyCenter = new Vector3();
-const headCenter = new Vector3();
+const sj_SEGMENTS = 7;
+const sj_GRAVITY = new Vector3(0, -9.8, 0);
+const sj_tmp = new Vector3();
+const sj_tmp2 = new Vector3();
+const sj_right = new Vector3();
+const sj_anchor = new Vector3();
+const sj_bodyCenter = new Vector3();
+const sj_headCenter = new Vector3();
 
 /**
  * Two scarf tails simulated as Verlet chains and rendered as tapered ribbons.
@@ -31,55 +31,57 @@ export class ScarfTails {
 
   constructor(
     private readonly panda: Panda,
-    material: Material,
+    sj_material: Material,
   ) {
     this.chains = [
       { seg: 0.07, width: 0.088, anchorOffset: new Vector3(0.02, 0, 0) },
       { seg: 0.058, width: 0.078, anchorOffset: new Vector3(-0.03, -0.02, 0.01) },
-    ].map((c) => ({
-      ...c,
-      pos: Array.from({ length: SEGMENTS }, () => new Vector3()),
-      prev: Array.from({ length: SEGMENTS }, () => new Vector3()),
+    ].map((sj_c) => ({
+      ...sj_c,
+      pos: Array.from({ length: sj_SEGMENTS }, () => new Vector3()),
+      prev: Array.from({ length: sj_SEGMENTS }, () => new Vector3()),
     }));
-    const vertsPerChain = SEGMENTS * 2;
-    this.positions = new Float32Array(this.chains.length * vertsPerChain * 3);
-    const index: number[] = [];
-    this.chains.forEach((_, ci) => {
-      const base = ci * vertsPerChain;
-      for (let i = 0; i < SEGMENTS - 1; i++) {
-        const a = base + i * 2;
-        index.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+    const sj_vertsPerChain = sj_SEGMENTS * 2;
+    this.positions = new Float32Array(this.chains.length * sj_vertsPerChain * 3);
+    const sj_index: number[] = [];
+    this.chains.forEach((_sj, sj_ci) => {
+      const sj_base = sj_ci * sj_vertsPerChain;
+      for (let sj_i = 0; sj_i < sj_SEGMENTS - 1; sj_i++) {
+        const sj_a = sj_base + sj_i * 2;
+        sj_index.push(sj_a, sj_a + 1, sj_a + 2, sj_a + 1, sj_a + 3, sj_a + 2);
       }
     });
     // u across a tail, v along it from the knot to the fringed end
-    const uv = new Float32Array(this.chains.length * vertsPerChain * 2);
-    this.chains.forEach((_, ci) => {
-      for (let i = 0; i < SEGMENTS; i++) {
-        const k = (ci * vertsPerChain + i * 2) * 2;
-        const v = i / (SEGMENTS - 1);
-        uv.set([0, v, 1, v], k);
+    const sj_uv = new Float32Array(this.chains.length * sj_vertsPerChain * 2);
+    this.chains.forEach((_sj, sj_ci) => {
+      for (let sj_i = 0; sj_i < sj_SEGMENTS; sj_i++) {
+        const sj_k = (sj_ci * sj_vertsPerChain + sj_i * 2) * 2;
+        const sj_v = sj_i / (sj_SEGMENTS - 1);
+        sj_uv.set([0, sj_v, 1, sj_v], sj_k);
       }
     });
     this.geometry = new BufferGeometry();
     this.geometry.setAttribute('position', new BufferAttribute(this.positions, 3));
-    this.geometry.setAttribute('uv', new BufferAttribute(uv, 2));
-    this.geometry.setIndex(index);
-    this.mesh = new Mesh(this.geometry, material);
+    this.geometry.setAttribute('uv', new BufferAttribute(sj_uv, 2));
+    this.geometry.setIndex(sj_index);
+    this.mesh = new Mesh(this.geometry, sj_material);
     this.mesh.name = 'scarf-tails';
     this.mesh.frustumCulled = false;
     this.mesh.castShadow = true;
   }
 
-  addTo(scene: Scene): void {
-    scene.add(this.mesh);
+  addTo(sj_scene: Scene): void {
+    sj_scene.add(this.mesh);
   }
 
   private reset(): void {
-    this.panda.scarfKnot.getWorldPosition(anchor);
-    for (const c of this.chains) {
-      for (let i = 0; i < SEGMENTS; i++) {
-        c.pos[i]!.set(anchor.x, anchor.y - i * c.seg, anchor.z).add(c.anchorOffset);
-        c.prev[i]!.copy(c.pos[i]!);
+    this.panda.scarfKnot.getWorldPosition(sj_anchor);
+    for (const sj_c of this.chains) {
+      for (let sj_i = 0; sj_i < sj_SEGMENTS; sj_i++) {
+        sj_c.pos[sj_i]!.set(sj_anchor.x, sj_anchor.y - sj_i * sj_c.seg, sj_anchor.z).add(
+          sj_c.anchorOffset,
+        );
+        sj_c.prev[sj_i]!.copy(sj_c.pos[sj_i]!);
       }
     }
     this.initialised = true;
@@ -90,80 +92,86 @@ export class ScarfTails {
     this.initialised = false;
   }
 
-  update(dt: number, wind: { x: number; y: number }, windStrength: number, time: number): void {
+  update(
+    sj_dt: number,
+    sj_wind: { x: number; y: number },
+    sj_windStrength: number,
+    sj_time: number,
+  ): void {
     this.panda.root.updateMatrixWorld(true);
     if (!this.initialised) this.reset();
-    const step = Math.min(dt, 1 / 30);
-    this.panda.scarfKnot.getWorldPosition(anchor);
-    this.panda.body.localToWorld(bodyCenter.set(0, 0.56, 0));
-    this.panda.head.localToWorld(headCenter.set(0, 0, 0));
-    right.set(1, 0, 0).applyQuaternion(this.panda.root.quaternion);
+    const sj_step = Math.min(sj_dt, 1 / 30);
+    this.panda.scarfKnot.getWorldPosition(sj_anchor);
+    this.panda.body.localToWorld(sj_bodyCenter.set(0, 0.56, 0));
+    this.panda.head.localToWorld(sj_headCenter.set(0, 0, 0));
+    sj_right.set(1, 0, 0).applyQuaternion(this.panda.root.quaternion);
 
-    const gust = (0.6 + 0.4 * Math.sin(time * 2.3)) * windStrength;
-    for (const c of this.chains) {
+    const sj_gust = (0.6 + 0.4 * Math.sin(sj_time * 2.3)) * sj_windStrength;
+    for (const sj_c of this.chains) {
       // Verlet integration.
-      for (let i = 1; i < SEGMENTS; i++) {
-        const p = c.pos[i]!;
-        const pr = c.prev[i]!;
-        tmp.subVectors(p, pr).multiplyScalar(0.94);
-        pr.copy(p);
-        p.add(tmp);
-        tmp2.set(wind.x * gust * 1.6, 0, wind.y * gust * 1.6).add(GRAVITY);
-        tmp2.x += Math.sin(time * 9 + i) * 0.6;
-        p.addScaledVector(tmp2, step * step);
+      for (let sj_i = 1; sj_i < sj_SEGMENTS; sj_i++) {
+        const sj_p = sj_c.pos[sj_i]!;
+        const sj_pr = sj_c.prev[sj_i]!;
+        sj_tmp.subVectors(sj_p, sj_pr).multiplyScalar(0.94);
+        sj_pr.copy(sj_p);
+        sj_p.add(sj_tmp);
+        sj_tmp2.set(sj_wind.x * sj_gust * 1.6, 0, sj_wind.y * sj_gust * 1.6).add(sj_GRAVITY);
+        sj_tmp2.x += Math.sin(sj_time * 9 + sj_i) * 0.6;
+        sj_p.addScaledVector(sj_tmp2, sj_step * sj_step);
       }
-      c.pos[0]!.copy(anchor).add(c.anchorOffset);
-      c.prev[0]!.copy(c.pos[0]!);
+      sj_c.pos[0]!.copy(sj_anchor).add(sj_c.anchorOffset);
+      sj_c.prev[0]!.copy(sj_c.pos[0]!);
       // Distance constraints + body collision.
-      for (let it = 0; it < 5; it++) {
-        for (let i = 1; i < SEGMENTS; i++) {
-          const a = c.pos[i - 1]!;
-          const b = c.pos[i]!;
-          tmp.subVectors(b, a);
-          const len = tmp.length() || 1e-6;
-          const diff = (len - c.seg) / len;
-          if (i === 1) b.addScaledVector(tmp, -diff);
+      for (let sj_it = 0; sj_it < 5; sj_it++) {
+        for (let sj_i = 1; sj_i < sj_SEGMENTS; sj_i++) {
+          const sj_a = sj_c.pos[sj_i - 1]!;
+          const sj_b = sj_c.pos[sj_i]!;
+          sj_tmp.subVectors(sj_b, sj_a);
+          const sj_len = sj_tmp.length() || 1e-6;
+          const sj_diff = (sj_len - sj_c.seg) / sj_len;
+          if (sj_i === 1) sj_b.addScaledVector(sj_tmp, -sj_diff);
           else {
-            a.addScaledVector(tmp, diff * 0.5);
-            b.addScaledVector(tmp, -diff * 0.5);
+            sj_a.addScaledVector(sj_tmp, sj_diff * 0.5);
+            sj_b.addScaledVector(sj_tmp, -sj_diff * 0.5);
           }
         }
-        for (let i = 1; i < SEGMENTS; i++) {
-          this.pushOutSphere(c.pos[i]!, bodyCenter, 0.41);
-          this.pushOutSphere(c.pos[i]!, headCenter, 0.39);
+        for (let sj_i = 1; sj_i < sj_SEGMENTS; sj_i++) {
+          this.pushOutSphere(sj_c.pos[sj_i]!, sj_bodyCenter, 0.41);
+          this.pushOutSphere(sj_c.pos[sj_i]!, sj_headCenter, 0.39);
         }
       }
     }
     this.writeGeometry();
   }
 
-  private pushOutSphere(p: Vector3, center: Vector3, radius: number): void {
-    tmp.subVectors(p, center);
-    const d = tmp.length();
-    if (d < radius && d > 1e-5) p.copy(center).addScaledVector(tmp, radius / d);
+  private pushOutSphere(sj_p: Vector3, sj_center: Vector3, sj_radius: number): void {
+    sj_tmp.subVectors(sj_p, sj_center);
+    const sj_d = sj_tmp.length();
+    if (sj_d < sj_radius && sj_d > 1e-5)
+      sj_p.copy(sj_center).addScaledVector(sj_tmp, sj_radius / sj_d);
   }
 
   private writeGeometry(): void {
-    let o = 0;
-    for (const c of this.chains) {
-      for (let i = 0; i < SEGMENTS; i++) {
-        const p = c.pos[i]!;
-        const next = c.pos[Math.min(i + 1, SEGMENTS - 1)]!;
-        const prev = c.pos[Math.max(i - 1, 0)]!;
-        tmp.subVectors(next, prev).normalize();
+    let sj_o = 0;
+    for (const sj_c of this.chains) {
+      for (let sj_i = 0; sj_i < sj_SEGMENTS; sj_i++) {
+        const sj_p = sj_c.pos[sj_i]!;
+        const sj_next = sj_c.pos[Math.min(sj_i + 1, sj_SEGMENTS - 1)]!;
+        const sj_prev = sj_c.pos[Math.max(sj_i - 1, 0)]!;
+        sj_tmp.subVectors(sj_next, sj_prev).normalize();
         // Side vector: the panda's right axis made perpendicular to the ribbon.
-        tmp2.copy(right).addScaledVector(tmp, -right.dot(tmp)).normalize();
-        const w = c.width * (1 - (i / (SEGMENTS - 1)) * 0.2) * 0.5;
-        this.positions[o++] = p.x - tmp2.x * w;
-        this.positions[o++] = p.y - tmp2.y * w;
-        this.positions[o++] = p.z - tmp2.z * w;
-        this.positions[o++] = p.x + tmp2.x * w;
-        this.positions[o++] = p.y + tmp2.y * w;
-        this.positions[o++] = p.z + tmp2.z * w;
+        sj_tmp2.copy(sj_right).addScaledVector(sj_tmp, -sj_right.dot(sj_tmp)).normalize();
+        const sj_w = sj_c.width * (1 - (sj_i / (sj_SEGMENTS - 1)) * 0.2) * 0.5;
+        this.positions[sj_o++] = sj_p.x - sj_tmp2.x * sj_w;
+        this.positions[sj_o++] = sj_p.y - sj_tmp2.y * sj_w;
+        this.positions[sj_o++] = sj_p.z - sj_tmp2.z * sj_w;
+        this.positions[sj_o++] = sj_p.x + sj_tmp2.x * sj_w;
+        this.positions[sj_o++] = sj_p.y + sj_tmp2.y * sj_w;
+        this.positions[sj_o++] = sj_p.z + sj_tmp2.z * sj_w;
       }
     }
-    const attr = this.geometry.attributes.position as BufferAttribute;
-    attr.needsUpdate = true;
+    const sj_attr = this.geometry.attributes.position as BufferAttribute;
+    sj_attr.needsUpdate = true;
     this.geometry.computeVertexNormals();
   }
 }

@@ -3,7 +3,7 @@ import { AudioCore } from './AudioCore';
 import { Music } from './Music';
 import { Sfx, type SfxName, type SfxOptions } from './Sfx';
 import { Ambience } from './Ambience';
-import { storage } from '../core/Storage';
+import { sj_storage } from '../core/Storage';
 import type { Surface } from '../world/layout';
 
 export interface AudioFrame {
@@ -30,8 +30,8 @@ export class GameAudio {
   private duck = 1;
 
   constructor() {
-    this.muted = storage.get('muted', false);
-    this.musicOn = storage.get('music', true);
+    this.muted = sj_storage.get('muted', false);
+    this.musicOn = sj_storage.get('music', true);
     document.addEventListener('visibilitychange', () => {
       if (!this.core) return;
       if (document.hidden) void this.core.ctx.suspend();
@@ -49,8 +49,8 @@ export class GameAudio {
     try {
       this.core = new AudioCore();
       await this.core.ctx.resume();
-    } catch (err) {
-      console.warn('Audio unavailable', err);
+    } catch (sj_err) {
+      console.warn('Audio unavailable', sj_err);
       this.core = null;
       return;
     }
@@ -61,31 +61,31 @@ export class GameAudio {
     this.music.start();
   }
 
-  private applyLevels(instant = false): void {
-    const core = this.core;
-    if (!core) return;
-    const t = core.now;
-    const k = instant ? 0.01 : 0.15;
-    core.master.gain.setTargetAtTime(this.muted ? 0 : 0.9, t, k);
-    core.music.gain.setTargetAtTime(this.musicOn ? 0.85 * this.duck : 0, t, k * 2);
+  private applyLevels(sj_instant = false): void {
+    const sj_core = this.core;
+    if (!sj_core) return;
+    const sj_t = sj_core.now;
+    const sj_k = sj_instant ? 0.01 : 0.15;
+    sj_core.master.gain.setTargetAtTime(this.muted ? 0 : 0.9, sj_t, sj_k);
+    sj_core.music.gain.setTargetAtTime(this.musicOn ? 0.85 * this.duck : 0, sj_t, sj_k * 2);
   }
 
-  setMuted(muted: boolean): void {
-    this.muted = muted;
-    storage.set('muted', muted);
-    if (this.core && !muted) void this.core.ctx.resume();
+  setMuted(sj_muted: boolean): void {
+    this.muted = sj_muted;
+    sj_storage.set('muted', sj_muted);
+    if (this.core && !sj_muted) void this.core.ctx.resume();
     this.applyLevels();
   }
 
-  setMusic(on: boolean): void {
-    this.musicOn = on;
-    storage.set('music', on);
+  setMusic(sj_on: boolean): void {
+    this.musicOn = sj_on;
+    sj_storage.set('music', sj_on);
     this.applyLevels();
   }
 
-  sfx(name: SfxName, o?: SfxOptions): void {
+  sfx(sj_name: SfxName, sj_o?: SfxOptions): void {
     if (!this.sfxPlayer || this.muted) return;
-    if (name === 'discover') {
+    if (sj_name === 'discover') {
       // Let the sting breathe: dip the music for a moment.
       this.duck = 0.35;
       this.applyLevels();
@@ -94,29 +94,29 @@ export class GameAudio {
         this.applyLevels();
       }, 2600);
     }
-    this.sfxPlayer.play(name, o);
+    this.sfxPlayer.play(sj_name, sj_o);
   }
 
-  footstep(surface: Surface, run: boolean): void {
+  footstep(sj_surface: Surface, sj_run: boolean): void {
     if (!this.sfxPlayer || this.muted) return;
-    this.sfxPlayer.footstep(surface, run);
+    this.sfxPlayer.footstep(sj_surface, sj_run);
   }
 
-  update(dt: number, f: AudioFrame): void {
-    const core = this.core;
-    if (!core || this.muted) return;
+  update(sj_dt: number, sj_f: AudioFrame): void {
+    const sj_core = this.core;
+    if (!sj_core || this.muted) return;
     // listener = camera position, "right" = camera's local +x on the ground plane
-    const e = f.camera.matrixWorld.elements;
-    const rx = e[0]!;
-    const rz = e[2]!;
-    const len = Math.hypot(rx, rz) || 1;
-    core.listener.x = f.camera.position.x;
-    core.listener.y = f.camera.position.y;
-    core.listener.z = f.camera.position.z;
-    core.listener.rightX = rx / len;
-    core.listener.rightZ = rz / len;
+    const sj_e = sj_f.camera.matrixWorld.elements;
+    const sj_rx = sj_e[0]!;
+    const sj_rz = sj_e[2]!;
+    const sj_len = Math.hypot(sj_rx, sj_rz) || 1;
+    sj_core.listener.x = sj_f.camera.position.x;
+    sj_core.listener.y = sj_f.camera.position.y;
+    sj_core.listener.z = sj_f.camera.position.z;
+    sj_core.listener.rightX = sj_rx / sj_len;
+    sj_core.listener.rightZ = sj_rz / sj_len;
     this.music?.update();
-    this.ambience?.update(dt, f.player, f.waterfall, f.meditating || f.panelOpen);
+    this.ambience?.update(sj_dt, sj_f.player, sj_f.waterfall, sj_f.meditating || sj_f.panelOpen);
   }
 }
 

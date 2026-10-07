@@ -16,10 +16,10 @@ export class Loop {
 
   constructor(
     private readonly tick: (
-      dt: number,
-      elapsed: number,
-      frameTime: number,
-      render: boolean,
+      sj_dt: number,
+      sj_elapsed: number,
+      sj_frameTime: number,
+      sj_render: boolean,
     ) => void,
   ) {}
 
@@ -27,19 +27,19 @@ export class Loop {
     if (this.running) return;
     this.running = true;
     this.last = performance.now();
-    const step = (now: number) => {
+    const sj_step = (sj_now: number) => {
       if (!this.running) return;
-      this.handle = requestAnimationFrame(step);
-      const frameTime = Math.max(0, (now - this.last) / 1000);
-      this.last = now;
-      const dt = Math.min(frameTime, 1 / 20);
+      this.handle = requestAnimationFrame(sj_step);
+      const sj_frameTime = Math.max(0, (sj_now - this.last) / 1000);
+      this.last = sj_now;
+      const sj_dt = Math.min(sj_frameTime, 1 / 20);
       this.frame++;
-      for (let i = 0; i < this.substeps; i++) {
-        this.elapsed += dt;
-        this.tick(dt, this.elapsed, frameTime, i === this.substeps - 1);
+      for (let sj_i = 0; sj_i < this.substeps; sj_i++) {
+        this.elapsed += sj_dt;
+        this.tick(sj_dt, this.elapsed, sj_frameTime, sj_i === this.substeps - 1);
       }
     };
-    this.handle = requestAnimationFrame(step);
+    this.handle = requestAnimationFrame(sj_step);
   }
 
   stop(): void {

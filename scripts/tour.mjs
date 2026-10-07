@@ -13,102 +13,102 @@
 import { chromium } from 'playwright-core';
 import { mkdirSync, rmSync } from 'node:fs';
 
-const flags = {};
-const positional = [];
-for (let i = 2; i < process.argv.length; i++) {
-  const a = process.argv[i];
-  if (a === '--no-shots') flags['no-shots'] = true;
-  else if (a.startsWith('--')) flags[a.slice(2)] = process.argv[++i];
-  else positional.push(a);
+const sj_flags = {};
+const sj_positional = [];
+for (let sj_i = 2; sj_i < process.argv.length; sj_i++) {
+  const sj_a = process.argv[sj_i];
+  if (sj_a === '--no-shots') sj_flags['no-shots'] = true;
+  else if (sj_a.startsWith('--')) sj_flags[sj_a.slice(2)] = process.argv[++sj_i];
+  else sj_positional.push(sj_a);
 }
-const flag = (name, fallback) => flags[name] ?? fallback;
-const url = positional[0] ?? 'http://localhost:5173/';
-const sim = Number(flag('sim', '8'));
-const every = Number(flag('every', '4')) * 1000;
-const quality = flag('quality', 'low');
-const shots = !flags['no-shots'];
-const outDir = new URL('../screenshots/tour/', import.meta.url);
-if (shots) {
-  rmSync(outDir, { recursive: true, force: true });
-  mkdirSync(outDir, { recursive: true });
+const sj_flag = (sj_name, sj_fallback) => sj_flags[sj_name] ?? sj_fallback;
+const sj_url = sj_positional[0] ?? 'http://localhost:5173/';
+const sj_sim = Number(sj_flag('sim', '8'));
+const sj_every = Number(sj_flag('every', '4')) * 1000;
+const sj_quality = sj_flag('quality', 'low');
+const sj_shots = !sj_flags['no-shots'];
+const sj_outDir = new URL('../screenshots/tour/', import.meta.url);
+if (sj_shots) {
+  rmSync(sj_outDir, { recursive: true, force: true });
+  mkdirSync(sj_outDir, { recursive: true });
 }
 
-const browser = await chromium.launch({
+const sj_browser = await chromium.launch({
   executablePath: process.env.CHROMIUM_PATH ?? '/opt/pw-browsers/chromium',
   args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
 });
-const page = await browser.newPage({ viewport: { width: 960, height: 540 } });
-page.setDefaultTimeout(240_000);
-const errors = [];
-page.on('pageerror', (e) => errors.push(e.message));
-page.on('console', (m) => {
-  if (m.type() === 'error') errors.push(m.text());
+const sj_page = await sj_browser.newPage({ viewport: { width: 960, height: 540 } });
+sj_page.setDefaultTimeout(240_000);
+const sj_errors = [];
+sj_page.on('pageerror', (sj_e) => sj_errors.push(sj_e.message));
+sj_page.on('console', (sj_m) => {
+  if (sj_m.type() === 'error') sj_errors.push(sj_m.text());
 });
 
-const sep = url.includes('?') ? '&' : '?';
-await page.goto(`${url}${sep}quality=${quality}&adaptive=0&sim=${sim}&tour`);
-await page.waitForSelector('.loader--ready', { timeout: 240_000 });
-await page.evaluate(() => window.__game.progress.reset());
-await page.click('.loader__tour');
+const sj_sep = sj_url.includes('?') ? '&' : '?';
+await sj_page.goto(`${sj_url}${sj_sep}quality=${sj_quality}&adaptive=0&sim=${sj_sim}&tour`);
+await sj_page.waitForSelector('.loader--ready', { timeout: 240_000 });
+await sj_page.evaluate(() => window.__game.progress.reset());
+await sj_page.click('.loader__tour');
 
-const t0 = Date.now();
-const seen = new Set();
-let n = 0;
-let last = 0;
+const sj_t0 = Date.now();
+const sj_seen = new Set();
+let sj_n = 0;
+let sj_last = 0;
 for (;;) {
-  const state = await page.evaluate(() => {
-    const t = window.__game.tour;
+  const sj_state = await sj_page.evaluate(() => {
+    const sj_t = window.__game.tour;
     return {
-      running: t.running,
-      chapter: t.chapter,
-      time: t.timeline.now,
+      running: sj_t.running,
+      chapter: sj_t.chapter,
+      time: sj_t.timeline.now,
       ended: document.querySelector('.tour')?.classList.contains('tour--ended') ?? false,
     };
   });
-  seen.add(state.chapter);
-  if (shots && Date.now() - last >= every) {
-    last = Date.now();
-    const name = `${String(n++).padStart(3, '0')}-c${state.chapter}-t${state.time.toFixed(0)}.png`;
-    await page.screenshot({ path: new URL(name, outDir).pathname });
+  sj_seen.add(sj_state.chapter);
+  if (sj_shots && Date.now() - sj_last >= sj_every) {
+    sj_last = Date.now();
+    const sj_name = `${String(sj_n++).padStart(3, '0')}-c${sj_state.chapter}-t${sj_state.time.toFixed(0)}.png`;
+    await sj_page.screenshot({ path: new URL(sj_name, sj_outDir).pathname });
   }
-  if (state.ended || !state.running) break;
+  if (sj_state.ended || !sj_state.running) break;
   // software rendering can be very slow: allow up to 90 minutes for the whole film
-  if (Date.now() - t0 > 90 * 60_000) {
-    errors.push('tour did not finish in time');
+  if (Date.now() - sj_t0 > 90 * 60_000) {
+    sj_errors.push('tour did not finish in time');
     break;
   }
-  await page.waitForTimeout(500);
+  await sj_page.waitForTimeout(500);
 }
-if (shots)
-  await page.screenshot({
-    path: new URL(`${String(n).padStart(3, '0')}-end.png`, outDir).pathname,
+if (sj_shots)
+  await sj_page.screenshot({
+    path: new URL(`${String(sj_n).padStart(3, '0')}-end.png`, sj_outDir).pathname,
   });
 
-const result = await page.evaluate(() => ({
+const sj_result = await sj_page.evaluate(() => ({
   found: window.__game.progress.all,
   time: window.__game.tour.timeline.now,
 }));
-const chapters = [...seen].filter((c) => c >= 0).sort((a, b) => a - b);
-console.log(`chapters seen: ${chapters.join(', ')}`);
-console.log(`scrolls found: ${result.found.length}/6 (${result.found.join(', ')})`);
+const sj_chapters = [...sj_seen].filter((sj_c) => sj_c >= 0).sort((sj_a, sj_b) => sj_a - sj_b);
+console.log(`chapters seen: ${sj_chapters.join(', ')}`);
+console.log(`scrolls found: ${sj_result.found.length}/6 (${sj_result.found.join(', ')})`);
 console.log(
-  `film length: ${result.time.toFixed(0)} s of tour time, ${((Date.now() - t0) / 1000).toFixed(0)} s real`,
+  `film length: ${sj_result.time.toFixed(0)} s of tour time, ${((Date.now() - sj_t0) / 1000).toFixed(0)} s real`,
 );
 
 // Hand the controls back and make sure the panda walks again.
-await page.click('[data-end="explore"]');
-await page.waitForTimeout(800);
-const free = await page.evaluate(() => ({
+await sj_page.click('[data-end="explore"]');
+await sj_page.waitForTimeout(800);
+const sj_free = await sj_page.evaluate(() => ({
   running: window.__game.tour.running,
   driver: window.__valley.driver !== null,
 }));
-if (free.running || free.driver) errors.push('the tour did not hand back the controls');
+if (sj_free.running || sj_free.driver) sj_errors.push('the tour did not hand back the controls');
 
-await browser.close();
-const ok = errors.length === 0 && result.found.length === 6 && chapters.length >= 8;
-if (!ok) {
+await sj_browser.close();
+const sj_ok = sj_errors.length === 0 && sj_result.found.length === 6 && sj_chapters.length >= 8;
+if (!sj_ok) {
   console.log('FAILED');
-  for (const e of errors) console.log(' -', e);
+  for (const sj_e of sj_errors) console.log(' -', sj_e);
   process.exit(1);
 }
 console.log('PASSED');

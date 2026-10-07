@@ -1,5 +1,5 @@
 import { Emitter } from './Emitter';
-import { storage } from './Storage';
+import { sj_storage } from './Storage';
 
 export type QualityLevel = 'low' | 'medium' | 'high';
 
@@ -22,7 +22,7 @@ export interface QualitySettings {
   detail: number;
 }
 
-export const QUALITY_PRESETS: Record<QualityLevel, QualitySettings> = {
+export const sj_QUALITY_PRESETS: Record<QualityLevel, QualitySettings> = {
   low: {
     level: 'low',
     maxPixelRatio: 1,
@@ -61,12 +61,12 @@ export const QUALITY_PRESETS: Record<QualityLevel, QualitySettings> = {
   },
 };
 
-const LEVELS: QualityLevel[] = ['low', 'medium', 'high'];
+const sj_LEVELS: QualityLevel[] = ['low', 'medium', 'high'];
 
 function isLikelyMobile(): boolean {
-  const coarse = window.matchMedia?.('(pointer: coarse)').matches ?? false;
-  const small = Math.min(window.screen.width, window.screen.height) < 820;
-  return coarse && small;
+  const sj_coarse = window.matchMedia?.('(pointer: coarse)').matches ?? false;
+  const sj_small = Math.min(window.screen.width, window.screen.height) < 820;
+  return sj_coarse && sj_small;
 }
 
 /**
@@ -89,16 +89,16 @@ export class Quality extends Emitter<{ change: QualitySettings; scale: number }>
 
   constructor() {
     super();
-    const params = new URLSearchParams(window.location.search);
-    const fromUrl = params.get('quality') as QualityLevel | null;
-    const saved = storage.get<QualityLevel | null>('quality', null);
-    const chosen = fromUrl && LEVELS.includes(fromUrl) ? fromUrl : saved;
-    this.userChosen = chosen !== null;
+    const sj_params = new URLSearchParams(window.location.search);
+    const sj_fromUrl = sj_params.get('quality') as QualityLevel | null;
+    const sj_saved = sj_storage.get<QualityLevel | null>('quality', null);
+    const sj_chosen = sj_fromUrl && sj_LEVELS.includes(sj_fromUrl) ? sj_fromUrl : sj_saved;
+    this.userChosen = sj_chosen !== null;
     // High by default; phones start one step lower. Either way the monitor below steps
     // down if the frame rate stays low.
-    const level: QualityLevel = chosen ?? (isLikelyMobile() ? 'medium' : 'high');
-    this.settings = { ...QUALITY_PRESETS[level] };
-    this.adaptive = params.get('adaptive') !== '0';
+    const sj_level: QualityLevel = sj_chosen ?? (isLikelyMobile() ? 'medium' : 'high');
+    this.settings = { ...sj_QUALITY_PRESETS[sj_level] };
+    this.adaptive = sj_params.get('adaptive') !== '0';
     // Frames measured before the tab was hidden say nothing about the ones after it.
     document.addEventListener('visibilitychange', () => {
       this.frames = 0;
@@ -107,13 +107,13 @@ export class Quality extends Emitter<{ change: QualitySettings; scale: number }>
     });
   }
 
-  /** `persist` marks a choice made by the visitor: it is saved and never auto-lowered. */
-  set(level: QualityLevel, persist = true): void {
-    if (persist) {
-      storage.set('quality', level);
+  /** `sj_persist` marks a choice made by the visitor: it is saved and never auto-lowered. */
+  set(sj_level: QualityLevel, sj_persist = true): void {
+    if (sj_persist) {
+      sj_storage.set('quality', sj_level);
       this.userChosen = true;
     }
-    this.settings = { ...QUALITY_PRESETS[level] };
+    this.settings = { ...sj_QUALITY_PRESETS[sj_level] };
     this.emit('change', this.settings);
     if (this.renderScale !== 1) {
       this.renderScale = 1;
@@ -122,28 +122,28 @@ export class Quality extends Emitter<{ change: QualitySettings; scale: number }>
   }
 
   /** Called once per frame with the real (unclamped) frame time in seconds. */
-  monitor(frameTime: number): void {
+  monitor(sj_frameTime: number): void {
     if (!this.adaptive || this.userChosen) return;
     // One long frame after quick ones is a stall (tab switch, hidden iframe, GC), not a
     // slow GPU; a GPU that is slow every frame still gets measured.
-    const stall = frameTime > 0.25 && this.lastFrameTime < 0.1;
-    this.lastFrameTime = frameTime;
-    if (stall) return;
+    const sj_stall = sj_frameTime > 0.25 && this.lastFrameTime < 0.1;
+    this.lastFrameTime = sj_frameTime;
+    if (sj_stall) return;
     if (this.warmup > 0) {
-      this.warmup -= frameTime;
+      this.warmup -= sj_frameTime;
       return;
     }
     if (this.cooldown > 0) {
-      this.cooldown -= frameTime;
+      this.cooldown -= sj_frameTime;
       return;
     }
     this.frames++;
-    this.accum += frameTime;
+    this.accum += sj_frameTime;
     if (this.accum < 3) return;
-    const fps = this.frames / this.accum;
+    const sj_fps = this.frames / this.accum;
     this.frames = 0;
     this.accum = 0;
-    if (fps >= 42) return;
+    if (sj_fps >= 42) return;
     // First lower the resolution, then drop a preset.
     if (this.renderScale > 0.72) {
       this.renderScale = Math.max(0.7, this.renderScale - 0.15);
@@ -151,9 +151,9 @@ export class Quality extends Emitter<{ change: QualitySettings; scale: number }>
       this.cooldown = 2;
       return;
     }
-    const idx = LEVELS.indexOf(this.settings.level);
-    if (idx > 0) {
-      this.set(LEVELS[idx - 1]!, false);
+    const sj_idx = sj_LEVELS.indexOf(this.settings.level);
+    if (sj_idx > 0) {
+      this.set(sj_LEVELS[sj_idx - 1]!, false);
       this.cooldown = 3;
     }
   }
