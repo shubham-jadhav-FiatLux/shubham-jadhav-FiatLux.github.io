@@ -237,6 +237,30 @@ export function planRange(range: RangeDef): PeakSpec[] {
   return specs;
 }
 
+/**
+ * Each range is cut into sectors round the valley, one mesh each, so the camera skips
+ * the ones behind or beside it (a single mesh for a whole ring of mountains is always
+ * drawn in full).
+ */
+const SECTORS = 8;
+
+/** Groups the parts of a range by the direction they lie in, seen from the valley. */
+function bySector(parts: PeakMesh[]): PeakMesh[][] {
+  const groups: PeakMesh[][] = Array.from({ length: SECTORS }, () => []);
+  for (const p of parts) {
+    let x = 0;
+    let z = 0;
+    const n = p.positions.length / 3;
+    for (let i = 0; i < n; i++) {
+      x += p.positions[i * 3]!;
+      z += p.positions[i * 3 + 2]!;
+    }
+    const a = Math.atan2(z / n, x / n);
+    groups[Math.floor(((a + Math.PI) / (Math.PI * 2)) * SECTORS) % SECTORS]!.push(p);
+  }
+  return groups.filter((g) => g.length > 0);
+}
+
 /** Concatenates meshes into one geometry with smooth normals. */
 function merge(parts: PeakMesh[]): BufferGeometry {
   let vertices = 0;
@@ -295,18 +319,25 @@ export class Mountains {
         return buildPeak(s, res);
       });
       parts.push(...this.vegetation(range, specs, q.trees));
-      const mesh = new Mesh(
-        merge(parts),
-        createMountainMaterial({
-          hazeDensity: range.hazeDensity,
-          hazeMin: range.hazeMin,
-          mist: new Vector2(...range.mist),
-          detail: q.detail,
-        }),
-      );
-      mesh.name = `mountains-${range.name}`;
-      mesh.matrixAutoUpdate = false;
-      this.meshes.push(mesh);
+      const material = createMountainMaterial({
+        hazeDensity: range.hazeDensity,
+        hazeMin: range.hazeMin,
+        mist: new Vector2(...range.mist),
+        detail: q.detail,
+      });
+      bySector(parts).forEach((group, i) => {
+        // centred on its own middle, so the renderer can sort it by distance (nearer
+        // things are drawn first and hide what is behind them before it is shaded)
+        const geometry = merge(group);
+        const centre = geometry.boundingSphere!.center.clone();
+        geometry.translate(-centre.x, -centre.y, -centre.z);
+        const mesh = new Mesh(geometry, material);
+        mesh.position.copy(centre);
+        mesh.name = `mountains-${range.name}-${i}`;
+        mesh.matrixAutoUpdate = false;
+        mesh.updateMatrix();
+        this.meshes.push(mesh);
+      });
     }
     // the wooded slopes below the rim, falling into the clouds
     const skirt = new Mesh(
