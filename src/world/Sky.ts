@@ -1,7 +1,7 @@
 import { BackSide, Mesh, ShaderMaterial, SphereGeometry, type Scene } from 'three';
-import { ATMOSPHERE } from '../render/atmosphere';
-import { globalUniforms } from '../render/uniforms';
-import { NOISE_GLSL } from '../render/glsl';
+import { sj_ATMOSPHERE } from '../render/atmosphere';
+import { sj_globalUniforms } from '../render/uniforms';
+import { sj_NOISE_GLSL } from '../render/glsl';
 import { hazeGLSL } from '../render/fog';
 
 /**
@@ -13,19 +13,19 @@ export class Sky {
   readonly mesh: Mesh;
 
   constructor() {
-    const material = new ShaderMaterial({
+    const sj_material = new ShaderMaterial({
       side: BackSide,
       depthWrite: false,
       fog: false,
       uniforms: {
-        uTime: globalUniforms.uTime,
-        uSunDir: globalUniforms.uSunDir,
-        uZenith: { value: ATMOSPHERE.skyZenith },
-        uMid: { value: ATMOSPHERE.skyMid },
-        uHorizon: { value: ATMOSPHERE.skyHorizon },
-        uHorizonCool: { value: ATMOSPHERE.skyHorizonCool },
-        uFog: { value: ATMOSPHERE.fogColor },
-        uSunGlow: { value: ATMOSPHERE.sunGlow },
+        uTime: sj_globalUniforms.uTime,
+        uSunDir: sj_globalUniforms.uSunDir,
+        uZenith: { value: sj_ATMOSPHERE.skyZenith },
+        uMid: { value: sj_ATMOSPHERE.skyMid },
+        uHorizon: { value: sj_ATMOSPHERE.skyHorizon },
+        uHorizonCool: { value: sj_ATMOSPHERE.skyHorizonCool },
+        uFog: { value: sj_ATMOSPHERE.fogColor },
+        uSunGlow: { value: sj_ATMOSPHERE.sunGlow },
       },
       vertexShader: /* glsl */ `
         varying vec3 vDir;
@@ -45,7 +45,7 @@ export class Sky {
         uniform vec3 uFog;
         uniform vec3 uSunGlow;
         varying vec3 vDir;
-        ${NOISE_GLSL}
+        ${sj_NOISE_GLSL}
         ${hazeGLSL('uFog')}
         void main() {
           vec3 dir = normalize(vDir);
@@ -81,7 +81,7 @@ export class Sky {
         }
       `,
     });
-    this.mesh = new Mesh(new SphereGeometry(1800, 48, 24), material);
+    this.mesh = new Mesh(new SphereGeometry(1800, 48, 24), sj_material);
     this.mesh.name = 'sky';
     this.mesh.frustumCulled = false;
     // Drawn after everything opaque: the dome sits at the far plane, so the depth test
@@ -91,13 +91,13 @@ export class Sky {
     this.mesh.matrixAutoUpdate = false;
   }
 
-  addTo(scene: Scene): void {
-    scene.add(this.mesh);
+  addTo(sj_scene: Scene): void {
+    sj_scene.add(this.mesh);
   }
 
   /** The dome follows the camera so it is always at "infinity". */
-  update(cameraPosition: { x: number; y: number; z: number }): void {
-    this.mesh.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z);
+  update(sj_cameraPosition: { x: number; y: number; z: number }): void {
+    this.mesh.position.set(sj_cameraPosition.x, sj_cameraPosition.y, sj_cameraPosition.z);
     this.mesh.updateMatrix();
   }
 }

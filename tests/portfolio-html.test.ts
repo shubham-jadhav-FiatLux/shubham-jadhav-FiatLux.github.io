@@ -4,64 +4,68 @@ import { renderIndexHtml } from '../tools/portfolio-html.ts';
 import * as prerender from '../src/ui/prerender';
 import type { PortfolioContent } from '../src/content/types';
 
-const template = readFileSync(new URL('../index.html', import.meta.url), 'utf-8');
+const sj_template = readFileSync(new URL('../index.html', import.meta.url), 'utf-8');
 
-function withContent(patch: (c: PortfolioContent) => void): typeof prerender {
-  const content = structuredClone(prerender.portfolio);
-  patch(content);
-  return { ...prerender, portfolio: content };
+function withContent(sj_patch: (sj_c: PortfolioContent) => void): typeof prerender {
+  const sj_content = structuredClone(prerender.sj_portfolio);
+  sj_patch(sj_content);
+  return { ...prerender, sj_portfolio: sj_content };
 }
 
 describe('index.html generation', () => {
   it('writes title, description and link-preview tags', () => {
-    const html = renderIndexHtml(template, prerender);
-    expect(html).toContain('<title>Valley of Peace · An explorable portfolio</title>');
-    expect(html).toContain('<meta property="og:image" content="og-image.jpg" />');
-    expect(html).toContain('<meta name="twitter:card" content="summary_large_image" />');
-    expect(html).not.toContain('og:url');
+    const sj_html = renderIndexHtml(sj_template, prerender);
+    expect(sj_html).toContain('<title>Valley of Peace · An explorable portfolio</title>');
+    expect(sj_html).toContain('<meta property="og:image" content="og-image.jpg" />');
+    expect(sj_html).toContain('<meta name="twitter:card" content="summary_large_image" />');
+    expect(sj_html).not.toContain('og:url');
   });
 
   it('uses absolute preview URLs when the site address is known', () => {
-    const html = renderIndexHtml(template, prerender, 'https://me.github.io/valley');
-    expect(html).toContain('content="https://me.github.io/valley/og-image.jpg"');
-    expect(html).toContain('<link rel="canonical" href="https://me.github.io/valley/" />');
+    const sj_html = renderIndexHtml(sj_template, prerender, 'https://me.github.io/valley');
+    expect(sj_html).toContain('content="https://me.github.io/valley/og-image.jpg"');
+    expect(sj_html).toContain('<link rel="canonical" href="https://me.github.io/valley/" />');
   });
 
   it('puts the whole portfolio into a single noscript page', () => {
-    const html = renderIndexHtml(template, prerender);
-    expect(html.match(/<noscript><div class="classic classic--static">/g)).toHaveLength(1);
-    expect(html).toContain('id="classic-projects"');
-    expect(html).toContain('<script type="module" src="/src/main.ts"></script>');
+    const sj_html = renderIndexHtml(sj_template, prerender);
+    expect(sj_html.match(/<noscript><div class="classic classic--static">/g)).toHaveLength(1);
+    expect(sj_html).toContain('id="classic-projects"');
+    expect(sj_html).toContain('<script type="module" src="/src/main.ts"></script>');
   });
 
   it('puts the name and the seal on the title screen', () => {
-    const mod = withContent((c) => {
-      c.site.title = 'Valley & Hills';
-      c.site.seal = '山';
+    const sj_mod = withContent((sj_c) => {
+      sj_c.site.title = 'Valley & Hills';
+      sj_c.site.seal = '山';
     });
-    const html = renderIndexHtml(template, mod);
-    expect(html).toContain('<h1 id="loader-title" class="loader__title">Valley &amp; Hills</h1>');
-    expect(html).toContain('<div class="seal seal--lg loader__seal" aria-hidden="true">山</div>');
+    const sj_html = renderIndexHtml(sj_template, sj_mod);
+    expect(sj_html).toContain(
+      '<h1 id="loader-title" class="loader__title">Valley &amp; Hills</h1>',
+    );
+    expect(sj_html).toContain(
+      '<div class="seal seal--lg loader__seal" aria-hidden="true">山</div>',
+    );
   });
 
   it('keeps dollar signs from the content literally', () => {
-    const mod = withContent((c) => {
-      c.projects.items[0]!.summary = "Type commands after the $ prompt: $& $' $` $1";
+    const sj_mod = withContent((sj_c) => {
+      sj_c.projects.items[0]!.summary = "Type commands after the $ prompt: $& $' $` $1";
     });
-    const html = renderIndexHtml(template, mod);
-    expect(html).toContain('Type commands after the $ prompt: $&amp; $&#39; $` $1');
-    expect(html.match(/<noscript><div class="classic classic--static">/g)).toHaveLength(1);
-    expect(html.indexOf('<div id="loader"')).toBeLessThan(html.indexOf('classic--static'));
+    const sj_html = renderIndexHtml(sj_template, sj_mod);
+    expect(sj_html).toContain('Type commands after the $ prompt: $&amp; $&#39; $` $1');
+    expect(sj_html.match(/<noscript><div class="classic classic--static">/g)).toHaveLength(1);
+    expect(sj_html.indexOf('<div id="loader"')).toBeLessThan(sj_html.indexOf('classic--static'));
   });
 
   it('escapes markup in the content', () => {
-    const mod = withContent((c) => {
-      c.owner.name = '<img src=x onerror=alert(1)>';
-      c.projects.items[0]!.title = '</noscript><script>alert(1)</script>';
+    const sj_mod = withContent((sj_c) => {
+      sj_c.owner.name = '<img src=x onerror=alert(1)>';
+      sj_c.projects.items[0]!.title = '</noscript><script>alert(1)</script>';
     });
-    const html = renderIndexHtml(template, mod);
-    expect(html).not.toContain('<img src=x');
-    expect(html).not.toContain('<script>alert(1)</script>');
-    expect(html).toContain('&lt;/noscript&gt;&lt;script&gt;');
+    const sj_html = renderIndexHtml(sj_template, sj_mod);
+    expect(sj_html).not.toContain('<img src=x');
+    expect(sj_html).not.toContain('<script>alert(1)</script>');
+    expect(sj_html).toContain('&lt;/noscript&gt;&lt;script&gt;');
   });
 });

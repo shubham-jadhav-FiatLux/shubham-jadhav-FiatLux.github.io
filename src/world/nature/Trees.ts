@@ -35,19 +35,19 @@ export interface TreeInstance {
   variant?: number;
 }
 
-const VARIANTS = 3;
-const SEEDS: Record<TreeKind, number[]> = {
+const sj_VARIANTS = 3;
+const sj_SEEDS: Record<TreeKind, number[]> = {
   blossom: [101, 102, 103, 777],
   broadleaf: [201, 202, 203],
   pine: [301, 302, 303],
   willow: [401, 402, 403],
 };
 
-const m4 = new Matrix4();
-const q = new Quaternion();
-const up = new Vector3(0, 1, 0);
-const v3 = new Vector3();
-const s3 = new Vector3();
+const sj_m4 = new Matrix4();
+const sj_q = new Quaternion();
+const sj_up = new Vector3(0, 1, 0);
+const sj_v3 = new Vector3();
+const sj_s3 = new Vector3();
 
 /**
  * All hand-placed and scattered trees, grouped per kind/variant into InstancedMeshes
@@ -59,15 +59,15 @@ export class Trees {
   readonly blossomBlobs: { x: number; y: number; z: number; r: number }[] = [];
   readonly models = new Map<string, TreeModel>();
 
-  constructor(instances: TreeInstance[], density: number) {
+  constructor(sj_instances: TreeInstance[], sj_density: number) {
     this.group.name = 'trees';
-    const bark = createVegetationMaterial({
+    const sj_bark = createVegetationMaterial({
       name: 'bark',
       sway: 0.12,
       roughness: 0.95,
       doubleSided: false,
     });
-    const canopyMats: Record<TreeKind, Material> = {
+    const sj_canopyMats: Record<TreeKind, Material> = {
       blossom: createVegetationMaterial({
         name: 'blossom',
         map: createBlossomTexture(),
@@ -105,7 +105,7 @@ export class Trees {
         translucency: 0.4,
       }),
     };
-    const strandMat = createVegetationMaterial({
+    const sj_strandMat = createVegetationMaterial({
       name: 'willow-strands',
       map: createWillowTexture(),
       alphaTest: 0.4,
@@ -116,86 +116,93 @@ export class Trees {
     });
 
     // Bucket instances by kind + variant.
-    const buckets = new Map<string, TreeInstance[]>();
-    instances.forEach((inst, i) => {
-      const seeds = SEEDS[inst.kind];
-      const variant = inst.variant ?? i % Math.min(VARIANTS, seeds.length);
-      const key = `${inst.kind}:${variant}`;
-      if (!buckets.has(key)) buckets.set(key, []);
-      buckets.get(key)!.push(inst);
+    const sj_buckets = new Map<string, TreeInstance[]>();
+    sj_instances.forEach((sj_inst, sj_i) => {
+      const sj_seeds = sj_SEEDS[sj_inst.kind];
+      const sj_variant = sj_inst.variant ?? sj_i % Math.min(sj_VARIANTS, sj_seeds.length);
+      const sj_key = `${sj_inst.kind}:${sj_variant}`;
+      if (!sj_buckets.has(sj_key)) sj_buckets.set(sj_key, []);
+      sj_buckets.get(sj_key)!.push(sj_inst);
     });
 
-    for (const [key, list] of buckets) {
-      const [kind, variantStr] = key.split(':') as [TreeKind, string];
-      const seed = SEEDS[kind][Number(variantStr)]!;
-      const model = growTree({ kind, seed, density });
-      this.models.set(key, model);
-      const matrices = list.map((inst) => {
-        q.setFromAxisAngle(up, inst.rot);
+    for (const [sj_key, sj_list] of sj_buckets) {
+      const [sj_kind, sj_variantStr] = sj_key.split(':') as [TreeKind, string];
+      const sj_seed = sj_SEEDS[sj_kind][Number(sj_variantStr)]!;
+      const sj_model = growTree({ kind: sj_kind, seed: sj_seed, density: sj_density });
+      this.models.set(sj_key, sj_model);
+      const sj_matrices = sj_list.map((sj_inst) => {
+        sj_q.setFromAxisAngle(sj_up, sj_inst.rot);
         return new Matrix4().compose(
-          v3.set(inst.x, inst.y - 0.05, inst.z),
-          q,
-          s3.setScalar(inst.scale),
+          sj_v3.set(sj_inst.x, sj_inst.y - 0.05, sj_inst.z),
+          sj_q,
+          sj_s3.setScalar(sj_inst.scale),
         );
       });
-      this.addInstanced(`${key}-bark`, model.trunk, bark, matrices);
-      this.addInstanced(`${key}-canopy`, model.canopy, canopyMats[kind], matrices);
-      if (model.strands) this.addInstanced(`${key}-strands`, model.strands, strandMat, matrices);
-      if (kind === 'blossom') {
-        list.forEach((inst, i) => {
-          for (const b of model.blobs) {
-            v3.copy(b.center).multiplyScalar(inst.scale).applyMatrix4(m4.makeRotationY(inst.rot));
+      this.addInstanced(`${sj_key}-bark`, sj_model.trunk, sj_bark, sj_matrices);
+      this.addInstanced(`${sj_key}-canopy`, sj_model.canopy, sj_canopyMats[sj_kind], sj_matrices);
+      if (sj_model.strands)
+        this.addInstanced(`${sj_key}-strands`, sj_model.strands, sj_strandMat, sj_matrices);
+      if (sj_kind === 'blossom') {
+        sj_list.forEach((sj_inst, sj_i) => {
+          for (const sj_b of sj_model.blobs) {
+            sj_v3
+              .copy(sj_b.center)
+              .multiplyScalar(sj_inst.scale)
+              .applyMatrix4(sj_m4.makeRotationY(sj_inst.rot));
             this.blossomBlobs.push({
-              x: inst.x + v3.x,
-              y: inst.y + v3.y,
-              z: inst.z + v3.z,
-              r: b.radius * inst.scale,
+              x: sj_inst.x + sj_v3.x,
+              y: sj_inst.y + sj_v3.y,
+              z: sj_inst.z + sj_v3.z,
+              r: sj_b.radius * sj_inst.scale,
             });
           }
-          void i;
+          void sj_i;
         });
       }
     }
   }
 
   private addInstanced(
-    name: string,
-    geometry: BufferGeometry,
-    material: Material,
-    matrices: Matrix4[],
+    sj_name: string,
+    sj_geometry: BufferGeometry,
+    sj_material: Material,
+    sj_matrices: Matrix4[],
   ): void {
-    for (const mesh of chunkedInstances(geometry, material, matrices, { name, chunk: Infinity })) {
-      this.group.add(mesh);
+    for (const sj_mesh of chunkedInstances(sj_geometry, sj_material, sj_matrices, {
+      name: sj_name,
+      chunk: Infinity,
+    })) {
+      this.group.add(sj_mesh);
     }
   }
 
   /** Crown radius of a placed tree's model, for shade painting and spacing. */
-  crownOf(inst: TreeInstance, index: number): number {
-    const seeds = SEEDS[inst.kind];
-    const variant = inst.variant ?? index % Math.min(VARIANTS, seeds.length);
-    return (this.models.get(`${inst.kind}:${variant}`)?.crownRadius ?? 2) * inst.scale;
+  crownOf(sj_inst: TreeInstance, sj_index: number): number {
+    const sj_seeds = sj_SEEDS[sj_inst.kind];
+    const sj_variant = sj_inst.variant ?? sj_index % Math.min(sj_VARIANTS, sj_seeds.length);
+    return (this.models.get(`${sj_inst.kind}:${sj_variant}`)?.crownRadius ?? 2) * sj_inst.scale;
   }
 
-  addTo(scene: Scene): void {
-    scene.add(this.group);
+  addTo(sj_scene: Scene): void {
+    sj_scene.add(this.group);
   }
 }
 
 /** Bakes a simple vertical gradient vertex colour into a (non-indexed) geometry. */
-function tintGeometry(g: BufferGeometry, color: string): BufferGeometry {
-  const col = new Color(color);
-  const pos = g.attributes.position!;
-  const arr = new Float32Array(pos.count * 3);
-  for (let k = 0; k < pos.count; k++) {
-    const shade = 0.7 + Math.min(0.4, pos.getY(k) * 0.06);
-    arr[k * 3] = col.r * shade;
-    arr[k * 3 + 1] = col.g * shade;
-    arr[k * 3 + 2] = col.b * shade;
+function tintGeometry(sj_g: BufferGeometry, sj_color: string): BufferGeometry {
+  const sj_col = new Color(sj_color);
+  const sj_pos = sj_g.attributes.position!;
+  const sj_arr = new Float32Array(sj_pos.count * 3);
+  for (let sj_k = 0; sj_k < sj_pos.count; sj_k++) {
+    const sj_shade = 0.7 + Math.min(0.4, sj_pos.getY(sj_k) * 0.06);
+    sj_arr[sj_k * 3] = sj_col.r * sj_shade;
+    sj_arr[sj_k * 3 + 1] = sj_col.g * sj_shade;
+    sj_arr[sj_k * 3 + 2] = sj_col.b * sj_shade;
   }
-  g.setAttribute('color', new BufferAttribute(arr, 3));
-  g.deleteAttribute('uv');
-  g.computeVertexNormals();
-  return g;
+  sj_g.setAttribute('color', new BufferAttribute(sj_arr, 3));
+  sj_g.deleteAttribute('uv');
+  sj_g.computeVertexNormals();
+  return sj_g;
 }
 
 export interface FarTree {
@@ -214,36 +221,40 @@ export interface FarTree {
 export class FarForest {
   readonly group = new Group();
 
-  constructor(points: FarTree[]) {
-    const trunk = () => new ConeGeometry(0.25, 1.6, 5, 1).translate(0, 0.8, 0).toNonIndexed();
-    const pineGeo = mergeGeometries([
+  constructor(sj_points: FarTree[]) {
+    const sj_trunk = () => new ConeGeometry(0.25, 1.6, 5, 1).translate(0, 0.8, 0).toNonIndexed();
+    const sj_pineGeo = mergeGeometries([
       tintGeometry(new ConeGeometry(1.5, 5, 7, 1).translate(0, 3.3, 0).toNonIndexed(), '#35593a'),
       tintGeometry(new ConeGeometry(1.1, 3.4, 7, 1).translate(0, 5.4, 0).toNonIndexed(), '#3f6842'),
-      tintGeometry(trunk(), '#5a4332'),
+      tintGeometry(sj_trunk(), '#5a4332'),
     ])!;
-    const ballGeo = mergeGeometries([
+    const sj_ballGeo = mergeGeometries([
       tintGeometry(new IcosahedronGeometry(2.2, 1).translate(0, 3.5, 0), '#557f3c'),
       tintGeometry(new IcosahedronGeometry(1.5, 1).translate(1, 4.6, 0.4), '#618a44'),
-      tintGeometry(trunk(), '#5a4332'),
+      tintGeometry(sj_trunk(), '#5a4332'),
     ])!;
-    const mat = new MeshStandardMaterial({ vertexColors: true, roughness: 1, flatShading: true });
-    [pineGeo, ballGeo].forEach((geo, kind) => {
-      const list = points.filter((p) => p.kind === kind);
-      const mesh = new InstancedMesh(geo, mat, Math.max(1, list.length));
-      mesh.count = list.length;
-      list.forEach((p, i) => {
-        q.setFromAxisAngle(up, p.x * 0.37 + p.z * 0.11);
-        m4.compose(v3.set(p.x, p.y - 0.3, p.z), q, s3.setScalar(p.s));
-        mesh.setMatrixAt(i, m4);
+    const sj_mat = new MeshStandardMaterial({
+      vertexColors: true,
+      roughness: 1,
+      flatShading: true,
+    });
+    [sj_pineGeo, sj_ballGeo].forEach((sj_geo, sj_kind) => {
+      const sj_list = sj_points.filter((sj_p) => sj_p.kind === sj_kind);
+      const sj_mesh = new InstancedMesh(sj_geo, sj_mat, Math.max(1, sj_list.length));
+      sj_mesh.count = sj_list.length;
+      sj_list.forEach((sj_p, sj_i) => {
+        sj_q.setFromAxisAngle(sj_up, sj_p.x * 0.37 + sj_p.z * 0.11);
+        sj_m4.compose(sj_v3.set(sj_p.x, sj_p.y - 0.3, sj_p.z), sj_q, sj_s3.setScalar(sj_p.s));
+        sj_mesh.setMatrixAt(sj_i, sj_m4);
       });
-      mesh.instanceMatrix.needsUpdate = true;
-      mesh.computeBoundingSphere();
-      mesh.name = kind === 0 ? 'far-pines' : 'far-broadleaves';
-      this.group.add(mesh);
+      sj_mesh.instanceMatrix.needsUpdate = true;
+      sj_mesh.computeBoundingSphere();
+      sj_mesh.name = sj_kind === 0 ? 'far-pines' : 'far-broadleaves';
+      this.group.add(sj_mesh);
     });
   }
 
-  addTo(scene: Scene): void {
-    scene.add(this.group);
+  addTo(sj_scene: Scene): void {
+    sj_scene.add(this.group);
   }
 }

@@ -20,7 +20,7 @@ export function createPose(): CameraPose {
  * keep state (smoothing), so a shot object is used for one cut only.
  */
 export interface Shot {
-  pose(t: number, dt: number, out: CameraPose): void;
+  pose(sj_t: number, sj_dt: number, sj_out: CameraPose): void;
 }
 
 /** The subject of a shot: the panda (feet position and facing). */
@@ -34,33 +34,33 @@ export type Target = Vector3 | (() => Vector3);
 
 type Point = Target;
 
-const at = (p: Point): Vector3 => (typeof p === 'function' ? p() : p);
-const tmp = new Vector3();
-const dirA = new Vector3();
-const dirB = new Vector3();
+const sj_at = (sj_p: Point): Vector3 => (typeof sj_p === 'function' ? sj_p() : sj_p);
+const sj_tmp = new Vector3();
+const sj_dirA = new Vector3();
+const sj_dirB = new Vector3();
 
 /**
- * Turns unit direction `a` towards unit direction `b` by fraction `k` (into `a`) the way a
+ * Turns unit direction `sj_a` towards unit direction `sj_b` by fraction `sj_k` (into `sj_a`) the way a
  * camera operator would: panning the short way round and tilting, separately, so the
  * horizon stays level and a turn between opposite views never swings through the sky or
  * the ground.
  */
-export function panTilt(a: Vector3, b: Vector3, k: number): Vector3 {
-  const yawA = Math.atan2(a.x, a.z);
-  const yawB = Math.atan2(b.x, b.z);
-  const pitchA = Math.asin(Math.min(1, Math.max(-1, a.y)));
-  const pitchB = Math.asin(Math.min(1, Math.max(-1, b.y)));
-  let turn = yawB - yawA;
-  turn -= Math.round(turn / (Math.PI * 2)) * Math.PI * 2;
-  const yaw = yawA + turn * k;
-  const pitch = pitchA + (pitchB - pitchA) * k;
-  const flat = Math.cos(pitch);
-  return a.set(Math.sin(yaw) * flat, Math.sin(pitch), Math.cos(yaw) * flat);
+export function panTilt(sj_a: Vector3, sj_b: Vector3, sj_k: number): Vector3 {
+  const sj_yawA = Math.atan2(sj_a.x, sj_a.z);
+  const sj_yawB = Math.atan2(sj_b.x, sj_b.z);
+  const sj_pitchA = Math.asin(Math.min(1, Math.max(-1, sj_a.y)));
+  const sj_pitchB = Math.asin(Math.min(1, Math.max(-1, sj_b.y)));
+  let sj_turn = sj_yawB - sj_yawA;
+  sj_turn -= Math.round(sj_turn / (Math.PI * 2)) * Math.PI * 2;
+  const sj_yaw = sj_yawA + sj_turn * sj_k;
+  const sj_pitch = sj_pitchA + (sj_pitchB - sj_pitchA) * sj_k;
+  const sj_flat = Math.cos(sj_pitch);
+  return sj_a.set(Math.sin(sj_yaw) * sj_flat, Math.sin(sj_pitch), Math.cos(sj_yaw) * sj_flat);
 }
 
-const smoother = (u: number) => {
-  const x = clamp01(u);
-  return x * x * x * (x * (x * 6 - 15) + 10);
+const sj_smoother = (sj_u: number) => {
+  const sj_x = clamp01(sj_u);
+  return sj_x * sj_x * sj_x * (sj_x * (sj_x * 6 - 15) + 10);
 };
 
 /** Where the camera looks, by time: hold, or pan from one target to the next. */
@@ -80,52 +80,64 @@ export interface FovKey {
  * keys panned between smoothly. Pans turn the view (pan and tilt, not a straight slide of
  * the target), so swinging from a nearby panda to far hills stays an even pan.
  */
-export function aim(look: Target | LookKey[], t: number, position: Vector3, out: Vector3): void {
-  if (!Array.isArray(look)) {
-    out.copy(at(look));
+export function aim(
+  sj_look: Target | LookKey[],
+  sj_t: number,
+  sj_position: Vector3,
+  sj_out: Vector3,
+): void {
+  if (!Array.isArray(sj_look)) {
+    sj_out.copy(sj_at(sj_look));
     return;
   }
-  const keys = look;
-  if (t <= keys[0]!.t || keys.length === 1) {
-    out.copy(at(keys[0]!.at));
+  const sj_keys = sj_look;
+  if (sj_t <= sj_keys[0]!.t || sj_keys.length === 1) {
+    sj_out.copy(sj_at(sj_keys[0]!.at));
     return;
   }
-  const last = keys[keys.length - 1]!;
-  if (t >= last.t) {
-    out.copy(at(last.at));
+  const sj_last = sj_keys[sj_keys.length - 1]!;
+  if (sj_t >= sj_last.t) {
+    sj_out.copy(sj_at(sj_last.at));
     return;
   }
-  let i = 0;
-  while (i < keys.length - 2 && t > keys[i + 1]!.t) i++;
-  const a = keys[i]!;
-  const b = keys[i + 1]!;
-  const k = smoother((t - a.t) / Math.max(1e-6, b.t - a.t));
-  const pa = at(a.at);
-  const pb = at(b.at);
-  dirA.subVectors(pa, position);
-  dirB.subVectors(pb, position);
-  const da = dirA.length();
-  const db = dirB.length();
-  if (da < 1e-4 || db < 1e-4) {
-    out.lerpVectors(pa, pb, k);
+  let sj_i = 0;
+  while (sj_i < sj_keys.length - 2 && sj_t > sj_keys[sj_i + 1]!.t) sj_i++;
+  const sj_a = sj_keys[sj_i]!;
+  const sj_b = sj_keys[sj_i + 1]!;
+  const sj_k = sj_smoother((sj_t - sj_a.t) / Math.max(1e-6, sj_b.t - sj_a.t));
+  const sj_pa = sj_at(sj_a.at);
+  const sj_pb = sj_at(sj_b.at);
+  sj_dirA.subVectors(sj_pa, sj_position);
+  sj_dirB.subVectors(sj_pb, sj_position);
+  const sj_da = sj_dirA.length();
+  const sj_db = sj_dirB.length();
+  if (sj_da < 1e-4 || sj_db < 1e-4) {
+    sj_out.lerpVectors(sj_pa, sj_pb, sj_k);
     return;
   }
-  panTilt(dirA.multiplyScalar(1 / da), dirB.multiplyScalar(1 / db), k);
-  out.copy(position).addScaledVector(dirA, da + (db - da) * k);
+  panTilt(sj_dirA.multiplyScalar(1 / sj_da), sj_dirB.multiplyScalar(1 / sj_db), sj_k);
+  sj_out.copy(sj_position).addScaledVector(sj_dirA, sj_da + (sj_db - sj_da) * sj_k);
 }
 
 /** The lens at shot time `t`. */
-export function lens(fov: number | FovKey[] | undefined, t: number, fallback: number): number {
-  if (fov === undefined) return fallback;
-  if (typeof fov === 'number') return fov;
-  if (t <= fov[0]!.t || fov.length === 1) return fov[0]!.fov;
-  const last = fov[fov.length - 1]!;
-  if (t >= last.t) return last.fov;
-  let i = 0;
-  while (i < fov.length - 2 && t > fov[i + 1]!.t) i++;
-  const a = fov[i]!;
-  const b = fov[i + 1]!;
-  return a.fov + (b.fov - a.fov) * smoother((t - a.t) / Math.max(1e-6, b.t - a.t));
+export function lens(
+  sj_fov: number | FovKey[] | undefined,
+  sj_t: number,
+  sj_fallback: number,
+): number {
+  if (sj_fov === undefined) return sj_fallback;
+  if (typeof sj_fov === 'number') return sj_fov;
+  if (sj_t <= sj_fov[0]!.t || sj_fov.length === 1) return sj_fov[0]!.fov;
+  const sj_last = sj_fov[sj_fov.length - 1]!;
+  if (sj_t >= sj_last.t) return sj_last.fov;
+  let sj_i = 0;
+  while (sj_i < sj_fov.length - 2 && sj_t > sj_fov[sj_i + 1]!.t) sj_i++;
+  const sj_a = sj_fov[sj_i]!;
+  const sj_b = sj_fov[sj_i + 1]!;
+  return (
+    sj_a.fov +
+    (sj_b.fov - sj_a.fov) * sj_smoother((sj_t - sj_a.t) / Math.max(1e-6, sj_b.t - sj_a.t))
+  );
 }
 
 /**
@@ -137,7 +149,7 @@ export function lens(fov: number | FovKey[] | undefined, t: number, fallback: nu
  * out at the end, and changes speed smoothly in between), or a `duration` with an
  * optional CSS-style `ease` curve (default: a gentle ease-in-out).
  */
-export function move(o: {
+export function move(sj_o: {
   path: Vector3[];
   bezier?: boolean;
   times?: number[];
@@ -147,25 +159,28 @@ export function move(o: {
   fov?: number | FovKey[];
   clearance?: number;
 }): Shot {
-  const curve = o.bezier ? BezierPath.bezier(o.path) : BezierPath.through(o.path);
-  let progress: (t: number) => number;
-  if (o.times && !o.bezier) {
-    if (o.times.length !== o.path.length) throw new Error('one time per path point');
-    const timing = new PathTiming(
-      o.times.map((t, i) => ({ t, f: curve.knots[i]! / Math.max(1e-6, curve.length) })),
+  const sj_curve = sj_o.bezier ? BezierPath.bezier(sj_o.path) : BezierPath.through(sj_o.path);
+  let sj_progress: (sj_t: number) => number;
+  if (sj_o.times && !sj_o.bezier) {
+    if (sj_o.times.length !== sj_o.path.length) throw new Error('one time per path point');
+    const sj_timing = new PathTiming(
+      sj_o.times.map((sj_t, sj_i) => ({
+        t: sj_t,
+        f: sj_curve.knots[sj_i]! / Math.max(1e-6, sj_curve.length),
+      })),
     );
-    progress = (t) => timing.fraction(t);
+    sj_progress = (sj_t) => sj_timing.fraction(sj_t);
   } else {
-    const duration = o.duration ?? o.times?.[o.times.length - 1] ?? 6;
-    const ease = cubicBezierEase(...(o.ease ?? [0.45, 0.05, 0.25, 1]));
-    progress = (t) => ease(clamp01(t / duration));
+    const sj_duration = sj_o.duration ?? sj_o.times?.[sj_o.times.length - 1] ?? 6;
+    const sj_ease = cubicBezierEase(...(sj_o.ease ?? [0.45, 0.05, 0.25, 1]));
+    sj_progress = (sj_t) => sj_ease(clamp01(sj_t / sj_duration));
   }
   return {
-    pose(t, _dt, out) {
-      curve.atFraction(progress(t), out.position);
-      aim(o.look, t, out.position, out.target);
-      out.fov = lens(o.fov, t, 45);
-      out.clearance = o.clearance;
+    pose(sj_t, _sj_dt, sj_out) {
+      sj_curve.atFraction(sj_progress(sj_t), sj_out.position);
+      aim(sj_o.look, sj_t, sj_out.position, sj_out.target);
+      sj_out.fov = lens(sj_o.fov, sj_t, 45);
+      sj_out.clearance = sj_o.clearance;
     },
   };
 }
@@ -174,7 +189,7 @@ export function move(o: {
  * Camera on rails: glides along a smooth curve through `path` over `duration` seconds,
  * looking along a second curve (or at a moving point). Crane, dolly and aerial shots.
  */
-export function rail(o: {
+export function rail(sj_o: {
   path: Vector3[];
   look: Vector3[] | (() => Vector3);
   duration: number;
@@ -182,17 +197,17 @@ export function rail(o: {
   /** ease the move in and out (default) or glide at constant speed */
   ease?: boolean;
 }): Shot {
-  const cam = BezierPath.through(o.path);
-  const lookCurve = Array.isArray(o.look) ? BezierPath.through(o.look) : null;
+  const sj_cam = BezierPath.through(sj_o.path);
+  const sj_lookCurve = Array.isArray(sj_o.look) ? BezierPath.through(sj_o.look) : null;
   return {
-    pose(t, _dt, out) {
-      const u = Math.min(1, t / o.duration);
-      const k = o.ease === false ? u : easeInOutSine(u);
-      cam.atFraction(k, out.position);
-      if (lookCurve) lookCurve.atFraction(k, out.target);
-      else out.target.copy((o.look as () => Vector3)());
-      out.fov = o.fov ?? 45;
-      out.clearance = undefined;
+    pose(sj_t, _sj_dt, sj_out) {
+      const sj_u = Math.min(1, sj_t / sj_o.duration);
+      const sj_k = sj_o.ease === false ? sj_u : easeInOutSine(sj_u);
+      sj_cam.atFraction(sj_k, sj_out.position);
+      if (sj_lookCurve) sj_lookCurve.atFraction(sj_k, sj_out.target);
+      else sj_out.target.copy((sj_o.look as () => Vector3)());
+      sj_out.fov = sj_o.fov ?? 45;
+      sj_out.clearance = undefined;
     },
   };
 }
@@ -204,8 +219,8 @@ export function rail(o: {
  * camera operator following, not a camera nailed to the panda.
  */
 export function track(
-  subject: () => Subject,
-  o: {
+  sj_subject: () => Subject,
+  sj_o: {
     distance: number;
     height: number;
     angle: number;
@@ -220,50 +235,50 @@ export function track(
     clearance?: number;
   },
 ): Shot {
-  const pos = new Vector3();
-  const look = new Vector3();
-  let yaw = 0;
-  let started = false;
+  const sj_pos = new Vector3();
+  const sj_look = new Vector3();
+  let sj_yaw = 0;
+  let sj_started = false;
   return {
-    pose(t, dt, out) {
-      const s = subject();
-      if (!started) yaw = s.yaw;
-      yaw = dampAngle(yaw, s.yaw, 2.2, dt);
-      const a = yaw + o.angle + (o.swing ?? 0) * t;
-      tmp.set(
-        s.position.x - Math.sin(a) * o.distance,
-        s.position.y + o.height,
-        s.position.z - Math.cos(a) * o.distance,
+    pose(sj_t, sj_dt, sj_out) {
+      const sj_s = sj_subject();
+      if (!sj_started) sj_yaw = sj_s.yaw;
+      sj_yaw = dampAngle(sj_yaw, sj_s.yaw, 2.2, sj_dt);
+      const sj_a = sj_yaw + sj_o.angle + (sj_o.swing ?? 0) * sj_t;
+      sj_tmp.set(
+        sj_s.position.x - Math.sin(sj_a) * sj_o.distance,
+        sj_s.position.y + sj_o.height,
+        sj_s.position.z - Math.cos(sj_a) * sj_o.distance,
       );
-      const ahead = o.lookAhead ?? 0;
-      const lx = s.position.x + Math.sin(yaw) * ahead;
-      const lz = s.position.z + Math.cos(yaw) * ahead;
-      const ly = s.position.y + (o.lookHeight ?? 1);
-      const k = o.stiffness ?? 3.5;
-      if (!started) {
-        pos.copy(tmp);
-        look.set(lx, ly, lz);
-        started = true;
+      const sj_ahead = sj_o.lookAhead ?? 0;
+      const sj_lx = sj_s.position.x + Math.sin(sj_yaw) * sj_ahead;
+      const sj_lz = sj_s.position.z + Math.cos(sj_yaw) * sj_ahead;
+      const sj_ly = sj_s.position.y + (sj_o.lookHeight ?? 1);
+      const sj_k = sj_o.stiffness ?? 3.5;
+      if (!sj_started) {
+        sj_pos.copy(sj_tmp);
+        sj_look.set(sj_lx, sj_ly, sj_lz);
+        sj_started = true;
       } else {
-        pos.x = damp(pos.x, tmp.x, k, dt);
-        pos.y = damp(pos.y, tmp.y, k, dt);
-        pos.z = damp(pos.z, tmp.z, k, dt);
-        look.x = damp(look.x, lx, k * 1.6, dt);
-        look.y = damp(look.y, ly, k * 1.6, dt);
-        look.z = damp(look.z, lz, k * 1.6, dt);
+        sj_pos.x = damp(sj_pos.x, sj_tmp.x, sj_k, sj_dt);
+        sj_pos.y = damp(sj_pos.y, sj_tmp.y, sj_k, sj_dt);
+        sj_pos.z = damp(sj_pos.z, sj_tmp.z, sj_k, sj_dt);
+        sj_look.x = damp(sj_look.x, sj_lx, sj_k * 1.6, sj_dt);
+        sj_look.y = damp(sj_look.y, sj_ly, sj_k * 1.6, sj_dt);
+        sj_look.z = damp(sj_look.z, sj_lz, sj_k * 1.6, sj_dt);
       }
-      out.position.copy(pos);
-      out.target.copy(look);
-      out.fov = o.fov ?? 42;
-      out.clearance = o.clearance;
+      sj_out.position.copy(sj_pos);
+      sj_out.target.copy(sj_look);
+      sj_out.fov = sj_o.fov ?? 42;
+      sj_out.clearance = sj_o.clearance;
     },
   };
 }
 
 /** Circles slowly around a point (or the subject), always looking at it. */
 export function orbit(
-  center: Point,
-  o: {
+  sj_center: Point,
+  sj_o: {
     radius: number;
     height: number;
     /** start angle around the centre (0 = south of it, +z) */
@@ -276,24 +291,28 @@ export function orbit(
     push?: number;
   },
 ): Shot {
-  const c = new Vector3();
-  let started = false;
+  const sj_c = new Vector3();
+  let sj_started = false;
   return {
-    pose(t, dt, out) {
-      const p = at(center);
-      if (!started) {
-        c.copy(p);
-        started = true;
+    pose(sj_t, sj_dt, sj_out) {
+      const sj_p = sj_at(sj_center);
+      if (!sj_started) {
+        sj_c.copy(sj_p);
+        sj_started = true;
       } else {
-        c.x = damp(c.x, p.x, 3, dt);
-        c.y = damp(c.y, p.y, 3, dt);
-        c.z = damp(c.z, p.z, 3, dt);
+        sj_c.x = damp(sj_c.x, sj_p.x, 3, sj_dt);
+        sj_c.y = damp(sj_c.y, sj_p.y, 3, sj_dt);
+        sj_c.z = damp(sj_c.z, sj_p.z, 3, sj_dt);
       }
-      const a = o.angle + o.speed * t;
-      const r = Math.max(1.5, o.radius + (o.push ?? 0) * t);
-      out.position.set(c.x + Math.sin(a) * r, c.y + o.height, c.z + Math.cos(a) * r);
-      out.target.set(c.x, c.y + (o.lookHeight ?? 1), c.z);
-      out.fov = o.fov ?? 45;
+      const sj_a = sj_o.angle + sj_o.speed * sj_t;
+      const sj_r = Math.max(1.5, sj_o.radius + (sj_o.push ?? 0) * sj_t);
+      sj_out.position.set(
+        sj_c.x + Math.sin(sj_a) * sj_r,
+        sj_c.y + sj_o.height,
+        sj_c.z + Math.cos(sj_a) * sj_r,
+      );
+      sj_out.target.set(sj_c.x, sj_c.y + (sj_o.lookHeight ?? 1), sj_c.z);
+      sj_out.fov = sj_o.fov ?? 45;
     },
   };
 }
@@ -303,9 +322,9 @@ export function orbit(
  * `drift` moves the tripod slowly (a gentle dolly) in metres per second.
  */
 export function tripod(
-  position: Vector3,
-  look: Point,
-  o: {
+  sj_position: Vector3,
+  sj_look: Point,
+  sj_o: {
     fov?: number | FovKey[];
     lookHeight?: number;
     drift?: Vector3;
@@ -313,26 +332,26 @@ export function tripod(
     clearance?: number;
   } = {},
 ): Shot {
-  const target = new Vector3();
-  let started = false;
+  const sj_target = new Vector3();
+  let sj_started = false;
   return {
-    pose(t, dt, out) {
-      const p = at(look);
-      const ly = p.y + (o.lookHeight ?? 1);
-      if (!started) {
-        target.set(p.x, ly, p.z);
-        started = true;
+    pose(sj_t, sj_dt, sj_out) {
+      const sj_p = sj_at(sj_look);
+      const sj_ly = sj_p.y + (sj_o.lookHeight ?? 1);
+      if (!sj_started) {
+        sj_target.set(sj_p.x, sj_ly, sj_p.z);
+        sj_started = true;
       } else {
-        const k = o.stiffness ?? 4;
-        target.x = damp(target.x, p.x, k, dt);
-        target.y = damp(target.y, ly, k, dt);
-        target.z = damp(target.z, p.z, k, dt);
+        const sj_k = sj_o.stiffness ?? 4;
+        sj_target.x = damp(sj_target.x, sj_p.x, sj_k, sj_dt);
+        sj_target.y = damp(sj_target.y, sj_ly, sj_k, sj_dt);
+        sj_target.z = damp(sj_target.z, sj_p.z, sj_k, sj_dt);
       }
-      out.position.copy(position);
-      if (o.drift) out.position.addScaledVector(o.drift, t);
-      out.target.copy(target);
-      out.fov = lens(o.fov, t, 42);
-      out.clearance = o.clearance;
+      sj_out.position.copy(sj_position);
+      if (sj_o.drift) sj_out.position.addScaledVector(sj_o.drift, sj_t);
+      sj_out.target.copy(sj_target);
+      sj_out.fov = lens(sj_o.fov, sj_t, 42);
+      sj_out.clearance = sj_o.clearance;
     },
   };
 }
@@ -342,34 +361,34 @@ export function tripod(
  * alongside the zig-zag bridge at a fixed distance), smoothed, and looking at the subject.
  */
 export function dolly(
-  subject: () => Subject,
-  place: (s: Subject, out: Vector3) => void,
-  o: { lookHeight?: number; fov?: number; stiffness?: number } = {},
+  sj_subject: () => Subject,
+  sj_place: (sj_s: Subject, sj_out: Vector3) => void,
+  sj_o: { lookHeight?: number; fov?: number; stiffness?: number } = {},
 ): Shot {
-  const pos = new Vector3();
-  const look = new Vector3();
-  let started = false;
+  const sj_pos = new Vector3();
+  const sj_look = new Vector3();
+  let sj_started = false;
   return {
-    pose(_t, dt, out) {
-      const s = subject();
-      place(s, tmp);
-      const ly = s.position.y + (o.lookHeight ?? 1);
-      if (!started) {
-        pos.copy(tmp);
-        look.set(s.position.x, ly, s.position.z);
-        started = true;
+    pose(_sj_t, sj_dt, sj_out) {
+      const sj_s = sj_subject();
+      sj_place(sj_s, sj_tmp);
+      const sj_ly = sj_s.position.y + (sj_o.lookHeight ?? 1);
+      if (!sj_started) {
+        sj_pos.copy(sj_tmp);
+        sj_look.set(sj_s.position.x, sj_ly, sj_s.position.z);
+        sj_started = true;
       } else {
-        const k = o.stiffness ?? 2.5;
-        pos.x = damp(pos.x, tmp.x, k, dt);
-        pos.y = damp(pos.y, tmp.y, k, dt);
-        pos.z = damp(pos.z, tmp.z, k, dt);
-        look.x = damp(look.x, s.position.x, k * 2, dt);
-        look.y = damp(look.y, ly, k * 2, dt);
-        look.z = damp(look.z, s.position.z, k * 2, dt);
+        const sj_k = sj_o.stiffness ?? 2.5;
+        sj_pos.x = damp(sj_pos.x, sj_tmp.x, sj_k, sj_dt);
+        sj_pos.y = damp(sj_pos.y, sj_tmp.y, sj_k, sj_dt);
+        sj_pos.z = damp(sj_pos.z, sj_tmp.z, sj_k, sj_dt);
+        sj_look.x = damp(sj_look.x, sj_s.position.x, sj_k * 2, sj_dt);
+        sj_look.y = damp(sj_look.y, sj_ly, sj_k * 2, sj_dt);
+        sj_look.z = damp(sj_look.z, sj_s.position.z, sj_k * 2, sj_dt);
       }
-      out.position.copy(pos);
-      out.target.copy(look);
-      out.fov = o.fov ?? 42;
+      sj_out.position.copy(sj_pos);
+      sj_out.target.copy(sj_look);
+      sj_out.fov = sj_o.fov ?? 42;
     },
   };
 }

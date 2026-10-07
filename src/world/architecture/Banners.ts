@@ -11,10 +11,10 @@ import {
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { T, mul, type ArchBuilder } from './Builder';
 import { box, post } from './geometry';
-import { PAL } from './parts';
+import { sj_PAL } from './parts';
 import { createBannerAtlas, type BannerSpec } from './textures';
-import { globalUniforms } from '../../render/uniforms';
-import { WIND_GLSL } from '../../render/glsl';
+import { sj_globalUniforms } from '../../render/uniforms';
+import { sj_WIND_GLSL } from '../../render/glsl';
 import type { CollisionWorld } from '../../physics/CollisionWorld';
 import type { Vec2 } from '../layout';
 
@@ -28,31 +28,38 @@ export interface BannerAnchor {
   index: number;
 }
 
-/** Point and tangent at arc length `s` along a polyline. */
-function sampleAt(points: readonly Vec2[], s: number): { p: Vector3; dir: Vector3 } {
-  let acc = 0;
-  for (let i = 0; i < points.length - 1; i++) {
-    const a = points[i]!;
-    const b = points[i + 1]!;
-    const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
-    if (acc + len >= s || i === points.length - 2) {
-      const t = Math.min(1, Math.max(0, (s - acc) / len));
+/** Point and tangent at arc length `sj_s` along a polyline. */
+function sampleAt(sj_points: readonly Vec2[], sj_s: number): { p: Vector3; dir: Vector3 } {
+  let sj_acc = 0;
+  for (let sj_i = 0; sj_i < sj_points.length - 1; sj_i++) {
+    const sj_a = sj_points[sj_i]!;
+    const sj_b = sj_points[sj_i + 1]!;
+    const sj_len = Math.hypot(sj_b[0] - sj_a[0], sj_b[1] - sj_a[1]);
+    if (sj_acc + sj_len >= sj_s || sj_i === sj_points.length - 2) {
+      const sj_t = Math.min(1, Math.max(0, (sj_s - sj_acc) / sj_len));
       return {
-        p: new Vector3(a[0] + (b[0] - a[0]) * t, 0, a[1] + (b[1] - a[1]) * t),
-        dir: new Vector3(b[0] - a[0], 0, b[1] - a[1]).normalize(),
+        p: new Vector3(
+          sj_a[0] + (sj_b[0] - sj_a[0]) * sj_t,
+          0,
+          sj_a[1] + (sj_b[1] - sj_a[1]) * sj_t,
+        ),
+        dir: new Vector3(sj_b[0] - sj_a[0], 0, sj_b[1] - sj_a[1]).normalize(),
       };
     }
-    acc += len;
+    sj_acc += sj_len;
   }
   return { p: new Vector3(), dir: new Vector3(0, 0, 1) };
 }
 
-function pathLength(points: readonly Vec2[]): number {
-  let acc = 0;
-  for (let i = 0; i < points.length - 1; i++) {
-    acc += Math.hypot(points[i + 1]![0] - points[i]![0], points[i + 1]![1] - points[i]![1]);
+function pathLength(sj_points: readonly Vec2[]): number {
+  let sj_acc = 0;
+  for (let sj_i = 0; sj_i < sj_points.length - 1; sj_i++) {
+    sj_acc += Math.hypot(
+      sj_points[sj_i + 1]![0] - sj_points[sj_i]![0],
+      sj_points[sj_i + 1]![1] - sj_points[sj_i]![1],
+    );
   }
-  return acc;
+  return sj_acc;
 }
 
 /**
@@ -65,113 +72,115 @@ export class Banners {
   readonly anchors: BannerAnchor[] = [];
 
   constructor(
-    b: ArchBuilder,
-    col: CollisionWorld,
-    path: readonly Vec2[],
-    ground: (x: number, z: number) => number,
-    specs: BannerSpec[],
-    textScale = 1,
+    sj_b: ArchBuilder,
+    sj_col: CollisionWorld,
+    sj_path: readonly Vec2[],
+    sj_ground: (sj_x: number, sj_z: number) => number,
+    sj_specs: BannerSpec[],
+    sj_textScale = 1,
   ) {
-    const n = Math.max(1, specs.length);
-    const total = pathLength(path);
-    const cloths: BufferGeometry[] = [];
-    specs.forEach((_, i) => {
-      const s = total * (0.2 + (0.66 * (i + 0.5)) / n);
-      const { p, dir } = sampleAt(path, s);
-      const side = i % 2 === 0 ? 1 : -1;
-      const normal = new Vector3(dir.z, 0, -dir.x).multiplyScalar(side); // points away from path
-      const poleX = p.x + normal.x * 2.55;
-      const poleZ = p.z + normal.z * 2.55;
-      const y = ground(poleX, poleZ);
-      const poleH = 5.6;
+    const sj_n = Math.max(1, sj_specs.length);
+    const sj_total = pathLength(sj_path);
+    const sj_cloths: BufferGeometry[] = [];
+    sj_specs.forEach((_sj, sj_i) => {
+      const sj_s = sj_total * (0.2 + (0.66 * (sj_i + 0.5)) / sj_n);
+      const { p: sj_p, dir: sj_dir } = sampleAt(sj_path, sj_s);
+      const sj_side = sj_i % 2 === 0 ? 1 : -1;
+      const sj_normal = new Vector3(sj_dir.z, 0, -sj_dir.x).multiplyScalar(sj_side); // points away from path
+      const sj_poleX = sj_p.x + sj_normal.x * 2.55;
+      const sj_poleZ = sj_p.z + sj_normal.z * 2.55;
+      const sj_y = sj_ground(sj_poleX, sj_poleZ);
+      const sj_poleH = 5.6;
       // banner faces down the path, towards visitors walking up it
-      const yaw = Math.atan2(-dir.x, -dir.z);
-      b.add('paint', post(0.09, poleH, 8), PAL.wood, T(poleX, y, poleZ));
-      b.add('paint', post(0.18, 0.4, 8, 0.12), PAL.stoneDark, T(poleX, y, poleZ));
-      b.add('paint', post(0.06, 0.3, 6), PAL.gold, T(poleX, y + poleH, poleZ));
+      const sj_yaw = Math.atan2(-sj_dir.x, -sj_dir.z);
+      sj_b.add('paint', post(0.09, sj_poleH, 8), sj_PAL.wood, T(sj_poleX, sj_y, sj_poleZ));
+      sj_b.add('paint', post(0.18, 0.4, 8, 0.12), sj_PAL.stoneDark, T(sj_poleX, sj_y, sj_poleZ));
+      sj_b.add('paint', post(0.06, 0.3, 6), sj_PAL.gold, T(sj_poleX, sj_y + sj_poleH, sj_poleZ));
       // crossbar reaching over the path edge
-      const armLen = 1.55;
-      const mid = new Vector3(
-        poleX - normal.x * armLen * 0.5,
-        y + poleH - 0.25,
-        poleZ - normal.z * armLen * 0.5,
+      const sj_armLen = 1.55;
+      const sj_mid = new Vector3(
+        sj_poleX - sj_normal.x * sj_armLen * 0.5,
+        sj_y + sj_poleH - 0.25,
+        sj_poleZ - sj_normal.z * sj_armLen * 0.5,
       );
-      b.add(
+      sj_b.add(
         'paint',
-        box(0.08, 0.08, armLen),
-        PAL.wood,
-        T(mid.x, mid.y, mid.z, 0, Math.atan2(normal.x, normal.z)),
+        box(0.08, 0.08, sj_armLen),
+        sj_PAL.wood,
+        T(sj_mid.x, sj_mid.y, sj_mid.z, 0, Math.atan2(sj_normal.x, sj_normal.z)),
       );
-      col.circle(poleX, poleZ, 0.2, y, y + poleH, 'banner-pole');
+      sj_col.circle(sj_poleX, sj_poleZ, 0.2, sj_y, sj_y + sj_poleH, 'banner-pole');
 
       // cloth: 1.3 x 3.55 m, top edge under the crossbar, UVs into the atlas column
-      const cloth = new PlaneGeometry(1.3, 3.55, 4, 16);
-      cloth.translate(0, -1.775, 0);
-      const uv = cloth.attributes.uv as BufferAttribute;
-      const hang = new Float32Array(uv.count);
-      const pos = cloth.attributes.position as BufferAttribute;
-      for (let k = 0; k < uv.count; k++) {
-        uv.setX(k, (i + uv.getX(k)) / n);
-        hang[k] = -pos.getY(k) / 3.55;
+      const sj_cloth = new PlaneGeometry(1.3, 3.55, 4, 16);
+      sj_cloth.translate(0, -1.775, 0);
+      const sj_uv = sj_cloth.attributes.uv as BufferAttribute;
+      const sj_hang = new Float32Array(sj_uv.count);
+      const sj_pos = sj_cloth.attributes.position as BufferAttribute;
+      for (let sj_k = 0; sj_k < sj_uv.count; sj_k++) {
+        sj_uv.setX(sj_k, (sj_i + sj_uv.getX(sj_k)) / sj_n);
+        sj_hang[sj_k] = -sj_pos.getY(sj_k) / 3.55;
       }
-      cloth.setAttribute('aHang', new BufferAttribute(hang, 1));
-      const cx = poleX - normal.x * armLen * 0.72;
-      const cz = poleZ - normal.z * armLen * 0.72;
-      cloth.applyMatrix4(T(cx, y + poleH - 0.32, cz, 0, yaw));
-      cloths.push(cloth);
+      sj_cloth.setAttribute('aHang', new BufferAttribute(sj_hang, 1));
+      const sj_cx = sj_poleX - sj_normal.x * sj_armLen * 0.72;
+      const sj_cz = sj_poleZ - sj_normal.z * sj_armLen * 0.72;
+      sj_cloth.applyMatrix4(T(sj_cx, sj_y + sj_poleH - 0.32, sj_cz, 0, sj_yaw));
+      sj_cloths.push(sj_cloth);
 
       // altar with a glowing scroll, on the path side of the pole
-      const ax = p.x + normal.x * 1.55;
-      const az = p.z + normal.z * 1.55;
-      const ay = ground(ax, az);
-      const am = T(ax, ay, az, 0, yaw);
-      b.add('paint', box(0.9, 0.75, 0.6).translate(0, 0.375, 0), PAL.stone, am);
-      b.add('paint', box(1.0, 0.08, 0.7), PAL.stoneDark, mul(am, T(0, 0.79, 0)));
-      b.add(
+      const sj_ax = sj_p.x + sj_normal.x * 1.55;
+      const sj_az = sj_p.z + sj_normal.z * 1.55;
+      const sj_ay = sj_ground(sj_ax, sj_az);
+      const sj_am = T(sj_ax, sj_ay, sj_az, 0, sj_yaw);
+      sj_b.add('paint', box(0.9, 0.75, 0.6).translate(0, 0.375, 0), sj_PAL.stone, sj_am);
+      sj_b.add('paint', box(1.0, 0.08, 0.7), sj_PAL.stoneDark, mul(sj_am, T(0, 0.79, 0)));
+      sj_b.add(
         'glow',
         post(0.07, 0.62, 10)
           .rotateZ(Math.PI / 2)
           .translate(0.31, 0.9, 0),
         '#f5deb0',
-        am,
+        sj_am,
       );
-      b.add(
+      sj_b.add(
         'paint',
         post(0.08, 0.06, 10)
           .rotateZ(Math.PI / 2)
           .translate(0.37, 0.9, 0),
-        PAL.wood,
-        am,
+        sj_PAL.wood,
+        sj_am,
       );
-      b.add(
+      sj_b.add(
         'paint',
         post(0.08, 0.06, 10)
           .rotateZ(Math.PI / 2)
           .translate(-0.31, 0.9, 0),
-        PAL.wood,
-        am,
+        sj_PAL.wood,
+        sj_am,
       );
-      b.light({ x: ax, y: ay + 0.9, z: az, size: 0.3, kind: 'altar' });
-      col.box(ax, az, 0.48, 0.32, yaw, ay, ay + 0.9, `banner:${i}`);
-      this.anchors.push({ x: ax, y: ay + 0.9, z: az, yaw, index: i });
+      sj_b.light({ x: sj_ax, y: sj_ay + 0.9, z: sj_az, size: 0.3, kind: 'altar' });
+      sj_col.box(sj_ax, sj_az, 0.48, 0.32, sj_yaw, sj_ay, sj_ay + 0.9, `banner:${sj_i}`);
+      this.anchors.push({ x: sj_ax, y: sj_ay + 0.9, z: sj_az, yaw: sj_yaw, index: sj_i });
     });
 
-    const merged = cloths.length ? mergeGeometries(cloths, false)! : new PlaneGeometry(0.01, 0.01);
-    cloths.forEach((c) => c.dispose());
-    const material = new MeshStandardMaterial({
-      map: createBannerAtlas(specs, textScale),
+    const sj_merged = sj_cloths.length
+      ? mergeGeometries(sj_cloths, false)!
+      : new PlaneGeometry(0.01, 0.01);
+    sj_cloths.forEach((sj_c) => sj_c.dispose());
+    const sj_material = new MeshStandardMaterial({
+      map: createBannerAtlas(sj_specs, sj_textScale),
       side: DoubleSide,
       roughness: 0.85,
       alphaTest: 0.5,
     });
-    material.onBeforeCompile = (shader) => {
-      Object.assign(shader.uniforms, {
-        uTime: globalUniforms.uTime,
-        uWindDir: globalUniforms.uWindDir,
-        uWindStrength: globalUniforms.uWindStrength,
+    sj_material.onBeforeCompile = (sj_shader) => {
+      Object.assign(sj_shader.uniforms, {
+        uTime: sj_globalUniforms.uTime,
+        uWindDir: sj_globalUniforms.uWindDir,
+        uWindStrength: sj_globalUniforms.uWindStrength,
       });
-      shader.vertexShader = shader.vertexShader
-        .replace('#include <common>', `#include <common>\nattribute float aHang;\n${WIND_GLSL}`)
+      sj_shader.vertexShader = sj_shader.vertexShader
+        .replace('#include <common>', `#include <common>\nattribute float aHang;\n${sj_WIND_GLSL}`)
         .replace(
           '#include <begin_vertex>',
           /* glsl */ `#include <begin_vertex>
@@ -185,14 +194,14 @@ export class Banners {
           }`,
         );
     };
-    material.customProgramCacheKey = () => 'banner-cloth';
-    this.mesh = new Mesh(merged, material);
+    sj_material.customProgramCacheKey = () => 'banner-cloth';
+    this.mesh = new Mesh(sj_merged, sj_material);
     this.mesh.castShadow = true;
     this.mesh.receiveShadow = true;
     this.mesh.name = 'banners';
   }
 
-  addTo(scene: Scene): void {
-    scene.add(this.mesh);
+  addTo(sj_scene: Scene): void {
+    sj_scene.add(this.mesh);
   }
 }

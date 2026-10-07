@@ -63,7 +63,7 @@ images or sound files, which keeps the build tiny and the licensing simple.
   in the rock material. Cliffs are shaded in the terrain shader: strata, ledges, joints,
   seep stains and derivative bump mapping.
 - **Edges between materials.** Paths and yards are looked up in the splat map with a
-  meandering offset (`GROUND_WARP_GLSL`) shared by the ground, the grass and the flowers,
+  meandering offset (`sj_GROUND_WARP_GLSL`) shared by the ground, the grass and the flowers,
   so their ragged edges agree. Verges are trampled and dry; paths have a darker tread and
   pebbly margins; paving is laid stone by stone and frays at its edge; grass thins out
   onto the beach.

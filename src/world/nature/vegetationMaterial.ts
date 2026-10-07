@@ -1,7 +1,7 @@
 import { Color, DoubleSide, MeshStandardMaterial, type Texture } from 'three';
-import { globalUniforms } from '../../render/uniforms';
-import { WIND_GLSL } from '../../render/glsl';
-import { ATMOSPHERE } from '../../render/atmosphere';
+import { sj_globalUniforms } from '../../render/uniforms';
+import { sj_WIND_GLSL } from '../../render/glsl';
+import { sj_ATMOSPHERE } from '../../render/atmosphere';
 
 export interface VegetationOptions {
   name: string;
@@ -32,42 +32,42 @@ export interface VegetationOptions {
  * `aWind.x` height factor), leaves flutter (`aWind.y`), everything leans away from the
  * panda, and thin foliage glows when backlit by the low sun. Works with InstancedMesh.
  */
-export function createVegetationMaterial(o: VegetationOptions): MeshStandardMaterial {
-  const mat = new MeshStandardMaterial({
-    map: o.map ?? null,
-    alphaTest: o.alphaTest ?? 0,
-    roughness: o.roughness ?? 0.85,
+export function createVegetationMaterial(sj_o: VegetationOptions): MeshStandardMaterial {
+  const sj_mat = new MeshStandardMaterial({
+    map: sj_o.map ?? null,
+    alphaTest: sj_o.alphaTest ?? 0,
+    roughness: sj_o.roughness ?? 0.85,
     metalness: 0,
     vertexColors: true,
   });
-  if (o.doubleSided !== false) mat.side = DoubleSide;
-  const uniforms = {
-    uSway: { value: o.sway ?? 0.3 },
-    uFlutter: { value: o.flutter ?? 0 },
-    uPush: { value: o.push ?? 0 },
-    uPushRadius: { value: o.pushRadius ?? 1.6 },
-    uTranslucency: { value: o.translucency ?? 0 },
-    uSunColor: { value: new Color().copy(ATMOSPHERE.sunColor) },
-    uCulmNode: { value: o.culm?.node ?? new Color() },
-    uCulmBloom: { value: o.culm?.bloom ?? new Color() },
-    uCulmStripe: { value: o.culm?.stripe ?? new Color() },
+  if (sj_o.doubleSided !== false) sj_mat.side = DoubleSide;
+  const sj_uniforms = {
+    uSway: { value: sj_o.sway ?? 0.3 },
+    uFlutter: { value: sj_o.flutter ?? 0 },
+    uPush: { value: sj_o.push ?? 0 },
+    uPushRadius: { value: sj_o.pushRadius ?? 1.6 },
+    uTranslucency: { value: sj_o.translucency ?? 0 },
+    uSunColor: { value: new Color().copy(sj_ATMOSPHERE.sunColor) },
+    uCulmNode: { value: sj_o.culm?.node ?? new Color() },
+    uCulmBloom: { value: sj_o.culm?.bloom ?? new Color() },
+    uCulmStripe: { value: sj_o.culm?.stripe ?? new Color() },
   };
-  mat.onBeforeCompile = (shader) => {
-    Object.assign(shader.uniforms, uniforms, {
-      uTime: globalUniforms.uTime,
-      uWindDir: globalUniforms.uWindDir,
-      uWindStrength: globalUniforms.uWindStrength,
-      uPlayerPos: globalUniforms.uPlayerPos,
-      uSunDir: globalUniforms.uSunDir,
+  sj_mat.onBeforeCompile = (sj_shader) => {
+    Object.assign(sj_shader.uniforms, sj_uniforms, {
+      uTime: sj_globalUniforms.uTime,
+      uWindDir: sj_globalUniforms.uWindDir,
+      uWindStrength: sj_globalUniforms.uWindStrength,
+      uPlayerPos: sj_globalUniforms.uPlayerPos,
+      uSunDir: sj_globalUniforms.uSunDir,
     });
-    if (o.culm) {
-      shader.vertexShader = shader.vertexShader
+    if (sj_o.culm) {
+      sj_shader.vertexShader = sj_shader.vertexShader
         .replace(
           '#include <common>',
           '#include <common>\nattribute vec4 aCulm;\nvarying vec4 vCulm;',
         )
         .replace('#include <begin_vertex>', '#include <begin_vertex>\nvCulm = aCulm;');
-      shader.fragmentShader = shader.fragmentShader
+      sj_shader.fragmentShader = sj_shader.fragmentShader
         .replace(
           '#include <common>',
           '#include <common>\nvarying vec4 vCulm;\nuniform vec3 uCulmNode;\nuniform vec3 uCulmBloom;\nuniform vec3 uCulmStripe;',
@@ -92,7 +92,7 @@ export function createVegetationMaterial(o: VegetationOptions): MeshStandardMate
 }`,
         );
     }
-    shader.vertexShader = shader.vertexShader
+    sj_shader.vertexShader = sj_shader.vertexShader
       .replace(
         '#include <common>',
         /* glsl */ `#include <common>
@@ -103,7 +103,7 @@ uniform float uFlutter;
 uniform float uPush;
 uniform float uPushRadius;
 uniform vec3 uPlayerPos;
-${WIND_GLSL}`,
+${sj_WIND_GLSL}`,
       )
       .replace(
         '#include <project_vertex>',
@@ -142,7 +142,7 @@ ${WIND_GLSL}`,
   transformed += transpose(im) * worldOff / s2;
 }`,
       );
-    shader.fragmentShader = shader.fragmentShader
+    sj_shader.fragmentShader = sj_shader.fragmentShader
       .replace(
         '#include <common>',
         /* glsl */ `#include <common>
@@ -186,8 +186,8 @@ float bayer4(vec2 p) {
   }
   #include <opaque_fragment>`,
       );
-    if (o.keepNormals) {
-      shader.fragmentShader = shader.fragmentShader.replace(
+    if (sj_o.keepNormals) {
+      sj_shader.fragmentShader = sj_shader.fragmentShader.replace(
         '#include <normal_fragment_begin>',
         /* glsl */ `
 float faceDirection = gl_FrontFacing ? 1.0 : -1.0;
@@ -196,7 +196,7 @@ vec3 nonPerturbedNormal = normal;`,
       );
     }
   };
-  mat.customProgramCacheKey = () => `veg-${o.keepNormals ? 1 : 0}-${o.culm ? 1 : 0}`;
-  mat.name = o.name;
-  return mat;
+  sj_mat.customProgramCacheKey = () => `veg-${sj_o.keepNormals ? 1 : 0}-${sj_o.culm ? 1 : 0}`;
+  sj_mat.name = sj_o.name;
+  return sj_mat;
 }

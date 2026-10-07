@@ -1,7 +1,7 @@
 import { distToPolyline } from '../utils/math';
 import type { Random } from '../utils/random';
 import { lakeSdf, riverAt } from './heightfield';
-import { BRIDGE_POINTS, PATHS, PLAY_AREA, RESERVED } from './layout';
+import { sj_BRIDGE_POINTS, sj_PATHS, sj_PLAY_AREA, sj_RESERVED } from './layout';
 import type { Terrain } from './Terrain';
 
 export interface PlacedPoint {
@@ -19,7 +19,7 @@ export interface ScatterOptions {
   minDist: number;
   rand: Random;
   /** extra acceptance test, return probability 0..1 */
-  density?: (x: number, z: number) => number;
+  density?: (sj_x: number, sj_z: number) => number;
   /** keep this far from paths (m) */
   pathMargin?: number;
   /** keep this far from reserved areas (m, added to their radius) */
@@ -39,86 +39,95 @@ export class Placement {
   /** extra areas claimed at runtime (banners, props...) that scatters avoid */
   readonly reserved: { x: number; z: number; r: number }[] = [];
 
-  reserve(x: number, z: number, r: number): void {
-    this.reserved.push({ x, z, r });
+  reserve(sj_x: number, sj_z: number, sj_r: number): void {
+    this.reserved.push({ x: sj_x, z: sj_z, r: sj_r });
   }
 
   constructor(private readonly terrain: Terrain) {}
 
-  distanceToPaths(x: number, z: number): number {
-    let best = Infinity;
-    for (const p of PATHS) best = Math.min(best, distToPolyline(x, z, p.points) - p.width / 2);
-    best = Math.min(best, distToPolyline(x, z, BRIDGE_POINTS) - 2);
-    return best;
+  distanceToPaths(sj_x: number, sj_z: number): number {
+    let sj_best = Infinity;
+    for (const sj_p of sj_PATHS)
+      sj_best = Math.min(sj_best, distToPolyline(sj_x, sj_z, sj_p.points) - sj_p.width / 2);
+    sj_best = Math.min(sj_best, distToPolyline(sj_x, sj_z, sj_BRIDGE_POINTS) - 2);
+    return sj_best;
   }
 
   /** Distance from the stream's banks (negative inside the channel). */
-  distanceToStream(x: number, z: number): number {
-    const r = riverAt(x, z);
-    return r ? r.dist - r.halfWidth - 1.2 : Infinity;
+  distanceToStream(sj_x: number, sj_z: number): number {
+    const sj_r = riverAt(sj_x, sj_z);
+    return sj_r ? sj_r.dist - sj_r.halfWidth - 1.2 : Infinity;
   }
 
-  inReserved(x: number, z: number, margin: number): boolean {
-    const hit = (c: { x: number; z: number; r: number }) => {
-      const dx = x - c.x;
-      const dz = z - c.z;
-      const r = c.r + margin;
-      return dx * dx + dz * dz < r * r;
+  inReserved(sj_x: number, sj_z: number, sj_margin: number): boolean {
+    const sj_hit = (sj_c: { x: number; z: number; r: number }) => {
+      const sj_dx = sj_x - sj_c.x;
+      const sj_dz = sj_z - sj_c.z;
+      const sj_r = sj_c.r + sj_margin;
+      return sj_dx * sj_dx + sj_dz * sj_dz < sj_r * sj_r;
     };
-    return RESERVED.some(hit) || this.reserved.some(hit);
+    return sj_RESERVED.some(sj_hit) || this.reserved.some(sj_hit);
   }
 
-  insidePlayArea(x: number, z: number, margin = 0): boolean {
-    const ex = (x - PLAY_AREA.x) / (PLAY_AREA.rx - margin);
-    const ez = (z - PLAY_AREA.z) / (PLAY_AREA.rz - margin);
-    return ex * ex + ez * ez < 1;
+  insidePlayArea(sj_x: number, sj_z: number, sj_margin = 0): boolean {
+    const sj_ex = (sj_x - sj_PLAY_AREA.x) / (sj_PLAY_AREA.rx - sj_margin);
+    const sj_ez = (sj_z - sj_PLAY_AREA.z) / (sj_PLAY_AREA.rz - sj_margin);
+    return sj_ex * sj_ex + sj_ez * sj_ez < 1;
   }
 
-  scatter(o: ScatterOptions): PlacedPoint[] {
-    const out: PlacedPoint[] = [];
-    const [x0, z0, x1, z1] = o.bounds;
-    const cell = o.minDist / Math.SQRT2;
-    const gw = Math.max(1, Math.ceil((x1 - x0) / cell));
-    const gh = Math.max(1, Math.ceil((z1 - z0) / cell));
-    const grid = new Int32Array(gw * gh).fill(-1);
-    const attempts = o.count * 12;
-    const pathMargin = o.pathMargin ?? 1;
-    const reservedMargin = o.reservedMargin ?? 0;
-    const lake = o.lake ?? 'avoid';
-    const maxSlope = o.maxSlope ?? 0.45;
-    for (let a = 0; a < attempts && out.length < o.count; a++) {
-      const x = o.rand.range(x0, x1);
-      const z = o.rand.range(z0, z1);
-      const gx = Math.floor((x - x0) / cell);
-      const gz = Math.floor((z - z0) / cell);
+  scatter(sj_o: ScatterOptions): PlacedPoint[] {
+    const sj_out: PlacedPoint[] = [];
+    const [sj_x0, sj_z0, sj_x1, sj_z1] = sj_o.bounds;
+    const sj_cell = sj_o.minDist / Math.SQRT2;
+    const sj_gw = Math.max(1, Math.ceil((sj_x1 - sj_x0) / sj_cell));
+    const sj_gh = Math.max(1, Math.ceil((sj_z1 - sj_z0) / sj_cell));
+    const sj_grid = new Int32Array(sj_gw * sj_gh).fill(-1);
+    const sj_attempts = sj_o.count * 12;
+    const sj_pathMargin = sj_o.pathMargin ?? 1;
+    const sj_reservedMargin = sj_o.reservedMargin ?? 0;
+    const sj_lake = sj_o.lake ?? 'avoid';
+    const sj_maxSlope = sj_o.maxSlope ?? 0.45;
+    for (let sj_a = 0; sj_a < sj_attempts && sj_out.length < sj_o.count; sj_a++) {
+      const sj_x = sj_o.rand.range(sj_x0, sj_x1);
+      const sj_z = sj_o.rand.range(sj_z0, sj_z1);
+      const sj_gx = Math.floor((sj_x - sj_x0) / sj_cell);
+      const sj_gz = Math.floor((sj_z - sj_z0) / sj_cell);
       // min distance within this scatter
-      let ok = true;
-      for (let j = Math.max(0, gz - 2); j <= Math.min(gh - 1, gz + 2) && ok; j++) {
-        for (let i = Math.max(0, gx - 2); i <= Math.min(gw - 1, gx + 2); i++) {
-          const k = grid[j * gw + i]!;
-          if (k < 0) continue;
-          const p = out[k]!;
-          if ((p.x - x) ** 2 + (p.z - z) ** 2 < o.minDist * o.minDist) {
-            ok = false;
+      let sj_ok = true;
+      for (
+        let sj_j = Math.max(0, sj_gz - 2);
+        sj_j <= Math.min(sj_gh - 1, sj_gz + 2) && sj_ok;
+        sj_j++
+      ) {
+        for (let sj_i = Math.max(0, sj_gx - 2); sj_i <= Math.min(sj_gw - 1, sj_gx + 2); sj_i++) {
+          const sj_k = sj_grid[sj_j * sj_gw + sj_i]!;
+          if (sj_k < 0) continue;
+          const sj_p = sj_out[sj_k]!;
+          if ((sj_p.x - sj_x) ** 2 + (sj_p.z - sj_z) ** 2 < sj_o.minDist * sj_o.minDist) {
+            sj_ok = false;
             break;
           }
         }
       }
-      if (!ok) continue;
-      if (o.density && o.rand.float() > o.density(x, z)) continue;
-      const sdf = lakeSdf(x, z);
-      if (lake === 'avoid' && sdf < 1.5) continue;
-      if (lake === 'shore' && (sdf < -0.5 || sdf > 5)) continue;
-      if (lake === 'water' && sdf > -0.5) continue;
-      if (this.distanceToPaths(x, z) < pathMargin) continue;
-      if (this.distanceToStream(x, z) < 0.6) continue;
-      if (this.inReserved(x, z, reservedMargin)) continue;
-      if (this.terrain.slopeAt(x, z) > maxSlope) continue;
-      if (o.avoid && o.avoid.some((c) => (c.x - x) ** 2 + (c.z - z) ** 2 < c.r * c.r)) continue;
-      const k = out.length;
-      out.push({ x, z, y: this.terrain.heightAt(x, z) });
-      grid[gz * gw + gx] = k;
+      if (!sj_ok) continue;
+      if (sj_o.density && sj_o.rand.float() > sj_o.density(sj_x, sj_z)) continue;
+      const sj_sdf = lakeSdf(sj_x, sj_z);
+      if (sj_lake === 'avoid' && sj_sdf < 1.5) continue;
+      if (sj_lake === 'shore' && (sj_sdf < -0.5 || sj_sdf > 5)) continue;
+      if (sj_lake === 'water' && sj_sdf > -0.5) continue;
+      if (this.distanceToPaths(sj_x, sj_z) < sj_pathMargin) continue;
+      if (this.distanceToStream(sj_x, sj_z) < 0.6) continue;
+      if (this.inReserved(sj_x, sj_z, sj_reservedMargin)) continue;
+      if (this.terrain.slopeAt(sj_x, sj_z) > sj_maxSlope) continue;
+      if (
+        sj_o.avoid &&
+        sj_o.avoid.some((sj_c) => (sj_c.x - sj_x) ** 2 + (sj_c.z - sj_z) ** 2 < sj_c.r * sj_c.r)
+      )
+        continue;
+      const sj_k = sj_out.length;
+      sj_out.push({ x: sj_x, z: sj_z, y: this.terrain.heightAt(sj_x, sj_z) });
+      sj_grid[sj_gz * sj_gw + sj_gx] = sj_k;
     }
-    return out;
+    return sj_out;
   }
 }

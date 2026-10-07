@@ -9,21 +9,21 @@ import {
   Vector3,
   type Scene,
 } from 'three';
-import { globalUniforms } from '../../render/uniforms';
+import { sj_globalUniforms } from '../../render/uniforms';
 import type { LightSpot } from './Builder';
 import type { QualitySettings } from '../../core/Quality';
 
-const COLORS: Record<LightSpot['kind'], Color> = {
+const sj_COLORS: Record<LightSpot['kind'], Color> = {
   paper: new Color(1.0, 0.42, 0.14),
   stone: new Color(1.0, 0.66, 0.3),
   altar: new Color(1.0, 0.78, 0.45),
 };
-const HALO_SIZE: Record<LightSpot['kind'], number> = { paper: 5.2, stone: 4.6, altar: 3.6 };
-const tmp = new Vector3();
+const sj_HALO_SIZE: Record<LightSpot['kind'], number> = { paper: 5.2, stone: 4.6, altar: 3.6 };
+const sj_tmp = new Vector3();
 
 /** Real lights only where there is GPU to spare: 3 on High, 1 on Medium, none on Low. */
-function lightsFor(s: QualitySettings): number {
-  return s.level === 'high' ? 3 : s.level === 'medium' ? 1 : 0;
+function lightsFor(sj_s: QualitySettings): number {
+  return sj_s.level === 'high' ? 3 : sj_s.level === 'medium' ? 1 : 0;
 }
 
 /**
@@ -44,33 +44,33 @@ export class LanternGlow {
 
   constructor(
     private readonly spots: LightSpot[],
-    settings: QualitySettings,
+    sj_settings: QualitySettings,
   ) {
-    const lightCount = lightsFor(settings);
-    this.active = lightCount;
-    const n = spots.length;
-    const pos = new Float32Array(n * 3);
-    const size = new Float32Array(n);
-    const color = new Float32Array(n * 3);
-    const phase = new Float32Array(n);
-    spots.forEach((s, i) => {
-      pos.set([s.x, s.y, s.z], i * 3);
-      size[i] = s.size * HALO_SIZE[s.kind];
-      const c = COLORS[s.kind];
-      color.set([c.r, c.g, c.b], i * 3);
-      phase[i] = (s.x * 12.9898 + s.z * 78.233) % 6.283;
+    const sj_lightCount = lightsFor(sj_settings);
+    this.active = sj_lightCount;
+    const sj_n = spots.length;
+    const sj_pos = new Float32Array(sj_n * 3);
+    const sj_size = new Float32Array(sj_n);
+    const sj_color = new Float32Array(sj_n * 3);
+    const sj_phase = new Float32Array(sj_n);
+    spots.forEach((sj_s, sj_i) => {
+      sj_pos.set([sj_s.x, sj_s.y, sj_s.z], sj_i * 3);
+      sj_size[sj_i] = sj_s.size * sj_HALO_SIZE[sj_s.kind];
+      const sj_c = sj_COLORS[sj_s.kind];
+      sj_color.set([sj_c.r, sj_c.g, sj_c.b], sj_i * 3);
+      sj_phase[sj_i] = (sj_s.x * 12.9898 + sj_s.z * 78.233) % 6.283;
     });
-    const geo = new BufferGeometry();
-    geo.setAttribute('position', new BufferAttribute(pos, 3));
-    geo.setAttribute('aSize', new BufferAttribute(size, 1));
-    geo.setAttribute('aColor', new BufferAttribute(color, 3));
-    geo.setAttribute('aPhase', new BufferAttribute(phase, 1));
-    const material = new ShaderMaterial({
+    const sj_geo = new BufferGeometry();
+    sj_geo.setAttribute('position', new BufferAttribute(sj_pos, 3));
+    sj_geo.setAttribute('aSize', new BufferAttribute(sj_size, 1));
+    sj_geo.setAttribute('aColor', new BufferAttribute(sj_color, 3));
+    sj_geo.setAttribute('aPhase', new BufferAttribute(sj_phase, 1));
+    const sj_material = new ShaderMaterial({
       transparent: true,
       depthWrite: false,
       blending: AdditiveBlending,
       uniforms: {
-        uTime: globalUniforms.uTime,
+        uTime: sj_globalUniforms.uTime,
         uScale: { value: 800 },
         uIntensity: { value: 0.55 },
       },
@@ -106,59 +106,62 @@ export class LanternGlow {
         }
       `,
     });
-    this.points = new Points(geo, material);
+    this.points = new Points(sj_geo, sj_material);
     this.points.name = 'lantern-halos';
     this.points.frustumCulled = false;
     this.points.renderOrder = 5;
 
-    for (let i = 0; i < lightCount; i++) {
-      const light = new PointLight(0xffa25a, 0, 9, 2);
-      light.castShadow = false;
-      this.lights.push(light);
+    for (let sj_i = 0; sj_i < sj_lightCount; sj_i++) {
+      const sj_light = new PointLight(0xffa25a, 0, 9, 2);
+      sj_light.castShadow = false;
+      this.lights.push(sj_light);
       this.assigned.push(-1);
     }
   }
 
   /** Switches lights off (never removes them: see the class comment). */
-  applyQuality(s: QualitySettings): void {
-    this.active = Math.min(this.lights.length, lightsFor(s));
+  applyQuality(sj_s: QualitySettings): void {
+    this.active = Math.min(this.lights.length, lightsFor(sj_s));
   }
 
-  addTo(scene: Scene): void {
-    scene.add(this.points);
-    for (const l of this.lights) scene.add(l);
+  addTo(sj_scene: Scene): void {
+    sj_scene.add(this.points);
+    for (const sj_l of this.lights) sj_scene.add(sj_l);
   }
 
   /** Converts world-space halo sizes to pixels: call on resize / fov change. */
-  setViewport(heightPx: number, fovDeg: number): void {
+  setViewport(sj_heightPx: number, sj_fovDeg: number): void {
     this.points.material.uniforms.uScale!.value =
-      heightPx / (2 * Math.tan((fovDeg * Math.PI) / 360));
+      sj_heightPx / (2 * Math.tan((sj_fovDeg * Math.PI) / 360));
   }
 
-  /** Moves the point lights to the lanterns nearest `focus`, with a candle flicker. */
-  update(dt: number, time: number, focus: Vector3): void {
+  /** Moves the point lights to the lanterns nearest `sj_focus`, with a candle flicker. */
+  update(sj_dt: number, sj_time: number, sj_focus: Vector3): void {
     if (!this.lights.length) return;
-    this.retarget -= dt;
+    this.retarget -= sj_dt;
     if (this.retarget <= 0) {
       this.retarget = 0.4;
-      const nearest = this.spots
-        .map((s, i) => ({ i, d: tmp.set(s.x, s.y, s.z).distanceToSquared(focus) }))
-        .sort((a, b) => a.d - b.d)
+      const sj_nearest = this.spots
+        .map((sj_s, sj_i) => ({
+          i: sj_i,
+          d: sj_tmp.set(sj_s.x, sj_s.y, sj_s.z).distanceToSquared(sj_focus),
+        }))
+        .sort((sj_a, sj_b) => sj_a.d - sj_b.d)
         .slice(0, this.lights.length);
-      nearest.forEach((n, k) => {
-        this.assigned[k] = n.d < 22 * 22 ? n.i : -1;
+      sj_nearest.forEach((sj_n, sj_k) => {
+        this.assigned[sj_k] = sj_n.d < 22 * 22 ? sj_n.i : -1;
       });
     }
-    this.lights.forEach((light, k) => {
-      const i = this.assigned[k]!;
-      if (i < 0 || k >= this.active) {
-        light.intensity = 0;
+    this.lights.forEach((sj_light, sj_k) => {
+      const sj_i = this.assigned[sj_k]!;
+      if (sj_i < 0 || sj_k >= this.active) {
+        sj_light.intensity = 0;
         return;
       }
-      const s = this.spots[i]!;
-      light.position.set(s.x, s.y - s.size * 0.4, s.z);
-      const base = s.kind === 'paper' ? 4.5 : s.kind === 'stone' ? 3.5 : 2;
-      light.intensity = base * (0.88 + 0.12 * Math.sin(time * 9.1 + i * 1.7));
+      const sj_s = this.spots[sj_i]!;
+      sj_light.position.set(sj_s.x, sj_s.y - sj_s.size * 0.4, sj_s.z);
+      const sj_base = sj_s.kind === 'paper' ? 4.5 : sj_s.kind === 'stone' ? 3.5 : 2;
+      sj_light.intensity = sj_base * (0.88 + 0.12 * Math.sin(sj_time * 9.1 + sj_i * 1.7));
     });
   }
 }

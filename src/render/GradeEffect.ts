@@ -1,7 +1,7 @@
 import { Uniform, Vector3 } from 'three';
 import { BlendFunction, Effect } from 'postprocessing';
 
-const fragmentShader = /* glsl */ `
+const sj_fragmentShader = /* glsl */ `
 uniform float uSaturation;
 uniform vec3 uLift;
 uniform vec3 uGain;
@@ -34,7 +34,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor)
 /** Final colour grade: split toning, contrast, saturation and a whisper of grain. */
 export class GradeEffect extends Effect {
   constructor() {
-    super('GradeEffect', fragmentShader, {
+    super('GradeEffect', sj_fragmentShader, {
       blendFunction: BlendFunction.NORMAL,
       uniforms: new Map<string, Uniform>([
         ['uSaturation', new Uniform(1.12)],
@@ -48,7 +48,7 @@ export class GradeEffect extends Effect {
   }
 
   override update(): void {
-    const t = this.uniforms.get('uTime')!;
-    t.value = (t.value as number) + 0.016;
+    const sj_t = this.uniforms.get('uTime')!;
+    sj_t.value = (sj_t.value as number) + 0.016;
   }
 }

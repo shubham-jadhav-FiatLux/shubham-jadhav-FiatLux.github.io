@@ -14,7 +14,7 @@ import type { PortfolioContent } from './types';
  *  - Links open in a new tab. Use full URLs (https://...).
  *  - The gate glyphs must exist in the brush font subset (see scripts/subset-font.py).
  */
-export const portfolio: PortfolioContent = {
+export const sj_portfolio: PortfolioContent = {
   site: {
     title: 'Valley of Peace',
     gateGlyphs: '和平谷', // "Valley of Peace"

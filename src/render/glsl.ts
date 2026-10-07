@@ -4,7 +4,7 @@
  */
 
 /** Hash-based value noise and fbm (hashes by Dave Hoskins, no sin() precision issues). */
-export const NOISE_GLSL = /* glsl */ `
+export const sj_NOISE_GLSL = /* glsl */ `
 float hash12(vec2 p) {
   vec3 p3 = fract(vec3(p.xyx) * 0.1031);
   p3 += dot(p3, p3.yzx + 33.33);
@@ -39,14 +39,14 @@ float fbm(vec2 p) {
  * meander instead of following the painted strokes. The ground, the grass and the flowers
  * all use it, so blades and colours agree. Needs NOISE_GLSL.
  */
-export const GROUND_WARP_GLSL = /* glsl */ `
+export const sj_GROUND_WARP_GLSL = /* glsl */ `
 vec2 groundWarp(vec2 xz) {
   return (vec2(vnoise(xz * 0.37 + 3.1), vnoise(xz * 0.37 - 7.7)) - 0.5) * 1.1;
 }
 `;
 
 /** Terrain lookups shared by grass, water and anything that needs ground height on GPU. */
-export const TERRAIN_GLSL = /* glsl */ `
+export const sj_TERRAIN_GLSL = /* glsl */ `
 uniform sampler2D uHeightMap;
 uniform sampler2D uMaskMap;
 uniform sampler2D uDetailMap;
@@ -68,7 +68,7 @@ vec4 terrainDetailAt(vec2 xz) {
 `;
 
 /** Wind sway used by grass, bamboo, trees and banners so everything moves together. */
-export const WIND_GLSL = /* glsl */ `
+export const sj_WIND_GLSL = /* glsl */ `
 uniform float uTime;
 uniform vec2 uWindDir;
 uniform float uWindStrength;
@@ -83,7 +83,7 @@ vec2 windSway(vec2 xz, float phase) {
 `;
 
 /** 3D value noise (object-space detail on rocks and other solids). */
-export const NOISE3_GLSL = /* glsl */ `
+export const sj_NOISE3_GLSL = /* glsl */ `
 float hash13(vec3 p3) {
   p3 = fract(p3 * 0.1031);
   p3 += dot(p3, p3.zyx + 31.32);
@@ -123,7 +123,7 @@ float fbm3(vec3 p) {
  * Bump mapping from any scalar height evaluated per pixel (screen-space derivatives,
  * after Mikkelsen). `surfPos` and `surfNorm` in view space; returns the perturbed normal.
  */
-export const BUMP_GLSL = /* glsl */ `
+export const sj_BUMP_GLSL = /* glsl */ `
 vec3 bumpFromHeight(vec3 surfPos, vec3 surfNorm, float h) {
   vec3 dpdx = dFdx(surfPos);
   vec3 dpdy = dFdy(surfPos);
@@ -140,7 +140,7 @@ vec3 bumpFromHeight(vec3 surfPos, vec3 surfNorm, float h) {
  * camera's view? The frustum's side planes come straight from the projection matrix
  * (sums and differences of its rows), so any perspective projection works.
  */
-export const VIEW_CULL_GLSL = /* glsl */ `
+export const sj_VIEW_CULL_GLSL = /* glsl */ `
 bool sphereInView(vec3 c, float r) {
   mat4 m = projectionMatrix;
   vec4 row0 = vec4(m[0][0], m[1][0], m[2][0], m[3][0]);

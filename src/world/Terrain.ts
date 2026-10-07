@@ -11,25 +11,25 @@ import {
   RedFormat,
   type Scene,
 } from 'three';
-import { buildHeightGrid, CELL, gridNormal, riverCourse, sampleGrid } from './heightfield';
+import { buildHeightGrid, sj_CELL, gridNormal, sj_riverCourse, sampleGrid } from './heightfield';
 import {
-  FALLS,
-  PATHS,
-  PLAZAS,
-  TERRAIN_ORIGIN,
-  TERRAIN_RES,
-  TERRAIN_SIZE,
-  WATER_LEVEL,
+  sj_FALLS,
+  sj_PATHS,
+  sj_PLAZAS,
+  sj_TERRAIN_ORIGIN,
+  sj_TERRAIN_RES,
+  sj_TERRAIN_SIZE,
+  sj_WATER_LEVEL,
   type Surface,
 } from './layout';
 import { TerrainMask } from './TerrainMask';
-import { globalUniforms } from '../render/uniforms';
-import { BUMP_GLSL, GROUND_WARP_GLSL, NOISE_GLSL } from '../render/glsl';
-import { ATMOSPHERE } from '../render/atmosphere';
+import { sj_globalUniforms } from '../render/uniforms';
+import { sj_BUMP_GLSL, sj_GROUND_WARP_GLSL, sj_NOISE_GLSL } from '../render/glsl';
+import { sj_ATMOSPHERE } from '../render/atmosphere';
 import { smoothstep } from '../utils/math';
-import { GRASS_COLORS, GRASS_COLOR_GLSL } from './palette';
+import { sj_GRASS_COLORS, sj_GRASS_COLOR_GLSL } from './palette';
 
-const tmpNormal = { x: 0, y: 1, z: 0 };
+const sj_tmpNormal = { x: 0, y: 1, z: 0 };
 
 /**
  * The valley floor: a heightfield mesh with a procedural splat shader (grass, dirt paths,
@@ -55,53 +55,53 @@ export class Terrain {
     // Terrain does not cast: long golden-hour shadows from the rim looked noisy.
     this.mesh.castShadow = false;
     this.mesh.matrixAutoUpdate = false;
-    globalUniforms.uHeightMap.value = this.heightTexture;
-    globalUniforms.uMaskMap.value = this.mask.texture;
-    globalUniforms.uDetailMap.value = this.mask.detailTexture;
+    sj_globalUniforms.uHeightMap.value = this.heightTexture;
+    sj_globalUniforms.uMaskMap.value = this.mask.texture;
+    sj_globalUniforms.uDetailMap.value = this.mask.detailTexture;
   }
 
-  addTo(scene: Scene): void {
-    scene.add(this.mesh);
+  addTo(sj_scene: Scene): void {
+    sj_scene.add(this.mesh);
   }
 
   /** Ground height at world (x, z), matching the rendered triangles exactly. */
-  heightAt(x: number, z: number): number {
-    return sampleGrid(this.heights, x, z);
+  heightAt(sj_x: number, sj_z: number): number {
+    return sampleGrid(this.heights, sj_x, sj_z);
   }
 
-  normalAt(x: number, z: number, out = { x: 0, y: 1, z: 0 }) {
-    return gridNormal(this.heights, x, z, out);
+  normalAt(sj_x: number, sj_z: number, sj_out = { x: 0, y: 1, z: 0 }) {
+    return gridNormal(this.heights, sj_x, sj_z, sj_out);
   }
 
   /** Steepness in [0, 1]: 0 = flat, 1 = vertical. */
-  slopeAt(x: number, z: number): number {
-    return 1 - gridNormal(this.heights, x, z, tmpNormal).y;
+  slopeAt(sj_x: number, sj_z: number): number {
+    return 1 - gridNormal(this.heights, sj_x, sj_z, sj_tmpNormal).y;
   }
 
-  surfaceAt(x: number, z: number): Surface {
-    const h = this.heightAt(x, z);
-    if (h < WATER_LEVEL - 0.05) return 'water';
-    if (this.mask.sampleDetail(x, z).gravel > 0.6) return 'sand';
-    const m = this.mask.sample(x, z);
-    if (m.stone > 0.5) return 'stone';
-    if (m.dirt > 0.45) return 'dirt';
-    if (h < WATER_LEVEL + 0.45) return 'sand';
+  surfaceAt(sj_x: number, sj_z: number): Surface {
+    const sj_h = this.heightAt(sj_x, sj_z);
+    if (sj_h < sj_WATER_LEVEL - 0.05) return 'water';
+    if (this.mask.sampleDetail(sj_x, sj_z).gravel > 0.6) return 'sand';
+    const sj_m = this.mask.sample(sj_x, sj_z);
+    if (sj_m.stone > 0.5) return 'stone';
+    if (sj_m.dirt > 0.45) return 'dirt';
+    if (sj_h < sj_WATER_LEVEL + 0.45) return 'sand';
     return 'grass';
   }
 
   /** Paints paths and plazas; other systems add shade and footprints before `commit()`. */
   private paintLayout(): void {
-    for (const p of PATHS) {
+    for (const sj_p of sj_PATHS) {
       // a light verge only: grass grows right up to the (ragged) edge of the path
-      this.mask.path(p.points, p.width + 0.2, 'nograss', 0.55);
+      this.mask.path(sj_p.points, sj_p.width + 0.2, 'nograss', 0.55);
       // margins at 0.82, a brighter tread down the middle (the shader tells them apart)
-      this.mask.path(p.points, p.width, 'dirt', 0.82);
-      this.mask.path(p.points, p.width * 0.45, 'dirt', 1);
+      this.mask.path(sj_p.points, sj_p.width, 'dirt', 0.82);
+      this.mask.path(sj_p.points, sj_p.width * 0.45, 'dirt', 1);
     }
-    for (const p of PLAZAS) {
-      this.mask.circle('nograss', p.x, p.z, p.radius + 0.3, 0.7);
-      if (p.surface === 'stone') this.mask.circle('stone', p.x, p.z, p.radius);
-      else this.mask.circle('dirt', p.x, p.z, p.radius, 0.92);
+    for (const sj_p of sj_PLAZAS) {
+      this.mask.circle('nograss', sj_p.x, sj_p.z, sj_p.radius + 0.3, 0.7);
+      if (sj_p.surface === 'stone') this.mask.circle('stone', sj_p.x, sj_p.z, sj_p.radius);
+      else this.mask.circle('dirt', sj_p.x, sj_p.z, sj_p.radius, 0.92);
     }
     this.paintStream();
     this.paintSteepGround();
@@ -109,132 +109,138 @@ export class Terrain {
 
   /** Gravel bed and banks along the stream, no grass under the water. */
   private paintStream(): void {
-    const pts = riverCourse.points;
-    for (let i = 0; i < pts.length - 1; i += 2) {
-      const a = pts[i]!;
-      const b = pts[Math.min(pts.length - 1, i + 2)]!;
-      const seg: [number, number][] = [
-        [a.x, a.z],
-        [b.x, b.z],
+    const sj_pts = sj_riverCourse.points;
+    for (let sj_i = 0; sj_i < sj_pts.length - 1; sj_i += 2) {
+      const sj_a = sj_pts[sj_i]!;
+      const sj_b = sj_pts[Math.min(sj_pts.length - 1, sj_i + 2)]!;
+      const sj_seg: [number, number][] = [
+        [sj_a.x, sj_a.z],
+        [sj_b.x, sj_b.z],
       ];
-      this.mask.path(seg, (a.halfWidth + 1.2) * 2, 'gravel', 1);
-      this.mask.path(seg, (a.halfWidth + 1.9) * 2, 'gravel', 0.45);
-      this.mask.path(seg, (a.halfWidth + 1.5) * 2, 'nograss', 1);
-      this.mask.path(seg, (a.halfWidth + 0.6) * 2, 'wet', 0.35);
+      this.mask.path(sj_seg, (sj_a.halfWidth + 1.2) * 2, 'gravel', 1);
+      this.mask.path(sj_seg, (sj_a.halfWidth + 1.9) * 2, 'gravel', 0.45);
+      this.mask.path(sj_seg, (sj_a.halfWidth + 1.5) * 2, 'nograss', 1);
+      this.mask.path(sj_seg, (sj_a.halfWidth + 0.6) * 2, 'wet', 0.35);
     }
-    const spring = pts[0]!;
-    this.mask.circle('gravel', spring.x, spring.z, 4.1, 1);
-    this.mask.circle('nograss', spring.x, spring.z, 4.4, 1);
+    const sj_spring = sj_pts[0]!;
+    this.mask.circle('gravel', sj_spring.x, sj_spring.z, 4.1, 1);
+    this.mask.circle('nograss', sj_spring.x, sj_spring.z, 4.4, 1);
     // Spray keeps the rock and ground around the falls and the pool wet.
-    const { lip, foot } = FALLS;
+    const { lip: sj_lip, foot: sj_foot } = sj_FALLS;
     this.mask.path(
       [
-        [lip.x, lip.z],
-        [foot.x, foot.z],
+        [sj_lip.x, sj_lip.z],
+        [sj_foot.x, sj_foot.z],
       ],
       6,
       'wet',
       0.9,
     );
-    this.mask.blob('wet', foot.x, foot.z, 9, 0.85);
+    this.mask.blob('wet', sj_foot.x, sj_foot.z, 9, 0.85);
   }
 
   /** No grass on cliffs and steep banks (it looked pinned to the rock). */
   private paintSteepGround(): void {
-    const n = TERRAIN_RES;
-    const slope = new Float32Array(n * n);
-    for (let j = 0; j < n; j++) {
-      for (let i = 0; i < n; i++) {
-        const x = TERRAIN_ORIGIN + i * CELL;
-        const z = TERRAIN_ORIGIN + j * CELL;
-        slope[j * n + i] = 1 - gridNormal(this.heights, x, z, tmpNormal).y;
+    const sj_n = sj_TERRAIN_RES;
+    const sj_slope = new Float32Array(sj_n * sj_n);
+    for (let sj_j = 0; sj_j < sj_n; sj_j++) {
+      for (let sj_i = 0; sj_i < sj_n; sj_i++) {
+        const sj_x = sj_TERRAIN_ORIGIN + sj_i * sj_CELL;
+        const sj_z = sj_TERRAIN_ORIGIN + sj_j * sj_CELL;
+        sj_slope[sj_j * sj_n + sj_i] = 1 - gridNormal(this.heights, sj_x, sj_z, sj_tmpNormal).y;
       }
     }
-    const at = (x: number, z: number) => {
-      const fx = Math.min(n - 1.001, Math.max(0, (x - TERRAIN_ORIGIN) / CELL));
-      const fz = Math.min(n - 1.001, Math.max(0, (z - TERRAIN_ORIGIN) / CELL));
-      const i = Math.floor(fx);
-      const j = Math.floor(fz);
-      const u = fx - i;
-      const v = fz - j;
-      const s00 = slope[j * n + i]!;
-      const s10 = slope[j * n + i + 1]!;
-      const s01 = slope[(j + 1) * n + i]!;
-      const s11 = slope[(j + 1) * n + i + 1]!;
-      return (s00 * (1 - u) + s10 * u) * (1 - v) + (s01 * (1 - u) + s11 * u) * v;
+    const sj_at = (sj_x: number, sj_z: number) => {
+      const sj_fx = Math.min(sj_n - 1.001, Math.max(0, (sj_x - sj_TERRAIN_ORIGIN) / sj_CELL));
+      const sj_fz = Math.min(sj_n - 1.001, Math.max(0, (sj_z - sj_TERRAIN_ORIGIN) / sj_CELL));
+      const sj_i = Math.floor(sj_fx);
+      const sj_j = Math.floor(sj_fz);
+      const sj_u = sj_fx - sj_i;
+      const sj_v = sj_fz - sj_j;
+      const sj_s00 = sj_slope[sj_j * sj_n + sj_i]!;
+      const sj_s10 = sj_slope[sj_j * sj_n + sj_i + 1]!;
+      const sj_s01 = sj_slope[(sj_j + 1) * sj_n + sj_i]!;
+      const sj_s11 = sj_slope[(sj_j + 1) * sj_n + sj_i + 1]!;
+      return (
+        (sj_s00 * (1 - sj_u) + sj_s10 * sj_u) * (1 - sj_v) +
+        (sj_s01 * (1 - sj_u) + sj_s11 * sj_u) * sj_v
+      );
     };
-    const half = TERRAIN_SIZE / 2;
-    this.mask.field('nograss', { x0: -half, z0: -half, x1: half, z1: half }, (x, z) =>
-      smoothstep(0.3, 0.5, at(x, z)),
+    const sj_half = sj_TERRAIN_SIZE / 2;
+    this.mask.field(
+      'nograss',
+      { x0: -sj_half, z0: -sj_half, x1: sj_half, z1: sj_half },
+      (sj_x, sj_z) => smoothstep(0.3, 0.5, sj_at(sj_x, sj_z)),
     );
   }
 
   private createHeightTexture(): DataTexture {
-    const n = TERRAIN_RES;
-    const half = new Uint16Array(n * n);
-    for (let i = 0; i < n * n; i++) half[i] = DataUtils.toHalfFloat(this.heights[i]!);
-    const tex = new DataTexture(half, n, n, RedFormat, HalfFloatType);
-    tex.magFilter = LinearFilter;
-    tex.minFilter = LinearFilter;
-    tex.generateMipmaps = false;
-    tex.needsUpdate = true;
-    return tex;
+    const sj_n = sj_TERRAIN_RES;
+    const sj_half = new Uint16Array(sj_n * sj_n);
+    for (let sj_i = 0; sj_i < sj_n * sj_n; sj_i++)
+      sj_half[sj_i] = DataUtils.toHalfFloat(this.heights[sj_i]!);
+    const sj_tex = new DataTexture(sj_half, sj_n, sj_n, RedFormat, HalfFloatType);
+    sj_tex.magFilter = LinearFilter;
+    sj_tex.minFilter = LinearFilter;
+    sj_tex.generateMipmaps = false;
+    sj_tex.needsUpdate = true;
+    return sj_tex;
   }
 
   private createGeometry(): BufferGeometry {
-    const n = TERRAIN_RES;
-    const positions = new Float32Array(n * n * 3);
-    const normals = new Float32Array(n * n * 3);
-    for (let j = 0; j < n; j++) {
-      for (let i = 0; i < n; i++) {
-        const k = j * n + i;
-        const x = TERRAIN_ORIGIN + i * CELL;
-        const z = TERRAIN_ORIGIN + j * CELL;
-        positions[k * 3] = x;
-        positions[k * 3 + 1] = this.heights[k]!;
-        positions[k * 3 + 2] = z;
-        const hl = this.heights[j * n + Math.max(0, i - 1)]!;
-        const hr = this.heights[j * n + Math.min(n - 1, i + 1)]!;
-        const hd = this.heights[Math.max(0, j - 1) * n + i]!;
-        const hu = this.heights[Math.min(n - 1, j + 1) * n + i]!;
-        const nx = (hl - hr) / (2 * CELL);
-        const nz = (hd - hu) / (2 * CELL);
-        const len = Math.hypot(nx, 1, nz);
-        normals[k * 3] = nx / len;
-        normals[k * 3 + 1] = 1 / len;
-        normals[k * 3 + 2] = nz / len;
+    const sj_n = sj_TERRAIN_RES;
+    const sj_positions = new Float32Array(sj_n * sj_n * 3);
+    const sj_normals = new Float32Array(sj_n * sj_n * 3);
+    for (let sj_j = 0; sj_j < sj_n; sj_j++) {
+      for (let sj_i = 0; sj_i < sj_n; sj_i++) {
+        const sj_k = sj_j * sj_n + sj_i;
+        const sj_x = sj_TERRAIN_ORIGIN + sj_i * sj_CELL;
+        const sj_z = sj_TERRAIN_ORIGIN + sj_j * sj_CELL;
+        sj_positions[sj_k * 3] = sj_x;
+        sj_positions[sj_k * 3 + 1] = this.heights[sj_k]!;
+        sj_positions[sj_k * 3 + 2] = sj_z;
+        const sj_hl = this.heights[sj_j * sj_n + Math.max(0, sj_i - 1)]!;
+        const sj_hr = this.heights[sj_j * sj_n + Math.min(sj_n - 1, sj_i + 1)]!;
+        const sj_hd = this.heights[Math.max(0, sj_j - 1) * sj_n + sj_i]!;
+        const sj_hu = this.heights[Math.min(sj_n - 1, sj_j + 1) * sj_n + sj_i]!;
+        const sj_nx = (sj_hl - sj_hr) / (2 * sj_CELL);
+        const sj_nz = (sj_hd - sj_hu) / (2 * sj_CELL);
+        const sj_len = Math.hypot(sj_nx, 1, sj_nz);
+        sj_normals[sj_k * 3] = sj_nx / sj_len;
+        sj_normals[sj_k * 3 + 1] = 1 / sj_len;
+        sj_normals[sj_k * 3 + 2] = sj_nz / sj_len;
       }
     }
-    const index = new Uint32Array((n - 1) * (n - 1) * 6);
-    let o = 0;
-    for (let j = 0; j < n - 1; j++) {
-      for (let i = 0; i < n - 1; i++) {
-        const a = j * n + i; // 00
-        const b = a + 1; // 10
-        const c = a + n; // 01
-        const d = c + 1; // 11
+    const sj_index = new Uint32Array((sj_n - 1) * (sj_n - 1) * 6);
+    let sj_o = 0;
+    for (let sj_j = 0; sj_j < sj_n - 1; sj_j++) {
+      for (let sj_i = 0; sj_i < sj_n - 1; sj_i++) {
+        const sj_a = sj_j * sj_n + sj_i; // 00
+        const sj_b = sj_a + 1; // 10
+        const sj_c = sj_a + sj_n; // 01
+        const sj_d = sj_c + 1; // 11
         // Triangles (00, 01, 10) and (01, 11, 10): counter-clockwise seen from above.
-        index[o++] = a;
-        index[o++] = c;
-        index[o++] = b;
-        index[o++] = c;
-        index[o++] = d;
-        index[o++] = b;
+        sj_index[sj_o++] = sj_a;
+        sj_index[sj_o++] = sj_c;
+        sj_index[sj_o++] = sj_b;
+        sj_index[sj_o++] = sj_c;
+        sj_index[sj_o++] = sj_d;
+        sj_index[sj_o++] = sj_b;
       }
     }
-    const geo = new BufferGeometry();
-    geo.setAttribute('position', new BufferAttribute(positions, 3));
-    geo.setAttribute('normal', new BufferAttribute(normals, 3));
-    geo.setIndex(new BufferAttribute(index, 1));
-    geo.computeBoundingSphere();
-    geo.computeBoundingBox();
-    return geo;
+    const sj_geo = new BufferGeometry();
+    sj_geo.setAttribute('position', new BufferAttribute(sj_positions, 3));
+    sj_geo.setAttribute('normal', new BufferAttribute(sj_normals, 3));
+    sj_geo.setIndex(new BufferAttribute(sj_index, 1));
+    sj_geo.computeBoundingSphere();
+    sj_geo.computeBoundingBox();
+    return sj_geo;
   }
 
   private createMaterial(): MeshStandardMaterial {
-    const mat = new MeshStandardMaterial({ roughness: 0.95, metalness: 0 });
-    const colors = {
-      ...GRASS_COLORS,
+    const sj_mat = new MeshStandardMaterial({ roughness: 0.95, metalness: 0 });
+    const sj_colors = {
+      ...sj_GRASS_COLORS,
       uDirtA: new Color('#b39067'),
       uDirtB: new Color('#9c7a55'),
       uStoneA: new Color('#b5aa94'),
@@ -248,19 +254,20 @@ export class Terrain {
       uLitterA: new Color('#a7803f'),
       uLitterB: new Color('#7b5a33'),
       // warm glow that lanterns cast on the ground (emissive, HDR)
-      uLampLight: ATMOSPHERE.lampLight,
+      uLampLight: sj_ATMOSPHERE.lampLight,
     };
-    mat.onBeforeCompile = (shader) => {
-      Object.assign(shader.uniforms, {
-        uTime: globalUniforms.uTime,
-        uMaskMap: globalUniforms.uMaskMap,
-        uDetailMap: globalUniforms.uDetailMap,
-        uTerrain: globalUniforms.uTerrain,
-        uRipple: globalUniforms.uRipple,
+    sj_mat.onBeforeCompile = (sj_shader) => {
+      Object.assign(sj_shader.uniforms, {
+        uTime: sj_globalUniforms.uTime,
+        uMaskMap: sj_globalUniforms.uMaskMap,
+        uDetailMap: sj_globalUniforms.uDetailMap,
+        uTerrain: sj_globalUniforms.uTerrain,
+        uRipple: sj_globalUniforms.uRipple,
       });
-      for (const [k, v] of Object.entries(colors)) shader.uniforms[k] = { value: v };
+      for (const [sj_k, sj_v] of Object.entries(sj_colors))
+        sj_shader.uniforms[sj_k] = { value: sj_v };
 
-      shader.vertexShader = shader.vertexShader
+      sj_shader.vertexShader = sj_shader.vertexShader
         .replace(
           '#include <common>',
           '#include <common>\nvarying vec3 vTerrainPos;\nvarying vec3 vTerrainNormal;',
@@ -270,7 +277,7 @@ export class Terrain {
           '#include <begin_vertex>\nvTerrainPos = position;\nvTerrainNormal = normal;',
         );
 
-      shader.fragmentShader = shader.fragmentShader
+      sj_shader.fragmentShader = sj_shader.fragmentShader
         .replace(
           '#include <common>',
           /* glsl */ `#include <common>
@@ -287,10 +294,10 @@ uniform vec3 uGravelA, uGravelB, uLitterA, uLitterB, uLampLight;
 float terrainWet = 0.0;
 float terrainLight = 0.0;
 float terrainRelief = 0.0;
-${NOISE_GLSL}
-${GROUND_WARP_GLSL}
-${BUMP_GLSL}
-${GRASS_COLOR_GLSL}
+${sj_NOISE_GLSL}
+${sj_GROUND_WARP_GLSL}
+${sj_BUMP_GLSL}
+${sj_GRASS_COLOR_GLSL}
 // Golden ink ring of a discovery, spreading over the ground.
 float inkRipple(vec2 xz) {
   float age = uRipple.z;
@@ -542,7 +549,7 @@ vec3 terrainColor(vec3 wp, vec3 nrm) {
           '#include <emissivemap_fragment>\ntotalEmissiveRadiance += vec3(1.6, 1.1, 0.45) * inkRipple(vTerrainPos.xz) + uLampLight * terrainLight;',
         );
     };
-    mat.customProgramCacheKey = () => 'terrain-v6';
-    return mat;
+    sj_mat.customProgramCacheKey = () => 'terrain-v6';
+    return sj_mat;
   }
 }

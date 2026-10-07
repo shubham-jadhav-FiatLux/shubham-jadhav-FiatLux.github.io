@@ -43,6 +43,16 @@ npm run format       # prettier
 2. `npm version <major|minor|patch>` – bumps `package.json` and creates a `vX.Y.Z` tag.
 3. `git push --follow-tags` – CI deploys `main` to GitHub Pages.
 
+## Code style
+
+- Prettier and ESLint settle formatting and most questions of style (`npm run format`).
+- Variables, constants and parameters start with `sj_`: `sj_renderDuration`,
+  `sj_WATER_LEVEL`, `(sj_dt: number)`. A parameter that is deliberately unused keeps
+  TypeScript's leading underscore before it: `_sj_dt`. Classes, functions, types and
+  object properties are named as usual.
+- Shaders live next to the TypeScript that uses them, as template strings; GLSL shared
+  by several materials is in `src/render/glsl.ts`.
+
 ## Code layout
 
 See [docs/DESIGN.md](docs/DESIGN.md#8-architecture). Personal content lives only in

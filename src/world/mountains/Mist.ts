@@ -8,16 +8,16 @@ import {
   Vector2,
   Vector3,
 } from 'three';
-import { ATMOSPHERE } from '../../render/atmosphere';
-import { globalUniforms } from '../../render/uniforms';
-import { BUMP_GLSL, NOISE3_GLSL, NOISE_GLSL } from '../../render/glsl';
+import { sj_ATMOSPHERE } from '../../render/atmosphere';
+import { sj_globalUniforms } from '../../render/uniforms';
+import { sj_BUMP_GLSL, sj_NOISE3_GLSL, sj_NOISE_GLSL } from '../../render/glsl';
 import { hazeGLSL } from '../../render/fog';
 
 /** Sunlit tops and shaded undersides of the clouds (before haze). */
-const CLOUD_LIT = new Color('#fff4e4').multiplyScalar(1.12);
-const CLOUD_SHADE = new Color('#a9b0c6');
+const sj_CLOUD_LIT = new Color('#fff4e4').multiplyScalar(1.12);
+const sj_CLOUD_SHADE = new Color('#a9b0c6');
 
-const VERTEX = /* glsl */ `
+const sj_VERTEX = /* glsl */ `
   varying vec3 vWorld;
   void main() {
     vec4 wp = modelMatrix * vec4(position, 1.0);
@@ -31,26 +31,31 @@ const VERTEX = /* glsl */ `
  * the mountains rise out of it. Billows are lit by the low sun (bump-mapped from the
  * density field) and fade into the haze with distance.
  */
-export function createCloudSea(height: number, inner: number, outer: number, bumps: boolean) {
-  const geo = new RingGeometry(inner, outer, 160, 12);
-  geo.rotateX(-Math.PI / 2);
-  geo.translate(0, height, 0);
-  const material = new ShaderMaterial({
+export function createCloudSea(
+  sj_height: number,
+  sj_inner: number,
+  sj_outer: number,
+  sj_bumps: boolean,
+) {
+  const sj_geo = new RingGeometry(sj_inner, sj_outer, 160, 12);
+  sj_geo.rotateX(-Math.PI / 2);
+  sj_geo.translate(0, sj_height, 0);
+  const sj_material = new ShaderMaterial({
     name: 'cloud-sea',
     transparent: true,
     depthWrite: false,
     side: DoubleSide,
     fog: false,
-    defines: bumps ? { BUMPS: 1 } : {},
+    defines: sj_bumps ? { BUMPS: 1 } : {},
     uniforms: {
-      uTime: globalUniforms.uTime,
-      uSunDir: globalUniforms.uSunDir,
-      uFog: { value: ATMOSPHERE.fogColor },
-      uLit: { value: CLOUD_LIT },
-      uShade: { value: CLOUD_SHADE },
-      uRadii: { value: new Vector2(inner, outer) },
+      uTime: sj_globalUniforms.uTime,
+      uSunDir: sj_globalUniforms.uSunDir,
+      uFog: { value: sj_ATMOSPHERE.fogColor },
+      uLit: { value: sj_CLOUD_LIT },
+      uShade: { value: sj_CLOUD_SHADE },
+      uRadii: { value: new Vector2(sj_inner, sj_outer) },
     },
-    vertexShader: VERTEX,
+    vertexShader: sj_VERTEX,
     fragmentShader: /* glsl */ `
       uniform float uTime;
       uniform vec3 uSunDir;
@@ -59,8 +64,8 @@ export function createCloudSea(height: number, inner: number, outer: number, bum
       uniform vec3 uShade;
       uniform vec2 uRadii;
       varying vec3 vWorld;
-      ${NOISE_GLSL}
-      ${BUMP_GLSL}
+      ${sj_NOISE_GLSL}
+      ${sj_BUMP_GLSL}
       ${hazeGLSL('uFog')}
       void main() {
         vec2 xz = vWorld.xz;
@@ -102,12 +107,12 @@ export function createCloudSea(height: number, inner: number, outer: number, bum
       }
     `,
   });
-  const mesh = new Mesh(geo, material);
-  mesh.name = 'cloud-sea';
-  mesh.renderOrder = 1;
-  mesh.frustumCulled = false;
-  mesh.matrixAutoUpdate = false;
-  return mesh;
+  const sj_mesh = new Mesh(sj_geo, sj_material);
+  sj_mesh.name = 'cloud-sea';
+  sj_mesh.renderOrder = 1;
+  sj_mesh.frustumCulled = false;
+  sj_mesh.matrixAutoUpdate = false;
+  return sj_mesh;
 }
 
 export interface MistBand {
@@ -123,26 +128,26 @@ export interface MistBand {
  * A ring of mist hanging at the waist of a range: billowy top, ragged body, slowly drifting.
  * Bands sit between the ranges, so each range rises out of its own layer of cloud.
  */
-export function createMistBand(band: MistBand, index: number): Mesh {
-  const height = band.y1 - band.y0;
-  const geo = new CylinderGeometry(band.radius, band.radius, height, 160, 1, true);
-  geo.translate(0, band.y0 + height / 2, 0);
-  const material = new ShaderMaterial({
+export function createMistBand(sj_band: MistBand, sj_index: number): Mesh {
+  const sj_height = sj_band.y1 - sj_band.y0;
+  const sj_geo = new CylinderGeometry(sj_band.radius, sj_band.radius, sj_height, 160, 1, true);
+  sj_geo.translate(0, sj_band.y0 + sj_height / 2, 0);
+  const sj_material = new ShaderMaterial({
     name: 'mist-band',
     transparent: true,
     depthWrite: false,
     side: DoubleSide,
     fog: false,
     uniforms: {
-      uTime: globalUniforms.uTime,
-      uSunDir: globalUniforms.uSunDir,
-      uFog: { value: ATMOSPHERE.fogColor },
-      uLit: { value: CLOUD_LIT },
-      uShade: { value: CLOUD_SHADE },
-      uBand: { value: new Vector3(band.y0, band.y1, band.alpha) },
-      uSeed: { value: index * 31.7 },
+      uTime: sj_globalUniforms.uTime,
+      uSunDir: sj_globalUniforms.uSunDir,
+      uFog: { value: sj_ATMOSPHERE.fogColor },
+      uLit: { value: sj_CLOUD_LIT },
+      uShade: { value: sj_CLOUD_SHADE },
+      uBand: { value: new Vector3(sj_band.y0, sj_band.y1, sj_band.alpha) },
+      uSeed: { value: sj_index * 31.7 },
     },
-    vertexShader: VERTEX,
+    vertexShader: sj_VERTEX,
     fragmentShader: /* glsl */ `
       uniform float uTime;
       uniform vec3 uSunDir;
@@ -152,7 +157,7 @@ export function createMistBand(band: MistBand, index: number): Mesh {
       uniform vec3 uBand;
       uniform float uSeed;
       varying vec3 vWorld;
-      ${NOISE3_GLSL}
+      ${sj_NOISE3_GLSL}
       ${hazeGLSL('uFog')}
       void main() {
         float y = vWorld.y;
@@ -182,9 +187,9 @@ export function createMistBand(band: MistBand, index: number): Mesh {
       }
     `,
   });
-  const mesh = new Mesh(geo, material);
-  mesh.name = `mist-band-${index}`;
-  mesh.frustumCulled = false;
-  mesh.matrixAutoUpdate = false;
-  return mesh;
+  const sj_mesh = new Mesh(sj_geo, sj_material);
+  sj_mesh.name = `mist-band-${sj_index}`;
+  sj_mesh.frustumCulled = false;
+  sj_mesh.matrixAutoUpdate = false;
+  return sj_mesh;
 }

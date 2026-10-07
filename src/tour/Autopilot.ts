@@ -3,7 +3,7 @@ import { dampAngle } from '../utils/math';
 import type { PlayerController } from '../player/PlayerController';
 import type { Route } from './route';
 
-const look = { x: 0, z: 0 };
+const sj_look = { x: 0, z: 0 };
 
 /**
  * Walks the panda like a player would: every frame it produces the stick input the
@@ -37,11 +37,11 @@ export class Autopilot {
    * Starts walking (or running) along `route` from wherever the panda is, at `pace`
    * (a fraction of full speed: 0.6 is a stroll).
    */
-  walk(route: Route, run = false, pace = 1): void {
-    this.route = route;
-    this.pace = Math.min(1, Math.max(0.3, pace));
-    this.s = route.project(this.c.position.x, this.c.position.z);
-    this.run = run;
+  walk(sj_route: Route, sj_run = false, sj_pace = 1): void {
+    this.route = sj_route;
+    this.pace = Math.min(1, Math.max(0.3, sj_pace));
+    this.s = sj_route.project(this.c.position.x, this.c.position.z);
+    this.run = sj_run;
     this.arrived = false;
     this.faceTarget = null;
     this.stuck = 0;
@@ -54,8 +54,8 @@ export class Autopilot {
   }
 
   /** Turns to face (x, z) once standing still. */
-  face(x: number, z: number): void {
-    this.faceTarget = { x, z };
+  face(sj_x: number, sj_z: number): void {
+    this.faceTarget = { x: sj_x, z: sj_z };
   }
 
   stop(): void {
@@ -77,49 +77,52 @@ export class Autopilot {
   }
 
   /** Call once per frame before the controller update. */
-  steer(dt: number): { move: Vector2; run: boolean; jump: boolean } {
+  steer(sj_dt: number): { move: Vector2; run: boolean; jump: boolean } {
     this.move.set(0, 0);
     this.jump = false;
-    const c = this.c;
+    const sj_c = this.c;
     if (this.paused) return this;
     if (this.wantJump) {
       this.jump = true;
       this.wantJump = false;
     }
-    const r = this.route;
-    if (r && !this.arrived) {
-      this.s = r.project(c.position.x, c.position.z, Math.max(0, this.s - 1));
-      const [ex, ez] = r.end;
-      const toEnd = Math.hypot(ex - c.position.x, ez - c.position.z);
-      if (toEnd < 0.35 || (r.length - this.s < 0.2 && toEnd < 0.8)) {
+    const sj_r = this.route;
+    if (sj_r && !this.arrived) {
+      this.s = sj_r.project(sj_c.position.x, sj_c.position.z, Math.max(0, this.s - 1));
+      const [sj_ex, sj_ez] = sj_r.end;
+      const sj_toEnd = Math.hypot(sj_ex - sj_c.position.x, sj_ez - sj_c.position.z);
+      if (sj_toEnd < 0.35 || (sj_r.length - this.s < 0.2 && sj_toEnd < 0.8)) {
         this.arrived = true;
         this.route = null;
         this.run = false;
         return this;
       }
-      r.at(this.s + (this.run ? 2.4 : 1.5), look);
-      let dx = look.x - c.position.x;
-      let dz = look.z - c.position.z;
-      const len = Math.hypot(dx, dz);
-      if (len < 1e-4) {
-        dx = ex - c.position.x;
-        dz = ez - c.position.z;
+      sj_r.at(this.s + (this.run ? 2.4 : 1.5), sj_look);
+      let sj_dx = sj_look.x - sj_c.position.x;
+      let sj_dz = sj_look.z - sj_c.position.z;
+      const sj_len = Math.hypot(sj_dx, sj_dz);
+      if (sj_len < 1e-4) {
+        sj_dx = sj_ex - sj_c.position.x;
+        sj_dz = sj_ez - sj_c.position.z;
       }
-      const l = Math.hypot(dx, dz) || 1;
+      const sj_l = Math.hypot(sj_dx, sj_dz) || 1;
       // ease off over the last couple of metres so the panda stops on its mark
-      const amount = Math.min(1, 0.22 + toEnd / (this.run ? 3.2 : 1.8)) * this.pace;
+      const sj_amount = Math.min(1, 0.22 + sj_toEnd / (this.run ? 3.2 : 1.8)) * this.pace;
       // world direction → stick input for a camera looking north (yaw 0)
-      this.move.set((dx / l) * amount, (-dz / l) * amount);
+      this.move.set((sj_dx / sj_l) * sj_amount, (-sj_dz / sj_l) * sj_amount);
       // Blocked (a stray collider on the way): after a while, hop a little further along.
-      this.stuck = c.speed < 0.25 ? this.stuck + dt : 0;
+      this.stuck = sj_c.speed < 0.25 ? this.stuck + sj_dt : 0;
       if (this.stuck > 2.2) {
-        const p = r.at(this.s + 1.2);
-        c.teleport(p.x, p.z, c.yaw);
+        const sj_p = sj_r.at(this.s + 1.2);
+        sj_c.teleport(sj_p.x, sj_p.z, sj_c.yaw);
         this.stuck = 0;
       }
     } else if (this.faceTarget) {
-      const yaw = Math.atan2(this.faceTarget.x - c.position.x, this.faceTarget.z - c.position.z);
-      c.yaw = dampAngle(c.yaw, yaw, 7, dt);
+      const sj_yaw = Math.atan2(
+        this.faceTarget.x - sj_c.position.x,
+        this.faceTarget.z - sj_c.position.z,
+      );
+      sj_c.yaw = dampAngle(sj_c.yaw, sj_yaw, 7, sj_dt);
     }
     return this;
   }

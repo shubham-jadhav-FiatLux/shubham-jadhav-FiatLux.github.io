@@ -1,25 +1,26 @@
 import { ShaderChunk } from 'three';
-import { ATMOSPHERE, SUN_DIRECTION } from './atmosphere';
+import { sj_ATMOSPHERE, sj_SUN_DIRECTION } from './atmosphere';
 
-const f = (n: number) => n.toFixed(5);
-const v3 = (c: { r: number; g: number; b: number }) => `vec3(${f(c.r)}, ${f(c.g)}, ${f(c.b)})`;
+const sj_f = (sj_n: number) => sj_n.toFixed(5);
+const sj_v3 = (sj_c: { r: number; g: number; b: number }) =>
+  `vec3(${sj_f(sj_c.r)}, ${sj_f(sj_c.g)}, ${sj_f(sj_c.b)})`;
 
 /**
  * GLSL for the colour of the haze seen along a view direction: cool lavender away from
  * the sun, warm peach towards it, with a glow around the sun itself. Shared by the fog and
- * the sky so the horizon always matches. `coolExpr` is the GLSL expression for the cool tint.
+ * the sky so the horizon always matches. `sj_coolExpr` is the GLSL expression for the cool tint.
  */
-export function hazeGLSL(coolExpr: string): string {
-  const s = SUN_DIRECTION;
+export function hazeGLSL(sj_coolExpr: string): string {
+  const sj_s = sj_SUN_DIRECTION;
   return /* glsl */ `
   vec3 hazeColor(vec3 dir) {
-    vec3 sunDir = vec3(${f(s.x)}, ${f(s.y)}, ${f(s.z)});
+    vec3 sunDir = vec3(${sj_f(sj_s.x)}, ${sj_f(sj_s.y)}, ${sj_f(sj_s.z)});
     vec2 d2 = normalize(dir.xz + vec2(1e-5));
     vec2 s2 = normalize(sunDir.xz);
     float w = pow(0.5 + 0.5 * dot(d2, s2), 2.4);
-    vec3 col = mix(${coolExpr}, ${v3(ATMOSPHERE.fogWarmColor)}, w);
+    vec3 col = mix(${sj_coolExpr}, ${sj_v3(sj_ATMOSPHERE.fogWarmColor)}, w);
     float sunAmt = pow(max(dot(dir, sunDir), 0.0), 6.0);
-    return mix(col, ${v3(ATMOSPHERE.fogSunColor)}, sunAmt * 0.55);
+    return mix(col, ${sj_v3(sj_ATMOSPHERE.fogSunColor)}, sunAmt * 0.55);
   }`;
 }
 
@@ -65,8 +66,8 @@ export function installAtmosphericFog(): void {
       float t = clamp((dist - fogNear) / (fogFar - fogNear), 0.0, 1.0);
     #endif
     float distAmt = 1.0 - exp(-t * 3.2);
-    float heightAmt = exp(-max(worldPos.y - ${f(ATMOSPHERE.fogBase)}, 0.0) * ${f(ATMOSPHERE.fogFalloff)});
-    float amount = distAmt * mix(${f(ATMOSPHERE.fogHeightMin)}, 1.0, heightAmt);
+    float heightAmt = exp(-max(worldPos.y - ${sj_f(sj_ATMOSPHERE.fogBase)}, 0.0) * ${sj_f(sj_ATMOSPHERE.fogFalloff)});
+    float amount = distAmt * mix(${sj_f(sj_ATMOSPHERE.fogHeightMin)}, 1.0, heightAmt);
     amount = max(amount, smoothstep(0.62, 1.0, t));
     return mix(color, hazeColor(dir), amount);
   }

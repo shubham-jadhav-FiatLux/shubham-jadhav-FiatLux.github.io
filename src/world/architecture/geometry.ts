@@ -22,12 +22,15 @@ export interface RoofOptions {
 }
 
 interface FaceFn {
-  (u: number, v: number): Vector3;
+  (sj_u: number, sj_v: number): Vector3;
 }
 
-function surfaceY(u: number, v: number, o: RoofOptions): number {
-  const sag = o.sag ?? 1.6;
-  return o.height * Math.pow(v, sag) + o.lift * Math.pow(Math.abs(u), 3) * Math.pow(1 - v, 2);
+function surfaceY(sj_u: number, sj_v: number, sj_o: RoofOptions): number {
+  const sj_sag = sj_o.sag ?? 1.6;
+  return (
+    sj_o.height * Math.pow(sj_v, sj_sag) +
+    sj_o.lift * Math.pow(Math.abs(sj_u), 3) * Math.pow(1 - sj_v, 2)
+  );
 }
 
 /**
@@ -36,240 +39,277 @@ function surfaceY(u: number, v: number, o: RoofOptions): number {
  * UVs are in metres (u along the eave, v up the slope) for the tile shader.
  */
 function buildFaces(
-  faces: FaceFn[],
-  o: RoofOptions,
+  sj_faces: FaceFn[],
+  sj_o: RoofOptions,
 ): { top: BufferGeometry; under: BufferGeometry } {
-  const nu = o.segmentsU ?? 14;
-  const nv = o.segmentsV ?? 8;
-  const vMax = o.vMax ?? 1;
-  const t = o.thickness ?? 0.12;
-  const topPos: number[] = [];
-  const topUv: number[] = [];
-  const topIdx: number[] = [];
-  const underPos: number[] = [];
-  const underIdx: number[] = [];
-  let topBase = 0;
-  let underBase = 0;
-  for (const face of faces) {
-    const grid: Vector3[][] = [];
-    for (let j = 0; j <= nv; j++) {
-      const row: Vector3[] = [];
-      const v = (j / nv) * vMax;
-      for (let i = 0; i <= nu; i++) {
-        const u = (i / nu) * 2 - 1;
-        row.push(face(u, v));
+  const sj_nu = sj_o.segmentsU ?? 14;
+  const sj_nv = sj_o.segmentsV ?? 8;
+  const sj_vMax = sj_o.vMax ?? 1;
+  const sj_t = sj_o.thickness ?? 0.12;
+  const sj_topPos: number[] = [];
+  const sj_topUv: number[] = [];
+  const sj_topIdx: number[] = [];
+  const sj_underPos: number[] = [];
+  const sj_underIdx: number[] = [];
+  let sj_topBase = 0;
+  let sj_underBase = 0;
+  for (const sj_face of sj_faces) {
+    const sj_grid: Vector3[][] = [];
+    for (let sj_j = 0; sj_j <= sj_nv; sj_j++) {
+      const sj_row: Vector3[] = [];
+      const sj_v = (sj_j / sj_nv) * sj_vMax;
+      for (let sj_i = 0; sj_i <= sj_nu; sj_i++) {
+        const sj_u = (sj_i / sj_nu) * 2 - 1;
+        sj_row.push(sj_face(sj_u, sj_v));
       }
-      grid.push(row);
+      sj_grid.push(sj_row);
     }
     // Arc-length UVs (metres) so tiles have a constant size.
-    const vLen: number[] = [0];
-    for (let j = 1; j <= nv; j++)
-      vLen.push(vLen[j - 1]! + grid[j]![nu >> 1]!.distanceTo(grid[j - 1]![nu >> 1]!));
-    for (let j = 0; j <= nv; j++) {
-      let uAcc = 0;
-      for (let i = 0; i <= nu; i++) {
-        if (i > 0) uAcc += grid[j]![i]!.distanceTo(grid[j]![i - 1]!);
-        const p = grid[j]![i]!;
-        topPos.push(p.x, p.y, p.z);
-        topUv.push(uAcc, vLen[j]!);
-        underPos.push(p.x, p.y - t, p.z);
+    const sj_vLen: number[] = [0];
+    for (let sj_j = 1; sj_j <= sj_nv; sj_j++)
+      sj_vLen.push(
+        sj_vLen[sj_j - 1]! +
+          sj_grid[sj_j]![sj_nu >> 1]!.distanceTo(sj_grid[sj_j - 1]![sj_nu >> 1]!),
+      );
+    for (let sj_j = 0; sj_j <= sj_nv; sj_j++) {
+      let sj_uAcc = 0;
+      for (let sj_i = 0; sj_i <= sj_nu; sj_i++) {
+        if (sj_i > 0) sj_uAcc += sj_grid[sj_j]![sj_i]!.distanceTo(sj_grid[sj_j]![sj_i - 1]!);
+        const sj_p = sj_grid[sj_j]![sj_i]!;
+        sj_topPos.push(sj_p.x, sj_p.y, sj_p.z);
+        sj_topUv.push(sj_uAcc, sj_vLen[sj_j]!);
+        sj_underPos.push(sj_p.x, sj_p.y - sj_t, sj_p.z);
       }
     }
-    for (let j = 0; j < nv; j++) {
-      for (let i = 0; i < nu; i++) {
-        const a = topBase + j * (nu + 1) + i;
-        const b = a + 1;
-        const c = a + (nu + 1);
-        const d = c + 1;
-        topIdx.push(a, b, c, b, d, c);
-        const ua = underBase + j * (nu + 1) + i;
-        underIdx.push(ua, ua + (nu + 1), ua + 1, ua + 1, ua + (nu + 1), ua + (nu + 2));
+    for (let sj_j = 0; sj_j < sj_nv; sj_j++) {
+      for (let sj_i = 0; sj_i < sj_nu; sj_i++) {
+        const sj_a = sj_topBase + sj_j * (sj_nu + 1) + sj_i;
+        const sj_b = sj_a + 1;
+        const sj_c = sj_a + (sj_nu + 1);
+        const sj_d = sj_c + 1;
+        sj_topIdx.push(sj_a, sj_b, sj_c, sj_b, sj_d, sj_c);
+        const sj_ua = sj_underBase + sj_j * (sj_nu + 1) + sj_i;
+        sj_underIdx.push(
+          sj_ua,
+          sj_ua + (sj_nu + 1),
+          sj_ua + 1,
+          sj_ua + 1,
+          sj_ua + (sj_nu + 1),
+          sj_ua + (sj_nu + 2),
+        );
       }
     }
     // Fascia along the eave (v = 0): join top and underside rows.
-    const fStart = underPos.length / 3;
-    for (let i = 0; i <= nu; i++) {
-      const p = grid[0]![i]!;
-      underPos.push(p.x, p.y + 0.02, p.z, p.x, p.y - t, p.z);
+    const sj_fStart = sj_underPos.length / 3;
+    for (let sj_i = 0; sj_i <= sj_nu; sj_i++) {
+      const sj_p = sj_grid[0]![sj_i]!;
+      sj_underPos.push(sj_p.x, sj_p.y + 0.02, sj_p.z, sj_p.x, sj_p.y - sj_t, sj_p.z);
     }
-    for (let i = 0; i < nu; i++) {
-      const a = fStart + i * 2;
-      underIdx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+    for (let sj_i = 0; sj_i < sj_nu; sj_i++) {
+      const sj_a = sj_fStart + sj_i * 2;
+      sj_underIdx.push(sj_a, sj_a + 1, sj_a + 2, sj_a + 1, sj_a + 3, sj_a + 2);
     }
-    topBase += (nu + 1) * (nv + 1);
-    underBase = underPos.length / 3;
+    sj_topBase += (sj_nu + 1) * (sj_nv + 1);
+    sj_underBase = sj_underPos.length / 3;
   }
-  const top = new BufferGeometry();
-  top.setAttribute('position', new BufferAttribute(new Float32Array(topPos), 3));
-  top.setAttribute('uv', new BufferAttribute(new Float32Array(topUv), 2));
-  top.setIndex(topIdx);
-  top.computeVertexNormals();
-  const under = new BufferGeometry();
-  under.setAttribute('position', new BufferAttribute(new Float32Array(underPos), 3));
-  under.setIndex(underIdx);
-  under.computeVertexNormals();
-  return { top: top.toNonIndexed(), under: under.toNonIndexed() };
+  const sj_top = new BufferGeometry();
+  sj_top.setAttribute('position', new BufferAttribute(new Float32Array(sj_topPos), 3));
+  sj_top.setAttribute('uv', new BufferAttribute(new Float32Array(sj_topUv), 2));
+  sj_top.setIndex(sj_topIdx);
+  sj_top.computeVertexNormals();
+  const sj_under = new BufferGeometry();
+  sj_under.setAttribute('position', new BufferAttribute(new Float32Array(sj_underPos), 3));
+  sj_under.setIndex(sj_underIdx);
+  sj_under.computeVertexNormals();
+  return { top: sj_top.toNonIndexed(), under: sj_under.toNonIndexed() };
 }
 
 /**
- * Hip roof over a rectangle. `halfX`/`halfZ` include the overhang; the ridge runs along x.
+ * Hip roof over a rectangle. `sj_halfX`/`sj_halfZ` include the overhang; the ridge runs along x.
  * Returns the tiled top surface, the painted underside and the ridge line end points.
  */
-export function hipRoof(halfX: number, halfZ: number, o: RoofOptions) {
-  const ridge = Math.max(halfX - halfZ, 0.001);
-  const flare = o.flare ?? 0.07;
-  const fl = (u: number, v: number) => 1 + flare * Math.pow(Math.abs(u), 4) * (1 - v);
-  const faces: FaceFn[] = [
+export function hipRoof(sj_halfX: number, sj_halfZ: number, sj_o: RoofOptions) {
+  const sj_ridge = Math.max(sj_halfX - sj_halfZ, 0.001);
+  const sj_flare = sj_o.flare ?? 0.07;
+  const sj_fl = (sj_u: number, sj_v: number) =>
+    1 + sj_flare * Math.pow(Math.abs(sj_u), 4) * (1 - sj_v);
+  const sj_faces: FaceFn[] = [
     // front (+z)
-    (u, v) => {
-      const hw = halfX + (ridge - halfX) * v;
-      return new Vector3(u * hw * fl(u, v), surfaceY(u, v, o), halfZ * (1 - v) * fl(u, v));
+    (sj_u, sj_v) => {
+      const sj_hw = sj_halfX + (sj_ridge - sj_halfX) * sj_v;
+      return new Vector3(
+        sj_u * sj_hw * sj_fl(sj_u, sj_v),
+        surfaceY(sj_u, sj_v, sj_o),
+        sj_halfZ * (1 - sj_v) * sj_fl(sj_u, sj_v),
+      );
     },
     // back (-z)
-    (u, v) => {
-      const hw = halfX + (ridge - halfX) * v;
-      return new Vector3(-u * hw * fl(u, v), surfaceY(u, v, o), -halfZ * (1 - v) * fl(u, v));
+    (sj_u, sj_v) => {
+      const sj_hw = sj_halfX + (sj_ridge - sj_halfX) * sj_v;
+      return new Vector3(
+        -sj_u * sj_hw * sj_fl(sj_u, sj_v),
+        surfaceY(sj_u, sj_v, sj_o),
+        -sj_halfZ * (1 - sj_v) * sj_fl(sj_u, sj_v),
+      );
     },
     // right (+x)
-    (u, v) => {
-      const hd = halfZ * (1 - v);
+    (sj_u, sj_v) => {
+      const sj_hd = sj_halfZ * (1 - sj_v);
       return new Vector3(
-        (halfX + (ridge - halfX) * v) * fl(u, v),
-        surfaceY(u, v, o),
-        -u * hd * fl(u, v),
+        (sj_halfX + (sj_ridge - sj_halfX) * sj_v) * sj_fl(sj_u, sj_v),
+        surfaceY(sj_u, sj_v, sj_o),
+        -sj_u * sj_hd * sj_fl(sj_u, sj_v),
       );
     },
     // left (-x)
-    (u, v) => {
-      const hd = halfZ * (1 - v);
+    (sj_u, sj_v) => {
+      const sj_hd = sj_halfZ * (1 - sj_v);
       return new Vector3(
-        -(halfX + (ridge - halfX) * v) * fl(u, v),
-        surfaceY(u, v, o),
-        u * hd * fl(u, v),
+        -(sj_halfX + (sj_ridge - sj_halfX) * sj_v) * sj_fl(sj_u, sj_v),
+        surfaceY(sj_u, sj_v, sj_o),
+        sj_u * sj_hd * sj_fl(sj_u, sj_v),
       );
     },
   ];
-  const { top, under } = buildFaces(faces, o);
-  const hips: Vector3[][] = [];
-  for (const [sx, sz] of [
+  const { top: sj_top, under: sj_under } = buildFaces(sj_faces, sj_o);
+  const sj_hips: Vector3[][] = [];
+  for (const [sj_sx, sj_sz] of [
     [1, 1],
     [-1, 1],
     [1, -1],
     [-1, -1],
   ] as const) {
-    const line: Vector3[] = [];
-    for (let k = 0; k <= 8; k++) {
-      const v = k / 8;
-      const hw = halfX + (ridge - halfX) * v;
-      line.push(
-        new Vector3(sx * hw * fl(1, v), surfaceY(1, v, o) + 0.06, sz * halfZ * (1 - v) * fl(1, v)),
+    const sj_line: Vector3[] = [];
+    for (let sj_k = 0; sj_k <= 8; sj_k++) {
+      const sj_v = sj_k / 8;
+      const sj_hw = sj_halfX + (sj_ridge - sj_halfX) * sj_v;
+      sj_line.push(
+        new Vector3(
+          sj_sx * sj_hw * sj_fl(1, sj_v),
+          surfaceY(1, sj_v, sj_o) + 0.06,
+          sj_sz * sj_halfZ * (1 - sj_v) * sj_fl(1, sj_v),
+        ),
       );
     }
-    hips.push(line);
+    sj_hips.push(sj_line);
   }
   return {
-    top,
-    under,
-    ridgeFrom: new Vector3(-ridge, o.height + 0.06, 0),
-    ridgeTo: new Vector3(ridge, o.height + 0.06, 0),
-    hips,
+    top: sj_top,
+    under: sj_under,
+    ridgeFrom: new Vector3(-sj_ridge, sj_o.height + 0.06, 0),
+    ridgeTo: new Vector3(sj_ridge, sj_o.height + 0.06, 0),
+    hips: sj_hips,
   };
 }
 
 /**
  * Pyramidal / tiered roof over a regular polygon (square, hexagon, octagon...).
- * `radius` is the circumradius at the eaves. With `vMax < 1` it becomes the skirt roof
+ * `sj_radius` is the circumradius at the eaves. With `vMax < 1` it becomes the skirt roof
  * of a pagoda tier.
  */
-export function polygonRoof(sides: number, radius: number, o: RoofOptions, rotation = 0) {
-  const flare = o.flare ?? 0.07;
-  const corners: Vector3[] = [];
-  for (let i = 0; i < sides; i++) {
-    const a = rotation + (i / sides) * Math.PI * 2;
-    corners.push(new Vector3(Math.cos(a) * radius, 0, Math.sin(a) * radius));
+export function polygonRoof(
+  sj_sides: number,
+  sj_radius: number,
+  sj_o: RoofOptions,
+  sj_rotation = 0,
+) {
+  const sj_flare = sj_o.flare ?? 0.07;
+  const sj_corners: Vector3[] = [];
+  for (let sj_i = 0; sj_i < sj_sides; sj_i++) {
+    const sj_a = sj_rotation + (sj_i / sj_sides) * Math.PI * 2;
+    sj_corners.push(new Vector3(Math.cos(sj_a) * sj_radius, 0, Math.sin(sj_a) * sj_radius));
   }
-  const faces: FaceFn[] = corners.map((c0, i) => {
-    const c1 = corners[(i + 1) % sides]!;
-    return (u: number, v: number) => {
-      const t = (u + 1) / 2;
+  const sj_faces: FaceFn[] = sj_corners.map((sj_c0, sj_i) => {
+    const sj_c1 = sj_corners[(sj_i + 1) % sj_sides]!;
+    return (sj_u: number, sj_v: number) => {
+      const sj_t = (sj_u + 1) / 2;
       // c1 → c0 keeps the winding counter-clockwise seen from above (normals up).
-      const edge = new Vector3().lerpVectors(c1, c0, t);
-      const p = edge.multiplyScalar(1 - v);
-      const f = 1 + flare * Math.pow(Math.abs(u), 4) * (1 - v);
-      return new Vector3(p.x * f, surfaceY(u, v, o), p.z * f);
+      const sj_edge = new Vector3().lerpVectors(sj_c1, sj_c0, sj_t);
+      const sj_p = sj_edge.multiplyScalar(1 - sj_v);
+      const sj_f = 1 + sj_flare * Math.pow(Math.abs(sj_u), 4) * (1 - sj_v);
+      return new Vector3(sj_p.x * sj_f, surfaceY(sj_u, sj_v, sj_o), sj_p.z * sj_f);
     };
   });
-  const { top, under } = buildFaces(faces, o);
-  const vMax = o.vMax ?? 1;
-  const hips: Vector3[][] = corners.map((c) => {
-    const line: Vector3[] = [];
-    for (let k = 0; k <= 8; k++) {
-      const v = (k / 8) * vMax;
-      const f = 1 + flare * (1 - v);
-      line.push(new Vector3(c.x * (1 - v) * f, surfaceY(1, v, o) + 0.05, c.z * (1 - v) * f));
+  const { top: sj_top, under: sj_under } = buildFaces(sj_faces, sj_o);
+  const sj_vMax = sj_o.vMax ?? 1;
+  const sj_hips: Vector3[][] = sj_corners.map((sj_c) => {
+    const sj_line: Vector3[] = [];
+    for (let sj_k = 0; sj_k <= 8; sj_k++) {
+      const sj_v = (sj_k / 8) * sj_vMax;
+      const sj_f = 1 + sj_flare * (1 - sj_v);
+      sj_line.push(
+        new Vector3(
+          sj_c.x * (1 - sj_v) * sj_f,
+          surfaceY(1, sj_v, sj_o) + 0.05,
+          sj_c.z * (1 - sj_v) * sj_f,
+        ),
+      );
     }
-    return line;
+    return sj_line;
   });
   return {
-    top,
-    under,
-    corners,
-    hips,
-    apexY: o.height,
-    topRadius: radius * (1 - vMax),
-    topY: surfaceY(0, vMax, o),
+    top: sj_top,
+    under: sj_under,
+    corners: sj_corners,
+    hips: sj_hips,
+    apexY: sj_o.height,
+    topRadius: sj_radius * (1 - sj_vMax),
+    topY: surfaceY(0, sj_vMax, sj_o),
   };
 }
 
 /** Tube along a polyline (ridges, rails, hanging lantern strings). */
-export function tubeAlong(points: Vector3[], radius: number, radial = 6): BufferGeometry {
-  const pos: number[] = [];
-  const idx: number[] = [];
-  let side = new Vector3(0, 1, 0);
-  const dir = new Vector3();
-  points.forEach((p, i) => {
-    dir
-      .subVectors(points[Math.min(i + 1, points.length - 1)]!, points[Math.max(i - 1, 0)]!)
+export function tubeAlong(sj_points: Vector3[], sj_radius: number, sj_radial = 6): BufferGeometry {
+  const sj_pos: number[] = [];
+  const sj_idx: number[] = [];
+  let sj_side = new Vector3(0, 1, 0);
+  const sj_dir = new Vector3();
+  sj_points.forEach((sj_p, sj_i) => {
+    sj_dir
+      .subVectors(
+        sj_points[Math.min(sj_i + 1, sj_points.length - 1)]!,
+        sj_points[Math.max(sj_i - 1, 0)]!,
+      )
       .normalize();
-    side = side.clone().addScaledVector(dir, -side.dot(dir));
-    if (side.lengthSq() < 1e-6) side.set(1, 0, 0).addScaledVector(dir, -dir.x);
-    side.normalize();
-    const up = new Vector3().crossVectors(dir, side).normalize();
-    for (let k = 0; k < radial; k++) {
-      const a = (k / radial) * Math.PI * 2;
-      pos.push(
-        p.x + (side.x * Math.cos(a) + up.x * Math.sin(a)) * radius,
-        p.y + (side.y * Math.cos(a) + up.y * Math.sin(a)) * radius,
-        p.z + (side.z * Math.cos(a) + up.z * Math.sin(a)) * radius,
+    sj_side = sj_side.clone().addScaledVector(sj_dir, -sj_side.dot(sj_dir));
+    if (sj_side.lengthSq() < 1e-6) sj_side.set(1, 0, 0).addScaledVector(sj_dir, -sj_dir.x);
+    sj_side.normalize();
+    const sj_up = new Vector3().crossVectors(sj_dir, sj_side).normalize();
+    for (let sj_k = 0; sj_k < sj_radial; sj_k++) {
+      const sj_a = (sj_k / sj_radial) * Math.PI * 2;
+      sj_pos.push(
+        sj_p.x + (sj_side.x * Math.cos(sj_a) + sj_up.x * Math.sin(sj_a)) * sj_radius,
+        sj_p.y + (sj_side.y * Math.cos(sj_a) + sj_up.y * Math.sin(sj_a)) * sj_radius,
+        sj_p.z + (sj_side.z * Math.cos(sj_a) + sj_up.z * Math.sin(sj_a)) * sj_radius,
       );
     }
   });
-  for (let i = 0; i < points.length - 1; i++) {
-    for (let k = 0; k < radial; k++) {
-      const a = i * radial + k;
-      const b = i * radial + ((k + 1) % radial);
-      idx.push(a, a + radial, b, b, a + radial, b + radial);
+  for (let sj_i = 0; sj_i < sj_points.length - 1; sj_i++) {
+    for (let sj_k = 0; sj_k < sj_radial; sj_k++) {
+      const sj_a = sj_i * sj_radial + sj_k;
+      const sj_b = sj_i * sj_radial + ((sj_k + 1) % sj_radial);
+      sj_idx.push(sj_a, sj_a + sj_radial, sj_b, sj_b, sj_a + sj_radial, sj_b + sj_radial);
     }
   }
-  const g = new BufferGeometry();
-  g.setAttribute('position', new BufferAttribute(new Float32Array(pos), 3));
-  g.setIndex(idx);
-  g.computeVertexNormals();
-  return g;
+  const sj_g = new BufferGeometry();
+  sj_g.setAttribute('position', new BufferAttribute(new Float32Array(sj_pos), 3));
+  sj_g.setIndex(sj_idx);
+  sj_g.computeVertexNormals();
+  return sj_g;
 }
 
-export function box(w: number, h: number, d: number): BufferGeometry {
-  return new BoxGeometry(w, h, d);
+export function box(sj_w: number, sj_h: number, sj_d: number): BufferGeometry {
+  return new BoxGeometry(sj_w, sj_h, sj_d);
 }
 
 /** Cylinder standing on y = 0. */
 export function post(
-  radius: number,
-  height: number,
-  radial = 10,
-  topRadius = radius,
+  sj_radius: number,
+  sj_height: number,
+  sj_radial = 10,
+  sj_topRadius = sj_radius,
 ): BufferGeometry {
-  const g = new CylinderGeometry(topRadius, radius, height, radial);
-  g.translate(0, height / 2, 0);
-  return g;
+  const sj_g = new CylinderGeometry(sj_topRadius, sj_radius, sj_height, sj_radial);
+  sj_g.translate(0, sj_height / 2, 0);
+  return sj_g;
 }

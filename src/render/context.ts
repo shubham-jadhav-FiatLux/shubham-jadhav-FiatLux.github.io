@@ -3,7 +3,7 @@
  * completely), so the browser can composite it without blending it over the page; the
  * scene is antialiased in the post-processing render target, not here.
  */
-const CONTEXT_ATTRIBUTES: WebGLContextAttributes = {
+const sj_CONTEXT_ATTRIBUTES: WebGLContextAttributes = {
   alpha: false,
   depth: true,
   stencil: false,
@@ -19,9 +19,9 @@ const CONTEXT_ATTRIBUTES: WebGLContextAttributes = {
  * is not available. Checking for support this way, instead of on a throwaway canvas,
  * avoids creating (and discarding) a second context, which is slow on some machines.
  */
-export function createContext(canvas: HTMLCanvasElement): WebGL2RenderingContext | null {
+export function createContext(sj_canvas: HTMLCanvasElement): WebGL2RenderingContext | null {
   try {
-    return canvas.getContext('webgl2', CONTEXT_ATTRIBUTES);
+    return sj_canvas.getContext('webgl2', sj_CONTEXT_ATTRIBUTES);
   } catch {
     return null;
   }

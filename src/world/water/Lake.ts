@@ -9,12 +9,12 @@ import {
   Vector4,
   type Scene,
 } from 'three';
-import { globalUniforms } from '../../render/uniforms';
-import { NOISE_GLSL, TERRAIN_GLSL } from '../../render/glsl';
-import { ATMOSPHERE } from '../../render/atmosphere';
-import { FALLS, WATER_LEVEL } from '../layout';
+import { sj_globalUniforms } from '../../render/uniforms';
+import { sj_NOISE_GLSL, sj_TERRAIN_GLSL } from '../../render/glsl';
+import { sj_ATMOSPHERE } from '../../render/atmosphere';
+import { sj_FALLS, sj_WATER_LEVEL } from '../layout';
 
-const MAX_RIPPLES = 12;
+const sj_MAX_RIPPLES = 12;
 
 /**
  * Stylised lake surface. The water depth comes from the terrain height texture, so no
@@ -27,14 +27,14 @@ export class Lake {
   private ripples: Vector4[] = [];
   private next = 0;
 
-  constructor(bounds: { x0: number; z0: number; x1: number; z1: number }) {
-    for (let i = 0; i < MAX_RIPPLES; i++) this.ripples.push(new Vector4(0, 0, -100, 0));
-    const w = bounds.x1 - bounds.x0;
-    const d = bounds.z1 - bounds.z0;
-    const geometry = new PlaneGeometry(w, d, 1, 1);
-    geometry.rotateX(-Math.PI / 2);
-    geometry.translate(bounds.x0 + w / 2, WATER_LEVEL, bounds.z0 + d / 2);
-    const material = new ShaderMaterial({
+  constructor(sj_bounds: { x0: number; z0: number; x1: number; z1: number }) {
+    for (let sj_i = 0; sj_i < sj_MAX_RIPPLES; sj_i++) this.ripples.push(new Vector4(0, 0, -100, 0));
+    const sj_w = sj_bounds.x1 - sj_bounds.x0;
+    const sj_d = sj_bounds.z1 - sj_bounds.z0;
+    const sj_geometry = new PlaneGeometry(sj_w, sj_d, 1, 1);
+    sj_geometry.rotateX(-Math.PI / 2);
+    sj_geometry.translate(sj_bounds.x0 + sj_w / 2, sj_WATER_LEVEL, sj_bounds.z0 + sj_d / 2);
+    const sj_material = new ShaderMaterial({
       transparent: true,
       depthWrite: false,
       fog: true,
@@ -44,12 +44,12 @@ export class Lake {
           uShallow: { value: new Color('#79c7b0') },
           uDeep: { value: new Color('#22655f') },
           uFoam: { value: new Color('#f6f3e8') },
-          uZenith: { value: ATMOSPHERE.skyZenith },
-          uSunColor: { value: ATMOSPHERE.sunColor },
-          uLevel: { value: WATER_LEVEL },
+          uZenith: { value: sj_ATMOSPHERE.skyZenith },
+          uSunColor: { value: sj_ATMOSPHERE.sunColor },
+          uLevel: { value: sj_WATER_LEVEL },
           // where the waterfall lands: x, z, radius of the churn
-          uFallsFoot: { value: new Vector3(FALLS.foot.x, FALLS.foot.z, 2.6) },
-          uLampLight: { value: ATMOSPHERE.lampLight },
+          uFallsFoot: { value: new Vector3(sj_FALLS.foot.x, sj_FALLS.foot.z, 2.6) },
+          uLampLight: { value: sj_ATMOSPHERE.lampLight },
         },
       ]),
       vertexShader: /* glsl */ `
@@ -74,10 +74,10 @@ export class Lake {
         uniform float uLevel;
         uniform vec3 uFallsFoot;
         uniform vec3 uLampLight;
-        uniform vec4 uRipples[${MAX_RIPPLES}];
+        uniform vec4 uRipples[${sj_MAX_RIPPLES}];
         varying vec3 vWorld;
-        ${NOISE_GLSL}
-        ${TERRAIN_GLSL}
+        ${sj_NOISE_GLSL}
+        ${sj_TERRAIN_GLSL}
         // hazeColor() comes from the atmospheric fog chunk.
         #include <fog_pars_fragment>
 
@@ -96,7 +96,7 @@ export class Lake {
           vec2 g = noiseGrad(xz * 0.32 + uTime * vec2(0.05, 0.03)) * 0.5;
           g += noiseGrad(xz * 0.85 - uTime * vec2(0.04, 0.07)) * 0.28;
           g += noiseGrad(xz * 2.1 + uTime * vec2(0.09, -0.06)) * 0.14;
-          for (int i = 0; i < ${MAX_RIPPLES}; i++) {
+          for (int i = 0; i < ${sj_MAX_RIPPLES}; i++) {
             vec4 r = uRipples[i];
             float age = uTime - r.z;
             if (age < 0.0 || age > 3.5) continue;
@@ -157,28 +157,28 @@ export class Lake {
         }
       `,
     });
-    Object.assign(material.uniforms, {
-      uTime: globalUniforms.uTime,
-      uSunDir: globalUniforms.uSunDir,
-      uHeightMap: globalUniforms.uHeightMap,
-      uMaskMap: globalUniforms.uMaskMap,
-      uDetailMap: globalUniforms.uDetailMap,
-      uTerrain: globalUniforms.uTerrain,
+    Object.assign(sj_material.uniforms, {
+      uTime: sj_globalUniforms.uTime,
+      uSunDir: sj_globalUniforms.uSunDir,
+      uHeightMap: sj_globalUniforms.uHeightMap,
+      uMaskMap: sj_globalUniforms.uMaskMap,
+      uDetailMap: sj_globalUniforms.uDetailMap,
+      uTerrain: sj_globalUniforms.uTerrain,
       uRipples: { value: this.ripples },
     });
-    this.mesh = new Mesh(geometry, material);
+    this.mesh = new Mesh(sj_geometry, sj_material);
     this.mesh.name = 'lake';
     this.mesh.renderOrder = 1;
   }
 
-  addTo(scene: Scene): void {
-    scene.add(this.mesh);
+  addTo(sj_scene: Scene): void {
+    sj_scene.add(this.mesh);
   }
 
   /** Starts an expanding ring on the water surface. */
-  ripple(x: number, z: number, strength = 1): void {
-    const r = this.ripples[this.next]!;
-    r.set(x, z, globalUniforms.uTime.value, strength);
-    this.next = (this.next + 1) % MAX_RIPPLES;
+  ripple(sj_x: number, sj_z: number, sj_strength = 1): void {
+    const sj_r = this.ripples[this.next]!;
+    sj_r.set(sj_x, sj_z, sj_globalUniforms.uTime.value, sj_strength);
+    this.next = (this.next + 1) % sj_MAX_RIPPLES;
   }
 }

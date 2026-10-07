@@ -28,82 +28,83 @@ export interface Body {
   z: number;
 }
 
-const CELL = 8;
+const sj_CELL = 8;
 
-function key(ix: number, iz: number): number {
-  return (ix + 1000) * 4096 + (iz + 1000);
+function key(sj_ix: number, sj_iz: number): number {
+  return (sj_ix + 1000) * 4096 + (sj_iz + 1000);
 }
 
-function shapeBounds(s: Shape): [number, number, number, number] {
-  if (s.type === 'circle') return [s.x - s.r, s.z - s.r, s.x + s.r, s.z + s.r];
-  const ext = Math.hypot(s.hx, s.hz);
-  return [s.x - ext, s.z - ext, s.x + ext, s.z + ext];
+function shapeBounds(sj_s: Shape): [number, number, number, number] {
+  if (sj_s.type === 'circle')
+    return [sj_s.x - sj_s.r, sj_s.z - sj_s.r, sj_s.x + sj_s.r, sj_s.z + sj_s.r];
+  const sj_ext = Math.hypot(sj_s.hx, sj_s.hz);
+  return [sj_s.x - sj_ext, sj_s.z - sj_ext, sj_s.x + sj_ext, sj_s.z + sj_ext];
 }
 
-/** Whether (x, z) lies inside the shape, optionally grown by `margin`. */
-export function shapeContains(s: Shape, x: number, z: number, margin = 0): boolean {
-  if (s.type === 'circle') {
-    const dx = x - s.x;
-    const dz = z - s.z;
-    const r = s.r + margin;
-    return dx * dx + dz * dz <= r * r;
+/** Whether (x, z) lies inside the shape, optionally grown by `sj_margin`. */
+export function shapeContains(sj_s: Shape, sj_x: number, sj_z: number, sj_margin = 0): boolean {
+  if (sj_s.type === 'circle') {
+    const sj_dx = sj_x - sj_s.x;
+    const sj_dz = sj_z - sj_s.z;
+    const sj_r = sj_s.r + sj_margin;
+    return sj_dx * sj_dx + sj_dz * sj_dz <= sj_r * sj_r;
   }
-  const c = Math.cos(s.rot);
-  const sn = Math.sin(s.rot);
-  const dx = x - s.x;
-  const dz = z - s.z;
-  const lx = dx * c - dz * sn;
-  const lz = dx * sn + dz * c;
-  return Math.abs(lx) <= s.hx + margin && Math.abs(lz) <= s.hz + margin;
+  const sj_c = Math.cos(sj_s.rot);
+  const sj_sn = Math.sin(sj_s.rot);
+  const sj_dx = sj_x - sj_s.x;
+  const sj_dz = sj_z - sj_s.z;
+  const sj_lx = sj_dx * sj_c - sj_dz * sj_sn;
+  const sj_lz = sj_dx * sj_sn + sj_dz * sj_c;
+  return Math.abs(sj_lx) <= sj_s.hx + sj_margin && Math.abs(sj_lz) <= sj_s.hz + sj_margin;
 }
 
 /**
  * Pushes a circle of radius r at (body.x, body.z) out of the shape.
  * Returns true if a correction was applied.
  */
-export function pushOut(s: Shape, body: Body, r: number): boolean {
-  if (s.type === 'circle') {
-    const dx = body.x - s.x;
-    const dz = body.z - s.z;
-    const min = s.r + r;
-    const d2 = dx * dx + dz * dz;
-    if (d2 >= min * min) return false;
-    const d = Math.sqrt(d2);
-    if (d < 1e-6) {
-      body.x = s.x + min;
+export function pushOut(sj_s: Shape, sj_body: Body, sj_r: number): boolean {
+  if (sj_s.type === 'circle') {
+    const sj_dx = sj_body.x - sj_s.x;
+    const sj_dz = sj_body.z - sj_s.z;
+    const sj_min = sj_s.r + sj_r;
+    const sj_d2 = sj_dx * sj_dx + sj_dz * sj_dz;
+    if (sj_d2 >= sj_min * sj_min) return false;
+    const sj_d = Math.sqrt(sj_d2);
+    if (sj_d < 1e-6) {
+      sj_body.x = sj_s.x + sj_min;
       return true;
     }
-    const k = (min - d) / d;
-    body.x += dx * k;
-    body.z += dz * k;
+    const sj_k = (sj_min - sj_d) / sj_d;
+    sj_body.x += sj_dx * sj_k;
+    sj_body.z += sj_dz * sj_k;
     return true;
   }
-  const c = Math.cos(s.rot);
-  const sn = Math.sin(s.rot);
-  const dx = body.x - s.x;
-  const dz = body.z - s.z;
-  let lx = dx * c - dz * sn;
-  let lz = dx * sn + dz * c;
-  const cx = Math.max(-s.hx, Math.min(s.hx, lx));
-  const cz = Math.max(-s.hz, Math.min(s.hz, lz));
-  const ox = lx - cx;
-  const oz = lz - cz;
-  const d2 = ox * ox + oz * oz;
-  if (d2 > 1e-9) {
-    if (d2 >= r * r) return false;
-    const d = Math.sqrt(d2);
-    const k = (r - d) / d;
-    lx += ox * k;
-    lz += oz * k;
+  const sj_c = Math.cos(sj_s.rot);
+  const sj_sn = Math.sin(sj_s.rot);
+  const sj_dx = sj_body.x - sj_s.x;
+  const sj_dz = sj_body.z - sj_s.z;
+  let sj_lx = sj_dx * sj_c - sj_dz * sj_sn;
+  let sj_lz = sj_dx * sj_sn + sj_dz * sj_c;
+  const sj_cx = Math.max(-sj_s.hx, Math.min(sj_s.hx, sj_lx));
+  const sj_cz = Math.max(-sj_s.hz, Math.min(sj_s.hz, sj_lz));
+  const sj_ox = sj_lx - sj_cx;
+  const sj_oz = sj_lz - sj_cz;
+  const sj_d2 = sj_ox * sj_ox + sj_oz * sj_oz;
+  if (sj_d2 > 1e-9) {
+    if (sj_d2 >= sj_r * sj_r) return false;
+    const sj_d = Math.sqrt(sj_d2);
+    const sj_k = (sj_r - sj_d) / sj_d;
+    sj_lx += sj_ox * sj_k;
+    sj_lz += sj_oz * sj_k;
   } else {
     // Centre inside the box: leave through the closest face.
-    const px = s.hx - Math.abs(lx);
-    const pz = s.hz - Math.abs(lz);
-    if (px < pz) lx = Math.sign(lx || 1) * (s.hx + r);
-    else lz = Math.sign(lz || 1) * (s.hz + r);
+    const sj_px = sj_s.hx - Math.abs(sj_lx);
+    const sj_pz = sj_s.hz - Math.abs(sj_lz);
+    if (sj_px < sj_pz) sj_lx = Math.sign(sj_lx || 1) * (sj_s.hx + sj_r);
+    else sj_lz = Math.sign(sj_lz || 1) * (sj_s.hz + sj_r);
   }
-  body.x = s.x + lx * c + lz * sn;
-  body.z = s.z - lx * sn + lz * c;
+  sj_body.x = sj_s.x + sj_lx * sj_c + sj_lz * sj_sn;
+  sj_body.z = sj_s.z - sj_lx * sj_sn + sj_lz * sj_c;
   return true;
 }
 
@@ -117,63 +118,88 @@ export class CollisionWorld {
   private grid = new Map<number, { obstacles: Obstacle[]; platforms: Platform[] }>();
   private seen = new Set<object>();
 
-  addObstacle(o: Obstacle): Obstacle {
-    this.obstacles.push(o);
-    this.insert(o.shape, (cell) => cell.obstacles.push(o));
-    return o;
+  addObstacle(sj_o: Obstacle): Obstacle {
+    this.obstacles.push(sj_o);
+    this.insert(sj_o.shape, (sj_cell) => sj_cell.obstacles.push(sj_o));
+    return sj_o;
   }
 
-  addPlatform(p: Platform): Platform {
-    this.platforms.push(p);
-    this.insert(p.shape, (cell) => cell.platforms.push(p));
-    return p;
+  addPlatform(sj_p: Platform): Platform {
+    this.platforms.push(sj_p);
+    this.insert(sj_p.shape, (sj_cell) => sj_cell.platforms.push(sj_p));
+    return sj_p;
   }
 
-  circle(x: number, z: number, r: number, yMin: number, yMax: number, tag?: string): Obstacle {
-    return this.addObstacle({ shape: { type: 'circle', x, z, r }, yMin, yMax, tag });
+  circle(
+    sj_x: number,
+    sj_z: number,
+    sj_r: number,
+    sj_yMin: number,
+    sj_yMax: number,
+    sj_tag?: string,
+  ): Obstacle {
+    return this.addObstacle({
+      shape: { type: 'circle', x: sj_x, z: sj_z, r: sj_r },
+      yMin: sj_yMin,
+      yMax: sj_yMax,
+      tag: sj_tag,
+    });
   }
 
   box(
-    x: number,
-    z: number,
-    hx: number,
-    hz: number,
-    rot: number,
-    yMin: number,
-    yMax: number,
-    tag?: string,
+    sj_x: number,
+    sj_z: number,
+    sj_hx: number,
+    sj_hz: number,
+    sj_rot: number,
+    sj_yMin: number,
+    sj_yMax: number,
+    sj_tag?: string,
   ): Obstacle {
-    return this.addObstacle({ shape: { type: 'box', x, z, hx, hz, rot }, yMin, yMax, tag });
+    return this.addObstacle({
+      shape: { type: 'box', x: sj_x, z: sj_z, hx: sj_hx, hz: sj_hz, rot: sj_rot },
+      yMin: sj_yMin,
+      yMax: sj_yMax,
+      tag: sj_tag,
+    });
   }
 
   private insert(
-    shape: Shape,
-    add: (cell: { obstacles: Obstacle[]; platforms: Platform[] }) => void,
+    sj_shape: Shape,
+    sj_add: (sj_cell: { obstacles: Obstacle[]; platforms: Platform[] }) => void,
   ): void {
-    const [x0, z0, x1, z1] = shapeBounds(shape);
-    for (let ix = Math.floor(x0 / CELL); ix <= Math.floor(x1 / CELL); ix++) {
-      for (let iz = Math.floor(z0 / CELL); iz <= Math.floor(z1 / CELL); iz++) {
-        const k = key(ix, iz);
-        let cell = this.grid.get(k);
-        if (!cell) {
-          cell = { obstacles: [], platforms: [] };
-          this.grid.set(k, cell);
+    const [sj_x0, sj_z0, sj_x1, sj_z1] = shapeBounds(sj_shape);
+    for (let sj_ix = Math.floor(sj_x0 / sj_CELL); sj_ix <= Math.floor(sj_x1 / sj_CELL); sj_ix++) {
+      for (let sj_iz = Math.floor(sj_z0 / sj_CELL); sj_iz <= Math.floor(sj_z1 / sj_CELL); sj_iz++) {
+        const sj_k = key(sj_ix, sj_iz);
+        let sj_cell = this.grid.get(sj_k);
+        if (!sj_cell) {
+          sj_cell = { obstacles: [], platforms: [] };
+          this.grid.set(sj_k, sj_cell);
         }
-        add(cell);
+        sj_add(sj_cell);
       }
     }
   }
 
   private forNearby(
-    x: number,
-    z: number,
-    radius: number,
-    visit: (cell: { obstacles: Obstacle[]; platforms: Platform[] }) => void,
+    sj_x: number,
+    sj_z: number,
+    sj_radius: number,
+    sj_visit: (sj_cell: { obstacles: Obstacle[]; platforms: Platform[] }) => void,
   ): void {
-    for (let ix = Math.floor((x - radius) / CELL); ix <= Math.floor((x + radius) / CELL); ix++) {
-      for (let iz = Math.floor((z - radius) / CELL); iz <= Math.floor((z + radius) / CELL); iz++) {
-        const cell = this.grid.get(key(ix, iz));
-        if (cell) visit(cell);
+    for (
+      let sj_ix = Math.floor((sj_x - sj_radius) / sj_CELL);
+      sj_ix <= Math.floor((sj_x + sj_radius) / sj_CELL);
+      sj_ix++
+    ) {
+      for (
+        let sj_iz = Math.floor((sj_z - sj_radius) / sj_CELL);
+        sj_iz <= Math.floor((sj_z + sj_radius) / sj_CELL);
+        sj_iz++
+      ) {
+        const sj_cell = this.grid.get(key(sj_ix, sj_iz));
+        if (sj_cell) sj_visit(sj_cell);
       }
     }
   }
@@ -182,62 +208,73 @@ export class CollisionWorld {
    * Resolves horizontal penetration. Platforms that are too tall to step onto act as walls.
    * Returns the tag of the last thing hit (if any), useful for bump reactions.
    */
-  resolve(body: Body, radius: number, height: number, stepHeight: number): string | null {
-    let hitTag: string | null = null;
-    for (let iter = 0; iter < 3; iter++) {
-      let moved = false;
+  resolve(
+    sj_body: Body,
+    sj_radius: number,
+    sj_height: number,
+    sj_stepHeight: number,
+  ): string | null {
+    let sj_hitTag: string | null = null;
+    for (let sj_iter = 0; sj_iter < 3; sj_iter++) {
+      let sj_moved = false;
       this.seen.clear();
-      this.forNearby(body.x, body.z, radius + 1, (cell) => {
-        for (const o of cell.obstacles) {
-          if (this.seen.has(o)) continue;
-          this.seen.add(o);
-          if (body.y + height < o.yMin || body.y > o.yMax) continue;
-          if (pushOut(o.shape, body, radius)) {
-            moved = true;
-            hitTag = o.tag ?? hitTag;
+      this.forNearby(sj_body.x, sj_body.z, sj_radius + 1, (sj_cell) => {
+        for (const sj_o of sj_cell.obstacles) {
+          if (this.seen.has(sj_o)) continue;
+          this.seen.add(sj_o);
+          if (sj_body.y + sj_height < sj_o.yMin || sj_body.y > sj_o.yMax) continue;
+          if (pushOut(sj_o.shape, sj_body, sj_radius)) {
+            sj_moved = true;
+            sj_hitTag = sj_o.tag ?? sj_hitTag;
           }
         }
-        for (const p of cell.platforms) {
-          if (this.seen.has(p)) continue;
-          this.seen.add(p);
-          const canStep = body.y >= p.top - stepHeight;
-          if (canStep) continue;
-          if (body.y + height < p.bottom) continue;
-          if (pushOut(p.shape, body, radius * 0.6)) moved = true;
+        for (const sj_p of sj_cell.platforms) {
+          if (this.seen.has(sj_p)) continue;
+          this.seen.add(sj_p);
+          const sj_canStep = sj_body.y >= sj_p.top - sj_stepHeight;
+          if (sj_canStep) continue;
+          if (sj_body.y + sj_height < sj_p.bottom) continue;
+          if (pushOut(sj_p.shape, sj_body, sj_radius * 0.6)) sj_moved = true;
         }
       });
-      if (!moved) break;
+      if (!sj_moved) break;
     }
-    return hitTag;
+    return sj_hitTag;
   }
 
   /**
    * Highest platform top under (x, z) that the body can stand on
    * (i.e. not higher than y + stepHeight). Returns null when there is none.
    */
-  platformAt(x: number, z: number, y: number, stepHeight: number, margin = 0): Platform | null {
-    let best: Platform | null = null;
-    this.forNearby(x, z, 0.5, (cell) => {
-      for (const p of cell.platforms) {
-        if (p.top > y + stepHeight) continue;
-        if (best && p.top <= best.top) continue;
-        if (shapeContains(p.shape, x, z, margin)) best = p;
+  platformAt(
+    sj_x: number,
+    sj_z: number,
+    sj_y: number,
+    sj_stepHeight: number,
+    sj_margin = 0,
+  ): Platform | null {
+    let sj_best: Platform | null = null;
+    this.forNearby(sj_x, sj_z, 0.5, (sj_cell) => {
+      for (const sj_p of sj_cell.platforms) {
+        if (sj_p.top > sj_y + sj_stepHeight) continue;
+        if (sj_best && sj_p.top <= sj_best.top) continue;
+        if (shapeContains(sj_p.shape, sj_x, sj_z, sj_margin)) sj_best = sj_p;
       }
     });
-    return best;
+    return sj_best;
   }
 
-  /** Obstacles whose tag starts with `prefix` within `radius` of (x, z). */
-  findTagged(x: number, z: number, radius: number, prefix: string): Obstacle[] {
-    const out: Obstacle[] = [];
+  /** Obstacles whose tag starts with `sj_prefix` within `sj_radius` of (x, z). */
+  findTagged(sj_x: number, sj_z: number, sj_radius: number, sj_prefix: string): Obstacle[] {
+    const sj_out: Obstacle[] = [];
     this.seen.clear();
-    this.forNearby(x, z, radius, (cell) => {
-      for (const o of cell.obstacles) {
-        if (this.seen.has(o) || !o.tag?.startsWith(prefix)) continue;
-        this.seen.add(o);
-        if (shapeContains(o.shape, x, z, radius)) out.push(o);
+    this.forNearby(sj_x, sj_z, sj_radius, (sj_cell) => {
+      for (const sj_o of sj_cell.obstacles) {
+        if (this.seen.has(sj_o) || !sj_o.tag?.startsWith(sj_prefix)) continue;
+        this.seen.add(sj_o);
+        if (shapeContains(sj_o.shape, sj_x, sj_z, sj_radius)) sj_out.push(sj_o);
       }
     });
-    return out;
+    return sj_out;
   }
 }

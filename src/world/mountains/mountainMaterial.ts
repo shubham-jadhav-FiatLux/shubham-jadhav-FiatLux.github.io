@@ -1,7 +1,7 @@
 import { Color, ShaderMaterial, Vector2 } from 'three';
-import { ATMOSPHERE } from '../../render/atmosphere';
-import { globalUniforms } from '../../render/uniforms';
-import { BUMP_GLSL, NOISE3_GLSL, NOISE_GLSL } from '../../render/glsl';
+import { sj_ATMOSPHERE } from '../../render/atmosphere';
+import { sj_globalUniforms } from '../../render/uniforms';
+import { sj_BUMP_GLSL, sj_NOISE3_GLSL, sj_NOISE_GLSL } from '../../render/glsl';
 import { hazeGLSL } from '../../render/fog';
 
 export interface MountainLook {
@@ -16,7 +16,7 @@ export interface MountainLook {
 }
 
 /** Colours of the peaks before light and haze. */
-export const MOUNTAIN_COLORS = {
+export const sj_MOUNTAIN_COLORS = {
   rockLight: new Color('#7d796f'),
   rockDark: new Color('#43423f'),
   vegLight: new Color('#4f8634'),
@@ -35,26 +35,26 @@ export const MOUNTAIN_COLORS = {
  * the colour of the sky, and mist at the foot so the peaks rise out of the clouds.
  * Uses the same haze colour as the sky and the fog, so distant ranges melt into the horizon.
  */
-export function createMountainMaterial(look: MountainLook): ShaderMaterial {
-  const c = MOUNTAIN_COLORS;
+export function createMountainMaterial(sj_look: MountainLook): ShaderMaterial {
+  const sj_c = sj_MOUNTAIN_COLORS;
   return new ShaderMaterial({
     name: 'mountains',
     fog: false,
-    defines: look.detail ? { DETAIL: 1 } : {},
+    defines: sj_look.detail ? { DETAIL: 1 } : {},
     uniforms: {
-      uTime: globalUniforms.uTime,
-      uSunDir: globalUniforms.uSunDir,
-      uSunColor: { value: ATMOSPHERE.sunColor.clone().multiplyScalar(1.6) },
-      uSkyLight: { value: c.skyLight },
-      uBounce: { value: c.bounce },
-      uRockLight: { value: c.rockLight },
-      uRockDark: { value: c.rockDark },
-      uVegLight: { value: c.vegLight },
-      uVegDark: { value: c.vegDark },
-      uMistColor: { value: c.mist },
-      uFog: { value: ATMOSPHERE.fogColor },
-      uHaze: { value: new Vector2(look.hazeDensity, look.hazeMin) },
-      uMist: { value: look.mist },
+      uTime: sj_globalUniforms.uTime,
+      uSunDir: sj_globalUniforms.uSunDir,
+      uSunColor: { value: sj_ATMOSPHERE.sunColor.clone().multiplyScalar(1.6) },
+      uSkyLight: { value: sj_c.skyLight },
+      uBounce: { value: sj_c.bounce },
+      uRockLight: { value: sj_c.rockLight },
+      uRockDark: { value: sj_c.rockDark },
+      uVegLight: { value: sj_c.vegLight },
+      uVegDark: { value: sj_c.vegDark },
+      uMistColor: { value: sj_c.mist },
+      uFog: { value: sj_ATMOSPHERE.fogColor },
+      uHaze: { value: new Vector2(sj_look.hazeDensity, sj_look.hazeMin) },
+      uMist: { value: sj_look.mist },
     },
     vertexShader: /* glsl */ `
       attribute vec3 aInfo;
@@ -86,9 +86,9 @@ export function createMountainMaterial(look: MountainLook): ShaderMaterial {
       varying vec3 vWorld;
       varying vec3 vNormalW;
       varying vec3 vInfo;
-      ${NOISE_GLSL}
-      ${NOISE3_GLSL}
-      ${BUMP_GLSL}
+      ${sj_NOISE_GLSL}
+      ${sj_NOISE3_GLSL}
+      ${sj_BUMP_GLSL}
       ${hazeGLSL('uFog')}
 
       void main() {

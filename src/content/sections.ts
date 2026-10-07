@@ -12,7 +12,7 @@ export interface SectionMeta {
   landmark: string;
 }
 
-export const SECTIONS: readonly SectionMeta[] = [
+export const sj_SECTIONS: readonly SectionMeta[] = [
   { id: 'welcome', glyph: '迎', label: 'Welcome', place: 'the stone gate', landmark: 'Stone Gate' },
   {
     id: 'about',
@@ -51,6 +51,6 @@ export const SECTIONS: readonly SectionMeta[] = [
   },
 ];
 
-export function sectionMeta(id: SectionId): SectionMeta {
-  return SECTIONS.find((s) => s.id === id)!;
+export function sectionMeta(sj_id: SectionId): SectionMeta {
+  return sj_SECTIONS.find((sj_s) => sj_s.id === sj_id)!;
 }

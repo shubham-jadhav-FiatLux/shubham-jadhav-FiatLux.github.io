@@ -10,95 +10,99 @@
  */
 import { chromium } from 'playwright-core';
 
-const url = process.argv[2] ?? 'http://localhost:5173/';
-const browser = await chromium.launch({
+const sj_url = process.argv[2] ?? 'http://localhost:5173/';
+const sj_browser = await chromium.launch({
   executablePath: process.env.CHROMIUM_PATH ?? '/opt/pw-browsers/chromium',
   args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
 });
-const page = await browser.newPage({ viewport: { width: 960, height: 540 } });
-page.setDefaultTimeout(180_000);
-const errors = [];
-page.on('pageerror', (e) => errors.push(e.message));
-page.on('console', (m) => {
-  if (m.type() === 'error') errors.push(m.text());
+const sj_page = await sj_browser.newPage({ viewport: { width: 960, height: 540 } });
+sj_page.setDefaultTimeout(180_000);
+const sj_errors = [];
+sj_page.on('pageerror', (sj_e) => sj_errors.push(sj_e.message));
+sj_page.on('console', (sj_m) => {
+  if (sj_m.type() === 'error') sj_errors.push(sj_m.text());
 });
 
-const sep = url.includes('?') ? '&' : '?';
-await page.goto(`${url}${sep}quality=low&adaptive=0`);
-await page.waitForSelector('.loader--ready', { timeout: 180_000 });
-await page.evaluate(() => window.__game.progress.reset());
-await page.click('.loader__begin');
-await page.waitForTimeout(1500);
+const sj_sep = sj_url.includes('?') ? '&' : '?';
+await sj_page.goto(`${sj_url}${sj_sep}quality=low&adaptive=0`);
+await sj_page.waitForSelector('.loader--ready', { timeout: 180_000 });
+await sj_page.evaluate(() => window.__game.progress.reset());
+await sj_page.click('.loader__begin');
+await sj_page.waitForTimeout(1500);
 
-const place = (x, z, yaw) =>
-  page.evaluate(
-    ([x, z, yaw]) => {
-      const app = window.__valley;
-      app.controller.teleport(x, z, yaw);
-      app.rig.startFollow(app.controller.position, yaw, 0.01);
+const sj_place = (sj_x, sj_z, sj_yaw) =>
+  sj_page.evaluate(
+    ([sj_x, sj_z, sj_yaw]) => {
+      const sj_app = window.__valley;
+      sj_app.controller.teleport(sj_x, sj_z, sj_yaw);
+      sj_app.rig.startFollow(sj_app.controller.position, sj_yaw, 0.01);
     },
-    [x, z, yaw],
+    [sj_x, sj_z, sj_yaw],
   );
-const found = () => page.evaluate(() => window.__game.progress.all);
-const closePanels = () =>
-  page.evaluate(() => {
-    const g = window.__game;
-    g.scroll.close();
-    g.map.close();
-    g.menu.close();
+const sj_found = () => sj_page.evaluate(() => window.__game.progress.all);
+const sj_closePanels = () =>
+  sj_page.evaluate(() => {
+    const sj_g = window.__game;
+    sj_g.scroll.close();
+    sj_g.map.close();
+    sj_g.menu.close();
   });
-/** Waits until the prompt for spot `id` shows up (a few frames in software rendering). */
-const waitPrompt = (id) =>
-  page.waitForFunction((id) => window.__game.zones.active?.id === id, id, { timeout: 60_000 });
+/** Waits until the prompt for spot `sj_id` shows up (a few frames in software rendering). */
+const sj_waitPrompt = (sj_id) =>
+  sj_page.waitForFunction((sj_id) => window.__game.zones.active?.id === sj_id, sj_id, {
+    timeout: 60_000,
+  });
 
-const steps = [];
-async function step(name, fn, expect) {
-  const t0 = Date.now();
-  await closePanels();
-  await fn();
-  await page.waitForFunction((id) => window.__game.progress.has(id), expect, { timeout: 90_000 });
+const sj_steps = [];
+async function step(sj_name, sj_fn, sj_expect) {
+  const sj_t0 = Date.now();
+  await sj_closePanels();
+  await sj_fn();
+  await sj_page.waitForFunction((sj_id) => window.__game.progress.has(sj_id), sj_expect, {
+    timeout: 90_000,
+  });
   // The discovery ceremony ends by unrolling the scroll: wait for it, then move on.
-  await page.waitForFunction(
-    (id) => window.__game.scroll.isOpen && window.__game.scroll.section === id,
-    expect,
+  await sj_page.waitForFunction(
+    (sj_id) => window.__game.scroll.isOpen && window.__game.scroll.section === sj_id,
+    sj_expect,
     {
       timeout: 90_000,
     },
   );
-  steps.push(`${name}: ok (${((Date.now() - t0) / 1000).toFixed(1)}s)`);
+  sj_steps.push(`${sj_name}: ok (${((Date.now() - sj_t0) / 1000).toFixed(1)}s)`);
 }
 
 try {
-  const anchors = await page.evaluate(() => window.__valley.architecture.anchors);
+  const sj_anchors = await sj_page.evaluate(() => window.__valley.architecture.anchors);
 
   // Walking under the gate discovers the welcome scroll automatically. Opening the map
   // during the ceremony must keep the scroll from unrolling underneath it.
-  await place(anchors.gate.x, anchors.gate.z + 1.5, Math.PI);
-  await page.waitForFunction(() => window.__game.progress.has('welcome'), null, {
+  await sj_place(sj_anchors.gate.x, sj_anchors.gate.z + 1.5, Math.PI);
+  await sj_page.waitForFunction(() => window.__game.progress.has('welcome'), null, {
     timeout: 90_000,
   });
-  await page.keyboard.press('KeyM');
+  await sj_page.keyboard.press('KeyM');
   // the scroll would rise once the bow and the golden light are over (2.4 s)
-  await page.waitForTimeout(3200);
-  const layered = await page.evaluate(() => ({
+  await sj_page.waitForTimeout(3200);
+  const sj_layered = await sj_page.evaluate(() => ({
     map: window.__game.map.isOpen,
     scroll: window.__game.scroll.isOpen,
     following: window.__valley.rig.isFollowing,
   }));
-  if (!layered.map || layered.scroll) throw new Error('scroll opened under the map');
-  if (!layered.following) throw new Error('camera stayed in the discovery shot');
-  steps.push('gate (auto) + map during the ceremony: ok');
+  if (!sj_layered.map || sj_layered.scroll) throw new Error('scroll opened under the map');
+  if (!sj_layered.following) throw new Error('camera stayed in the discovery shot');
+  sj_steps.push('gate (auto) + map during the ceremony: ok');
 
   // Tea pavilion: press E at the table.
   await step(
     'pavilion (E)',
     async () => {
-      await place(anchors.pavilionTable.x - 1.4, anchors.pavilionTable.z + 1.2, 2.6);
-      await waitPrompt('about');
+      await sj_place(sj_anchors.pavilionTable.x - 1.4, sj_anchors.pavilionTable.z + 1.2, 2.6);
+      await sj_waitPrompt('about');
       // keyboard players see the key, not the touch hint
-      const key = await page.textContent('.hud__prompt kbd');
-      if (key !== 'E') throw new Error(`prompt shows "${key}" instead of E`);
-      await page.keyboard.press('KeyE');
+      const sj_key = await sj_page.textContent('.hud__prompt kbd');
+      if (sj_key !== 'E') throw new Error(`prompt shows "${sj_key}" instead of E`);
+      await sj_page.keyboard.press('KeyE');
     },
     'about',
   );
@@ -107,10 +111,10 @@ try {
   await step(
     'dummy (F)',
     async () => {
-      const d = anchors.dummies[0];
-      await place(d.x + 1.1, d.z + 1.1, -2.3);
-      await waitPrompt('dummy:0');
-      await page.keyboard.press('KeyF');
+      const sj_d = sj_anchors.dummies[0];
+      await sj_place(sj_d.x + 1.1, sj_d.z + 1.1, -2.3);
+      await sj_waitPrompt('dummy:0');
+      await sj_page.keyboard.press('KeyF');
     },
     'skills',
   );
@@ -119,10 +123,10 @@ try {
   await step(
     'milestone (E)',
     async () => {
-      const m = anchors.milestones[1];
-      await place(m.x, m.z, Math.PI);
-      await waitPrompt('milestone:1');
-      await page.keyboard.press('KeyE');
+      const sj_m = sj_anchors.milestones[1];
+      await sj_place(sj_m.x, sj_m.z, Math.PI);
+      await sj_waitPrompt('milestone:1');
+      await sj_page.keyboard.press('KeyE');
     },
     'journey',
   );
@@ -131,10 +135,10 @@ try {
   await step(
     'banner (E)',
     async () => {
-      const b = anchors.banners[0];
-      await place(b.x, b.z + 0.6, Math.PI);
-      await waitPrompt(`banner:${b.index}`);
-      await page.keyboard.press('KeyE');
+      const sj_b = sj_anchors.banners[0];
+      await sj_place(sj_b.x, sj_b.z + 0.6, Math.PI);
+      await sj_waitPrompt(`banner:${sj_b.index}`);
+      await sj_page.keyboard.press('KeyE');
     },
     'projects',
   );
@@ -143,72 +147,72 @@ try {
   await step(
     'bell (E)',
     async () => {
-      await place(anchors.bell.x - 1.8, anchors.bell.z + 1.8, 2.4);
-      await waitPrompt('bell');
-      await page.keyboard.press('KeyE');
+      await sj_place(sj_anchors.bell.x - 1.8, sj_anchors.bell.z + 1.8, 2.4);
+      await sj_waitPrompt('bell');
+      await sj_page.keyboard.press('KeyE');
     },
     'contact',
   );
 
   // Map + quick travel.
-  await closePanels();
-  await page.keyboard.press('KeyM');
-  await page.waitForFunction(() => window.__game.map.isOpen);
-  await page.click('.map__marker >> nth=1');
-  await page.waitForFunction(() => !window.__game.map.isOpen);
-  steps.push('map quick travel: ok');
+  await sj_closePanels();
+  await sj_page.keyboard.press('KeyM');
+  await sj_page.waitForFunction(() => window.__game.map.isOpen);
+  await sj_page.click('.map__marker >> nth=1');
+  await sj_page.waitForFunction(() => !window.__game.map.isOpen);
+  sj_steps.push('map quick travel: ok');
 
   // Classic page view opens and closes; Escape closes it without opening the menu.
-  await page.evaluate(() => window.__game.classic.open());
-  await page.waitForSelector('.classic:not([hidden])');
-  await page.click('.classic__play');
-  await page.evaluate(() => window.__game.classic.open());
-  await page.keyboard.press('Escape');
-  const afterEscape = await page.evaluate(() => ({
+  await sj_page.evaluate(() => window.__game.classic.open());
+  await sj_page.waitForSelector('.classic:not([hidden])');
+  await sj_page.click('.classic__play');
+  await sj_page.evaluate(() => window.__game.classic.open());
+  await sj_page.keyboard.press('Escape');
+  const sj_afterEscape = await sj_page.evaluate(() => ({
     classic: window.__game.classic.isOpen,
     menu: window.__game.menu.isOpen,
   }));
-  if (afterEscape.classic || afterEscape.menu) throw new Error('Escape from the page view');
-  steps.push('classic view: ok');
+  if (sj_afterEscape.classic || sj_afterEscape.menu) throw new Error('Escape from the page view');
+  sj_steps.push('classic view: ok');
 
   // Dragging on the canvas orbits the camera (the HUD layer must let it through).
-  await closePanels();
-  await page.waitForFunction(() => !window.__valley.uiBlocking);
-  await page.waitForTimeout(500);
-  const yaw0 = await page.evaluate(() => window.__valley.rig.targetYaw);
-  await page.mouse.move(480, 300);
-  await page.mouse.down();
-  await page.mouse.move(640, 310, { steps: 8 });
-  await page.mouse.up();
-  const yaw1 = await page.evaluate(() => window.__valley.rig.targetYaw);
-  if (Math.abs(yaw1 - yaw0) < 0.05) throw new Error('mouse drag did not orbit the camera');
-  steps.push('mouse orbit: ok');
+  await sj_closePanels();
+  await sj_page.waitForFunction(() => !window.__valley.uiBlocking);
+  await sj_page.waitForTimeout(500);
+  const sj_yaw0 = await sj_page.evaluate(() => window.__valley.rig.targetYaw);
+  await sj_page.mouse.move(480, 300);
+  await sj_page.mouse.down();
+  await sj_page.mouse.move(640, 310, { steps: 8 });
+  await sj_page.mouse.up();
+  const sj_yaw1 = await sj_page.evaluate(() => window.__valley.rig.targetYaw);
+  if (Math.abs(sj_yaw1 - sj_yaw0) < 0.05) throw new Error('mouse drag did not orbit the camera');
+  sj_steps.push('mouse orbit: ok');
 
   // Space still jumps right after a panel was closed (focus must not stay on its buttons).
-  await page.evaluate(() => window.__game.menu.open());
-  await page.waitForTimeout(300);
-  await page.evaluate(() => window.__game.menu.close());
-  const jumped = page.evaluate(
+  await sj_page.evaluate(() => window.__game.menu.open());
+  await sj_page.waitForTimeout(300);
+  await sj_page.evaluate(() => window.__game.menu.close());
+  const sj_jumped = sj_page.evaluate(
     () =>
-      new Promise((resolve) => {
-        window.__valley.controller.on('jump', () => resolve(true));
-        setTimeout(() => resolve(false), 8000);
+      new Promise((sj_resolve) => {
+        window.__valley.controller.on('jump', () => sj_resolve(true));
+        setTimeout(() => sj_resolve(false), 8000);
       }),
   );
-  await page.keyboard.press('Space');
-  if (!(await jumped)) throw new Error('Space did not jump after closing the menu');
-  steps.push('jump after panel: ok');
-} catch (err) {
-  errors.push(String(err));
+  await sj_page.keyboard.press('Space');
+  if (!(await sj_jumped)) throw new Error('Space did not jump after closing the menu');
+  sj_steps.push('jump after panel: ok');
+} catch (sj_err) {
+  sj_errors.push(String(sj_err));
 }
 
-const all = await found().catch(() => []);
-console.log(steps.join('\n'));
-console.log(`scrolls found: ${all.length}/6 (${all.join(', ')})`);
-await browser.close();
-if (errors.length || all.length !== 6) {
+const sj_all = await sj_found().catch(() => []);
+console.log(sj_steps.join('\n'));
+console.log(`scrolls found: ${sj_all.length}/6 (${sj_all.join(', ')})`);
+await sj_browser.close();
+if (sj_errors.length || sj_all.length !== 6) {
   console.error('FAILED');
-  for (const e of errors) console.error(' -', e);
+  for (const sj_e of sj_errors) console.error(' -', sj_e);
   process.exit(1);
 }
 console.log('PASSED');

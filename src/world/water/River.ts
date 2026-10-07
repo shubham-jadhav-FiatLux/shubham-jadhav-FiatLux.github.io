@@ -9,10 +9,10 @@ import {
   UniformsUtils,
   type Scene,
 } from 'three';
-import { globalUniforms } from '../../render/uniforms';
-import { NOISE_GLSL, TERRAIN_GLSL } from '../../render/glsl';
-import { ATMOSPHERE } from '../../render/atmosphere';
-import { RIVER_DEPTH, riverCourse, type RiverPoint } from '../heightfield';
+import { sj_globalUniforms } from '../../render/uniforms';
+import { sj_NOISE_GLSL, sj_TERRAIN_GLSL } from '../../render/glsl';
+import { sj_ATMOSPHERE } from '../../render/atmosphere';
+import { sj_RIVER_DEPTH, sj_riverCourse, type RiverPoint } from '../heightfield';
 
 /**
  * The stream on the plateau: one ribbon along the carved bed, from the spring pool to
@@ -25,56 +25,56 @@ export class River {
 
   constructor() {
     // Start a little upstream of the spring's centre so the water fills the whole pool.
-    const [p0, p1] = riverCourse.points as [RiverPoint, RiverPoint];
-    const back = Math.hypot(p0.x - p1.x, p0.z - p1.z) || 1;
-    const pre: RiverPoint = {
-      ...p0,
-      x: p0.x + ((p0.x - p1.x) / back) * 3.4,
-      z: p0.z + ((p0.z - p1.z) / back) * 3.4,
+    const [sj_p0, sj_p1] = sj_riverCourse.points as [RiverPoint, RiverPoint];
+    const sj_back = Math.hypot(sj_p0.x - sj_p1.x, sj_p0.z - sj_p1.z) || 1;
+    const sj_pre: RiverPoint = {
+      ...sj_p0,
+      x: sj_p0.x + ((sj_p0.x - sj_p1.x) / sj_back) * 3.4,
+      z: sj_p0.z + ((sj_p0.z - sj_p1.z) / sj_back) * 3.4,
       s: -3.4,
     };
-    const pts = [pre, ...riverCourse.points];
-    const n = pts.length;
-    const pos = new Float32Array(n * 2 * 3);
-    const uv = new Float32Array(n * 2 * 2);
-    const slope = new Float32Array(n * 2);
-    const index: number[] = [];
-    for (let i = 0; i < n; i++) {
-      const p = pts[i]!;
-      const a = pts[Math.max(0, i - 1)]!;
-      const b = pts[Math.min(n - 1, i + 1)]!;
-      let tx = b.x - a.x;
-      let tz = b.z - a.z;
-      const tl = Math.hypot(tx, tz) || 1;
-      tx /= tl;
-      tz /= tl;
-      const drop = Math.max(0, (a.bed - b.bed) / Math.max(0.01, b.s - a.s));
+    const sj_pts = [sj_pre, ...sj_riverCourse.points];
+    const sj_n = sj_pts.length;
+    const sj_pos = new Float32Array(sj_n * 2 * 3);
+    const sj_uv = new Float32Array(sj_n * 2 * 2);
+    const sj_slope = new Float32Array(sj_n * 2);
+    const sj_index: number[] = [];
+    for (let sj_i = 0; sj_i < sj_n; sj_i++) {
+      const sj_p = sj_pts[sj_i]!;
+      const sj_a = sj_pts[Math.max(0, sj_i - 1)]!;
+      const sj_b = sj_pts[Math.min(sj_n - 1, sj_i + 1)]!;
+      let sj_tx = sj_b.x - sj_a.x;
+      let sj_tz = sj_b.z - sj_a.z;
+      const sj_tl = Math.hypot(sj_tx, sj_tz) || 1;
+      sj_tx /= sj_tl;
+      sj_tz /= sj_tl;
+      const sj_drop = Math.max(0, (sj_a.bed - sj_b.bed) / Math.max(0.01, sj_b.s - sj_a.s));
       // wide at the spring so the whole pool is covered, then a little wider than the bed
-      const spring = Math.min(1, Math.max(0, 1 - p.s / 3.5));
-      const half = p.halfWidth + 1.3 + spring * 3.2;
-      const y = p.bed + RIVER_DEPTH;
-      for (const side of [-1, 1]) {
-        const k = i * 2 + (side > 0 ? 1 : 0);
-        pos[k * 3] = p.x - tz * half * side;
-        pos[k * 3 + 1] = y;
-        pos[k * 3 + 2] = p.z + tx * half * side;
-        uv[k * 2] = side > 0 ? 1 : 0;
-        uv[k * 2 + 1] = p.s;
-        slope[k] = drop;
+      const sj_spring = Math.min(1, Math.max(0, 1 - sj_p.s / 3.5));
+      const sj_half = sj_p.halfWidth + 1.3 + sj_spring * 3.2;
+      const sj_y = sj_p.bed + sj_RIVER_DEPTH;
+      for (const sj_side of [-1, 1]) {
+        const sj_k = sj_i * 2 + (sj_side > 0 ? 1 : 0);
+        sj_pos[sj_k * 3] = sj_p.x - sj_tz * sj_half * sj_side;
+        sj_pos[sj_k * 3 + 1] = sj_y;
+        sj_pos[sj_k * 3 + 2] = sj_p.z + sj_tx * sj_half * sj_side;
+        sj_uv[sj_k * 2] = sj_side > 0 ? 1 : 0;
+        sj_uv[sj_k * 2 + 1] = sj_p.s;
+        sj_slope[sj_k] = sj_drop;
       }
-      if (i < n - 1) {
-        const k = i * 2;
-        index.push(k, k + 2, k + 1, k + 1, k + 2, k + 3);
+      if (sj_i < sj_n - 1) {
+        const sj_k = sj_i * 2;
+        sj_index.push(sj_k, sj_k + 2, sj_k + 1, sj_k + 1, sj_k + 2, sj_k + 3);
       }
     }
-    const geo = new BufferGeometry();
-    geo.setAttribute('position', new BufferAttribute(pos, 3));
-    geo.setAttribute('uv', new BufferAttribute(uv, 2));
-    geo.setAttribute('aSlope', new BufferAttribute(slope, 1));
-    geo.setIndex(index);
-    geo.computeBoundingSphere();
+    const sj_geo = new BufferGeometry();
+    sj_geo.setAttribute('position', new BufferAttribute(sj_pos, 3));
+    sj_geo.setAttribute('uv', new BufferAttribute(sj_uv, 2));
+    sj_geo.setAttribute('aSlope', new BufferAttribute(sj_slope, 1));
+    sj_geo.setIndex(sj_index);
+    sj_geo.computeBoundingSphere();
 
-    const material = new ShaderMaterial({
+    const sj_material = new ShaderMaterial({
       transparent: true,
       depthWrite: false,
       side: DoubleSide,
@@ -85,9 +85,9 @@ export class River {
           uShallow: { value: new Color('#86ccb6') },
           uDeep: { value: new Color('#2d7468') },
           uFoam: { value: new Color('#f6f4ec') },
-          uZenith: { value: ATMOSPHERE.skyZenith },
-          uSunColor: { value: ATMOSPHERE.sunColor },
-          uLength: { value: riverCourse.length },
+          uZenith: { value: sj_ATMOSPHERE.skyZenith },
+          uSunColor: { value: sj_ATMOSPHERE.sunColor },
+          uLength: { value: sj_riverCourse.length },
         },
       ]),
       vertexShader: /* glsl */ `
@@ -118,8 +118,8 @@ export class River {
         varying vec3 vWorld;
         varying vec2 vUv;
         varying float vSlope;
-        ${NOISE_GLSL}
-        ${TERRAIN_GLSL}
+        ${sj_NOISE_GLSL}
+        ${sj_TERRAIN_GLSL}
         #include <fog_pars_fragment>
 
         void main() {
@@ -162,19 +162,19 @@ export class River {
         }
       `,
     });
-    Object.assign(material.uniforms, {
-      uTime: globalUniforms.uTime,
-      uSunDir: globalUniforms.uSunDir,
-      uHeightMap: globalUniforms.uHeightMap,
-      uMaskMap: globalUniforms.uMaskMap,
-      uTerrain: globalUniforms.uTerrain,
+    Object.assign(sj_material.uniforms, {
+      uTime: sj_globalUniforms.uTime,
+      uSunDir: sj_globalUniforms.uSunDir,
+      uHeightMap: sj_globalUniforms.uHeightMap,
+      uMaskMap: sj_globalUniforms.uMaskMap,
+      uTerrain: sj_globalUniforms.uTerrain,
     });
-    this.mesh = new Mesh(geo, material);
+    this.mesh = new Mesh(sj_geo, sj_material);
     this.mesh.name = 'river';
     this.mesh.renderOrder = 1;
   }
 
-  addTo(scene: Scene): void {
-    scene.add(this.mesh);
+  addTo(sj_scene: Scene): void {
+    sj_scene.add(this.mesh);
   }
 }
