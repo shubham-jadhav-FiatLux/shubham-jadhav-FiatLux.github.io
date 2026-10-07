@@ -8,7 +8,13 @@ import {
   type Scene,
 } from 'three';
 import { globalUniforms } from '../../render/uniforms';
-import { GROUND_WARP_GLSL, NOISE_GLSL, TERRAIN_GLSL, WIND_GLSL } from '../../render/glsl';
+import {
+  GROUND_WARP_GLSL,
+  NOISE_GLSL,
+  TERRAIN_GLSL,
+  VIEW_CULL_GLSL,
+  WIND_GLSL,
+} from '../../render/glsl';
 
 /** Unit flower: a thin stem quad and a five-petal head (position.y = 1 at the head). */
 function createFlowerGeometry(): InstancedBufferGeometry {
@@ -97,7 +103,8 @@ varying vec3 vFlowerColor;
 ${NOISE_GLSL}
 ${GROUND_WARP_GLSL}
 ${TERRAIN_GLSL}
-${WIND_GLSL}`,
+${WIND_GLSL}
+${VIEW_CULL_GLSL}`,
         )
         .replace(
           '#include <beginnormal_vertex>',
@@ -107,39 +114,48 @@ ${WIND_GLSL}`,
   vec2 local = (cellId + hash22(cellId * 2.71 + 3.0)) / uSide * uPatch - uPatch * 0.5;
   vec2 centre = uPlayerPos.xz;
   vec2 worldXZ = local + uPatch * floor((centre - local) / uPatch + 0.5);
-  float rnd = hash12(worldXZ * 5.13 + 1.9);
-  float rnd2 = hash12(worldXZ * 9.71 - 4.2);
   float ground = terrainHeightAt(worldXZ);
-  vec4 mask = terrainMaskAt(worldXZ);
-  float pathW = terrainMaskAt(worldXZ + groundWarp(worldXZ)).r;
-  float bare = max(max(max(pathW, mask.g), mask.a), terrainDetailAt(worldXZ).a);
-  float density = 1.0 - smoothstep(0.2, 0.5, bare);
-  density *= smoothstep(0.3, 0.6, ground);
-  // flowers grow in drifts
-  float drift = smoothstep(0.52, 0.72, fbm(worldXZ * 0.07 + 13.0));
-  density *= drift;
+
+  // As with the grass, a flower that cannot show (outside the circle, out of view, or
+  // not in a drift) is folded into a single point before the costly part.
+  vec3 p = vec3(worldXZ.x, ground - 50.0, worldXZ.y);
+  vFlowerColor = vec3(0.0);
   float edge = length(worldXZ - centre) / (uPatch * 0.5);
-  float fade = 1.0 - smoothstep(0.75, 1.0, edge);
-  float height = mix(0.22, 0.5, rnd) * fade * step(rnd2, density);
-  float headSize = mix(0.05, 0.085, rnd2) * step(0.001, height);
+  vec3 viewCentre = (viewMatrix * vec4(worldXZ.x, ground + 0.3, worldXZ.y, 1.0)).xyz;
+  if (edge < 1.0 && sphereInView(viewCentre, 0.9)) {
+    float rnd = hash12(worldXZ * 5.13 + 1.9);
+    float rnd2 = hash12(worldXZ * 9.71 - 4.2);
+    vec4 mask = terrainMaskAt(worldXZ);
+    float pathW = terrainMaskAt(worldXZ + groundWarp(worldXZ)).r;
+    float bare = max(max(max(pathW, mask.g), mask.a), terrainDetailAt(worldXZ).a);
+    float density = 1.0 - smoothstep(0.2, 0.5, bare);
+    density *= smoothstep(0.3, 0.6, ground);
+    // flowers grow in drifts
+    float drift = smoothstep(0.52, 0.72, fbm(worldXZ * 0.07 + 13.0));
+    density *= drift;
+    if (rnd2 <= density) {
+      float fade = 1.0 - smoothstep(0.75, 1.0, edge);
+      float height = mix(0.22, 0.5, rnd) * fade;
+      float headSize = mix(0.05, 0.085, rnd2) * step(0.001, height);
 
-  vec2 sway = windSway(worldXZ, rnd * 5.0) * 0.08;
-  vec2 away = worldXZ - uPlayerPos.xz;
-  sway += normalize(away + vec2(1e-4)) * (1.0 - smoothstep(0.2, 1.1, length(away))) * 0.25;
+      vec2 sway = windSway(worldXZ, rnd * 5.0) * 0.08;
+      vec2 away = worldXZ - uPlayerPos.xz;
+      sway += normalize(away + vec2(1e-4)) * (1.0 - smoothstep(0.2, 1.1, length(away))) * 0.25;
 
-  vec3 p;
-  float yaw = rnd * 6.2831;
-  vec2 f = vec2(cos(yaw), sin(yaw));
-  if (aPart < 0.5) {
-    float t = position.y;
-    p = vec3(worldXZ + vec2(-f.y, f.x) * position.x * 0.006 + sway * t * t, ground + t * height);
-    p = p.xzy;
-    vFlowerColor = vec3(0.28, 0.45, 0.18);
-  } else {
-    vec2 hx = vec2(position.x * f.x - position.z * f.y, position.x * f.y + position.z * f.x);
-    p = vec3(worldXZ.x + sway.x + hx.x * headSize, ground + height, worldXZ.y + sway.y + hx.y * headSize);
-    int ci = int(floor(hash12(worldXZ * 0.37 + floor(fbm(worldXZ * 0.05) * 6.0)) * 5.99));
-    vFlowerColor = aPart < 1.5 ? uPalette[ci] : vec3(0.95, 0.75, 0.2);
+      float yaw = rnd * 6.2831;
+      vec2 f = vec2(cos(yaw), sin(yaw));
+      if (aPart < 0.5) {
+        float t = position.y;
+        p = vec3(worldXZ + vec2(-f.y, f.x) * position.x * 0.006 + sway * t * t, ground + t * height);
+        p = p.xzy;
+        vFlowerColor = vec3(0.28, 0.45, 0.18);
+      } else {
+        vec2 hx = vec2(position.x * f.x - position.z * f.y, position.x * f.y + position.z * f.x);
+        p = vec3(worldXZ.x + sway.x + hx.x * headSize, ground + height, worldXZ.y + sway.y + hx.y * headSize);
+        int ci = int(floor(hash12(worldXZ * 0.37 + floor(fbm(worldXZ * 0.05) * 6.0)) * 5.99));
+        vFlowerColor = aPart < 1.5 ? uPalette[ci] : vec3(0.95, 0.75, 0.2);
+      }
+    }
   }
   vec3 objectNormal = vec3(0.0, 1.0, 0.0);
 `,
@@ -156,7 +172,7 @@ vec3 normal = normalize(vNormal);
 vec3 nonPerturbedNormal = normal;`,
         );
     };
-    material.customProgramCacheKey = () => 'flowers-v2';
+    material.customProgramCacheKey = () => 'flowers-v3';
     this.mesh = new Mesh(geometry, material);
     this.mesh.frustumCulled = false;
     this.mesh.receiveShadow = true;

@@ -8,7 +8,13 @@ import {
   type Scene,
 } from 'three';
 import { globalUniforms } from '../../render/uniforms';
-import { GROUND_WARP_GLSL, NOISE_GLSL, TERRAIN_GLSL, WIND_GLSL } from '../../render/glsl';
+import {
+  GROUND_WARP_GLSL,
+  NOISE_GLSL,
+  TERRAIN_GLSL,
+  VIEW_CULL_GLSL,
+  WIND_GLSL,
+} from '../../render/glsl';
 import { GRASS_COLORS, GRASS_COLOR_GLSL } from '../palette';
 import { ATMOSPHERE } from '../../render/atmosphere';
 import type { QualitySettings } from '../../core/Quality';
@@ -97,6 +103,7 @@ ${GROUND_WARP_GLSL}
 ${TERRAIN_GLSL}
 ${WIND_GLSL}
 ${GRASS_COLOR_GLSL}
+${VIEW_CULL_GLSL}
 `,
         )
         .replace(
@@ -108,76 +115,86 @@ ${GRASS_COLOR_GLSL}
   vec2 local = (cellId + hash22(cellId * 1.618 + 11.0)) / uSide * uPatch - uPatch * 0.5;
   vec2 centre = uPlayerPos.xz;
   vec2 worldXZ = local + uPatch * floor((centre - local) / uPatch + 0.5);
-
-  float rnd = hash12(worldXZ * 3.17 + 5.3);
-  float rnd2 = hash12(worldXZ * 7.31 - 1.7);
   float ground = terrainHeightAt(worldXZ);
-  vec4 mask = terrainMaskAt(worldXZ);
 
-  // Density: none on paths, paving, gravel, steep ground, under buildings or in water.
-  // Ragged, noisy edges; blades get shorter and sparser towards them.
-  vec4 detail = terrainDetailAt(worldXZ);
-  vGrassLamp = detail.r;
-  float pathW = terrainMaskAt(worldXZ + groundWarp(worldXZ)).r;
-  float bare = max(max(max(pathW, mask.g), mask.a), detail.a);
-  // ragged edges: broad bays plus small tufts poking out onto paths and paving
-  bare += (vnoise(worldXZ * 1.9) - 0.5) * 0.22 + (vnoise(worldXZ * 5.3) - 0.5) * 0.16;
-  float density = 1.0 - smoothstep(0.25, 0.6, bare);
-  density *= smoothstep(0.12, 0.45, ground + (vnoise(worldXZ * 0.8) - 0.5) * 0.25);
-  float meadow = fbm(worldXZ * 0.06);
-  density *= 0.55 + 0.6 * smoothstep(0.2, 0.6, meadow);
-
-  // Fade out towards the edge of the patch so it never pops.
+  // Many blades never show: the patch is square but the grass fades out in a circle,
+  // much of it lies behind or beside the camera, and paths and paving leave gaps. Such a
+  // blade is folded into a single point (no triangles to draw) as early as possible,
+  // before the costly part. (The sphere allows for the tallest blade, bent the furthest.)
+  vec3 bladePos = vec3(worldXZ.x, ground - 50.0, worldXZ.y);
+  vGrassColor = vec3(0.0);
+  vGrassTrans = 0.0;
+  vGrassLamp = 0.0;
   float edge = length(worldXZ - centre) / (uPatch * 0.5);
-  float fade = 1.0 - smoothstep(0.55, 1.0, edge);
+  vec3 viewCentre = (viewMatrix * vec4(worldXZ.x, ground + 0.45, worldXZ.y, 1.0)).xyz;
+  if (edge < 1.0 && sphereInView(viewCentre, 1.6)) {
+    float rnd = hash12(worldXZ * 3.17 + 5.3);
+    float rnd2 = hash12(worldXZ * 7.31 - 1.7);
+    vec4 mask = terrainMaskAt(worldXZ);
 
-  float height = mix(0.26, 0.66, rnd) * (0.7 + 0.6 * meadow) * fade;
-  height *= 1.0 - 0.62 * smoothstep(0.02, 0.5, bare);
-  // thinner, shorter, drier grass running down onto the beach
-  float beach = 1.0 - smoothstep(0.3, 0.95, ground + (vnoise(worldXZ * 1.3) - 0.5) * 0.3);
-  height *= 1.0 - 0.5 * beach;
-  if (rnd2 > density) height = 0.0;
-  float width = mix(0.045, 0.085, rnd2) * (height > 0.0 ? 1.0 : 0.0);
+    // Density: none on paths, paving, gravel, steep ground, under buildings or in water.
+    // Ragged, noisy edges; blades get shorter and sparser towards them.
+    vec4 detail = terrainDetailAt(worldXZ);
+    vGrassLamp = detail.r;
+    float pathW = terrainMaskAt(worldXZ + groundWarp(worldXZ)).r;
+    float bare = max(max(max(pathW, mask.g), mask.a), detail.a);
+    // ragged edges: broad bays plus small tufts poking out onto paths and paving
+    bare += (vnoise(worldXZ * 1.9) - 0.5) * 0.22 + (vnoise(worldXZ * 5.3) - 0.5) * 0.16;
+    float density = 1.0 - smoothstep(0.25, 0.6, bare);
+    density *= smoothstep(0.12, 0.45, ground + (vnoise(worldXZ * 0.8) - 0.5) * 0.25);
+    float meadow = fbm(worldXZ * 0.06);
+    density *= 0.55 + 0.6 * smoothstep(0.2, 0.6, meadow);
+    if (rnd2 <= density) {
+      // Fade out towards the edge of the patch so it never pops.
+      float fade = 1.0 - smoothstep(0.55, 1.0, edge);
 
-  float t = position.y;
-  float yaw = rnd * 6.2831;
-  vec2 facing = vec2(cos(yaw), sin(yaw));
-  vec2 sideDir = vec2(-facing.y, facing.x);
+      float height = mix(0.26, 0.66, rnd) * (0.7 + 0.6 * meadow) * fade;
+      height *= 1.0 - 0.62 * smoothstep(0.02, 0.5, bare);
+      // thinner, shorter, drier grass running down onto the beach
+      float beach = 1.0 - smoothstep(0.3, 0.95, ground + (vnoise(worldXZ * 1.3) - 0.5) * 0.3);
+      height *= 1.0 - 0.5 * beach;
+      float width = mix(0.045, 0.085, rnd2) * (height > 0.0 ? 1.0 : 0.0);
 
-  // Bend: natural curve + wind + panda + shock-wave.
-  float bendProfile = t * t;
-  vec2 bend = facing * (0.12 + 0.18 * rnd2) * height;
-  bend += windSway(worldXZ, rnd * 6.0) * 0.22 * height;
-  vec2 away = worldXZ - uPlayerPos.xz;
-  float dPlayer = length(away);
-  float push = (1.0 - smoothstep(0.25, 1.35, dPlayer)) * step(uPlayerPos.y - 0.6, ground);
-  bend += normalize(away + vec2(1e-4)) * push * 0.55;
-  float shockR = uShockAge * 9.0;
-  vec2 fromShock = worldXZ - uShockwave.xz;
-  float dShock = length(fromShock);
-  float ring = exp(-pow((dShock - shockR) * 1.3, 2.0)) * exp(-uShockAge * 1.6) * step(dShock, 7.0);
-  bend += normalize(fromShock + vec2(1e-4)) * ring * 0.9;
-  float squash = 1.0 - clamp(push * 0.35 + ring * 0.5, 0.0, 0.7);
+      float t = position.y;
+      float yaw = rnd * 6.2831;
+      vec2 facing = vec2(cos(yaw), sin(yaw));
+      vec2 sideDir = vec2(-facing.y, facing.x);
 
-  float profile = (1.0 - pow(t, 1.4)) * width * (0.35 + 0.65 * (1.0 - t * 0.2));
-  vec3 bladePos;
-  bladePos.xz = worldXZ + sideDir * position.x * profile + bend * bendProfile;
-  bladePos.y = ground + t * height * squash - length(bend) * bendProfile * 0.35;
+      // Bend: natural curve + wind + panda + shock-wave.
+      float bendProfile = t * t;
+      vec2 bend = facing * (0.12 + 0.18 * rnd2) * height;
+      bend += windSway(worldXZ, rnd * 6.0) * 0.22 * height;
+      vec2 away = worldXZ - uPlayerPos.xz;
+      float dPlayer = length(away);
+      float push = (1.0 - smoothstep(0.25, 1.35, dPlayer)) * step(uPlayerPos.y - 0.6, ground);
+      bend += normalize(away + vec2(1e-4)) * push * 0.55;
+      float shockR = uShockAge * 9.0;
+      vec2 fromShock = worldXZ - uShockwave.xz;
+      float dShock = length(fromShock);
+      float ring = exp(-pow((dShock - shockR) * 1.3, 2.0)) * exp(-uShockAge * 1.6) * step(dShock, 7.0);
+      bend += normalize(fromShock + vec2(1e-4)) * ring * 0.9;
+      float squash = 1.0 - clamp(push * 0.35 + ring * 0.5, 0.0, 0.7);
 
-  // Colour: match the ground at the root, sunlit and varied at the tip.
-  vec3 groundCol = grassGroundColor(worldXZ);
-  vec3 tipCol = mix(uTip, groundCol * 1.35, 0.35 + 0.4 * rnd2);
-  tipCol = mix(tipCol, vec3(0.78, 0.72, 0.38), step(0.93, rnd) * 0.6);
-  // trampled, sun-dried tips along paths and yards
-  tipCol = mix(tipCol, uGrassDry * 1.15, max(smoothstep(0.08, 0.45, pathW), beach) * 0.45);
-  vGrassColor = mix(groundCol * 0.55, tipCol, smoothstep(0.0, 1.0, t));
-  vGrassTrans = t * t;
-  {
-    // discovery ripple: blades light up gold as the ring passes
-    float age = uRipple.z;
-    float rr = length(worldXZ - uRipple.xy);
-    float glow = age < 3.0 ? exp(-pow((rr - age * 7.5) * 1.2, 2.0)) * exp(-age * 1.1) * uRipple.w : 0.0;
-    vGrassColor += vec3(1.2, 0.85, 0.3) * glow * t;
+      float profile = (1.0 - pow(t, 1.4)) * width * (0.35 + 0.65 * (1.0 - t * 0.2));
+      bladePos.xz = worldXZ + sideDir * position.x * profile + bend * bendProfile;
+      bladePos.y = ground + t * height * squash - length(bend) * bendProfile * 0.35;
+
+      // Colour: match the ground at the root, sunlit and varied at the tip.
+      vec3 groundCol = grassGroundColor(worldXZ);
+      vec3 tipCol = mix(uTip, groundCol * 1.35, 0.35 + 0.4 * rnd2);
+      tipCol = mix(tipCol, vec3(0.78, 0.72, 0.38), step(0.93, rnd) * 0.6);
+      // trampled, sun-dried tips along paths and yards
+      tipCol = mix(tipCol, uGrassDry * 1.15, max(smoothstep(0.08, 0.45, pathW), beach) * 0.45);
+      vGrassColor = mix(groundCol * 0.55, tipCol, smoothstep(0.0, 1.0, t));
+      vGrassTrans = t * t;
+      {
+        // discovery ripple: blades light up gold as the ring passes
+        float age = uRipple.z;
+        float rr = length(worldXZ - uRipple.xy);
+        float glow = age < 3.0 ? exp(-pow((rr - age * 7.5) * 1.2, 2.0)) * exp(-age * 1.1) * uRipple.w : 0.0;
+        vGrassColor += vec3(1.2, 0.85, 0.3) * glow * t;
+      }
+    }
   }
 
   vec3 objectNormal = vec3(0.0, 1.0, 0.0);
@@ -222,7 +239,7 @@ vec3 nonPerturbedNormal = normal;`,
   #include <opaque_fragment>`,
         );
     };
-    material.customProgramCacheKey = () => 'grass-v4';
+    material.customProgramCacheKey = () => 'grass-v5';
     this.mesh = new Mesh(geometry, material);
     this.mesh.name = 'grass';
     this.mesh.frustumCulled = false;
