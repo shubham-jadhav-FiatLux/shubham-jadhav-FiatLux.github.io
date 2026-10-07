@@ -13,6 +13,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The valley opens faster and the title screen no longer freezes as it appears. Every
+  shader is compiled while loading, for the way it is actually drawn and in the
+  background where the browser can: 57 programs instead of 97, and none compiled after
+  the title shows (before, about fifty were compiled on its first frames). The page
+  also creates one graphics context instead of two, paints the map in idle time and
+  blurs the ground masks faster.
+- Smoother frames for the same picture: the sky is only painted where it shows; the
+  ground works out each material (rock strata, sand, trampled verges, leaf litter) only
+  where it appears; grass blades and flowers out of view or in the gaps are skipped
+  before their costly shading; the mountains are cut into sectors and the buildings into
+  cells, so the camera and the sun's shadow skip what they cannot see; merged buildings
+  keep their shared vertices (46% fewer for the painted parts); and high-density screens
+  use two multisamples instead of four.
+- Variables, constants and parameters are named with an `sj_` prefix throughout the
+  code (see CONTRIBUTING.md).
 - The weeping willows by the lake are grown anew: a stout trunk splits into limbs that
   rise like a vase, branches arch over from them, and a dense curtain of long, leafy
   strands falls from the arches almost to the ground, ragged at the ends and swaying

@@ -299,14 +299,35 @@ camera → world uniforms → gameplay (zones, effects, map, audio) → render.
 
 Target 60 fps on a mid-range laptop (integrated GPU) at the _Medium_ preset.
 
-| Preset | Pixel ratio | Shadows | Grass blades | MSAA | Post FX                         |
-| ------ | ----------- | ------- | ------------ | ---- | ------------------------------- |
-| Low    | 1.0         | off     | 14k          | off  | tone mapping, grading, vignette |
-| Medium | ≤ 1.5       | 1024²   | 36k          | 2×   | + bloom                         |
-| High   | ≤ 2.0       | 2048²   | 70k          | 4×   | + bloom                         |
+| Preset | Pixel ratio | Shadows | Grass blades | MSAA                            | Post FX                         |
+| ------ | ----------- | ------- | ------------ | ------------------------------- | ------------------------------- |
+| Low    | 1.0         | off     | 14k          | off                             | tone mapping, grading, vignette |
+| Medium | ≤ 1.5       | 1024²   | 36k          | 2×                              | + bloom                         |
+| High   | ≤ 2.0       | 2048²   | 70k          | 4× (2× on high-density screens) | + bloom                         |
 
-The whole valley renders in roughly 200 draw calls: static architecture is merged per
-material, vegetation and wildlife are instanced and the grass is a single instanced draw.
+The whole valley renders in roughly 200–250 draw calls: static architecture is merged per
+material and per 40 m cell, each mountain range is cut into eight sectors round the
+valley, vegetation and wildlife are instanced and the grass is a single instanced draw.
+
+What keeps it fast without changing the picture:
+
+- **No compiling after the title appears.** Every shader is compiled while loading, for
+  the state it is drawn in (into the post-processing buffer), in the background where the
+  browser supports `KHR_parallel_shader_compile`. One frame is drawn while loading with the
+  sun's shadow stretched over the whole valley, which prepares the shadow shaders of every
+  caster and the post-processing passes. Production builds skip three.js's shader error
+  checks, which would make the browser wait for each compile.
+- **Only shade what shows.** The sky dome is drawn after everything opaque, so the depth
+  test skips every pixel the valley covers. The ground shader works out each material
+  (rock strata, sand, verges, leaf litter) only where it appears. Grass blades and
+  flowers that cannot show (outside the fading circle of the patch, out of view, in the
+  gaps of paths and drifts) are folded into a point in the vertex shader before their
+  costly part.
+- **Skip what is out of view.** Mountain sectors and building cells are separate meshes
+  centred on themselves, so the camera and the sun's shadow camera cull them and the
+  renderer can sort them front to back. Merged buildings keep their shared vertices.
+- **Startup work off the critical path.** One WebGL context (created while checking for
+  support), the painted map in idle time, a cache-friendly blur for the ground masks.
 
 The preset is chosen automatically (phones → Medium, otherwise High) and adapts down if
 the frame rate stays low. Visitors can override it from the settings menu.
