@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The site is live at [shubham-jadhav-fiatlux.github.io](https://shubham-jadhav-fiatlux.github.io/),
+  and the repository is set up as an open-source project: a code of conduct (Contributor
+  Covenant 2.1), a security policy with private reporting, issue forms, a pull request
+  checklist, monthly Dependabot updates and consistent line endings.
 - A "schedushh!" as a scroll opens: a whoosh as it flies out, the knock of its rollers
   parting and the rustle of the paper unfurling, timed to the scroll's flight.
 
@@ -28,6 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   use two multisamples instead of four.
 - Variables, constants and parameters are named with an `sj_` prefix throughout the
   code (see CONTRIBUTING.md).
+- Settings and found scrolls are saved under the name `valley-of-peace:` in the browser,
+  so progress from earlier previews starts afresh.
 - The weeping willows by the lake are grown anew: a stout trunk splits into limbs that
   rise like a vase, branches arch over from them, and a dense curtain of long, leafy
   strands falls from the arches almost to the ground, ragged at the ends and swaying
@@ -316,13 +322,13 @@ lantern light, softer edges between materials and a little more life in the vall
 - Follow camera with orbit, zoom, look-ahead and cinematic shots.
 - Title screen, screenshot script and unit tests.
 
-[Unreleased]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.8.0...HEAD
-[0.8.0]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.7.0...v0.8.0
-[0.7.0]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.6.0...v0.7.0
-[0.6.0]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.5.1...v0.6.0
-[0.5.1]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.5.0...v0.5.1
-[0.5.0]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.4.0...v0.5.0
-[0.4.0]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.3.0...v0.4.0
-[0.3.0]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.2.0...v0.3.0
-[0.2.0]: https://github.com/OWNER/valley-of-whispering-bamboo/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/OWNER/valley-of-whispering-bamboo/releases/tag/v0.1.0
+[Unreleased]: https://github.com/shubham-jadhav-FiatLux/shubham-jadhav-FiatLux.github.io/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/shubham-jadhav-FiatLux/shubham-jadhav-FiatLux.github.io/compare/v0.7.0...v0.8.0
+[0.7.0]: https://github.com/shubham-jadhav-FiatLux/shubham-jadhav-FiatLux.github.io/compare/v0.6.0...v0.7.0
+[0.6.0]: https://github.com/shubham-jadhav-FiatLux/shubham-jadhav-FiatLux.github.io/compare/v0.5.1...v0.6.0
+[0.5.1]: https://github.com/shubham-jadhav-FiatLux/shubham-jadhav-FiatLux.github.io/compare/v0.5.0...v0.5.1
+[0.5.0]: https://github.com/shubham-jadhav-FiatLux/shubham-jadhav-FiatLux.github.io/compare/v0.4.0...v0.5.0
+[0.4.0]: https://github.com/shubham-jadhav-FiatLux/shubham-jadhav-FiatLux.github.io/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/shubham-jadhav-FiatLux/shubham-jadhav-FiatLux.github.io/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/shubham-jadhav-FiatLux/shubham-jadhav-FiatLux.github.io/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/shubham-jadhav-FiatLux/shubham-jadhav-FiatLux.github.io/releases/tag/v0.1.0

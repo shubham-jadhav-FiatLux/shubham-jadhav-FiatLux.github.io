@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Visit the valley
+    url: https://shubham-jadhav-fiatlux.github.io/
+    about: The live portfolio. The Contact scroll at the bell tower has my details.
+  - name: Report a security problem
+    url: https://github.com/shubham-jadhav-FiatLux/shubham-jadhav-FiatLux.github.io/security/advisories/new
+    about: Please report vulnerabilities privately, not in a public issue.

@@ -5,17 +5,18 @@ Versions follow [Semantic Versioning](https://semver.org). While the project is 
 
 ## Milestones
 
-| Version | Theme                                                                                    | Status       |
-| ------- | ---------------------------------------------------------------------------------------- | ------------ |
-| 0.1.0   | Engine core, terrain, sky, the panda walking around                                      | ✅ released  |
-| 0.2.0   | Living nature: grass, bamboo, blossom trees, rocks, lake, waterfall                      | ✅ released  |
-| 0.3.0   | Architecture and landmarks: gate, pagoda, pavilion, village, bridge, bell, training yard | ✅ released  |
-| 0.4.0   | Portfolio zones and scrolls, discovery moments, map with quick travel, procedural audio  | ✅ released  |
-| 0.5.0   | Polish: accessibility, reduced motion, SEO and sharing, performance, mobile              | ✅ released  |
-| 0.6.0   | Visual update: waterfall and stream, stone, wood and bamboo detail, lantern light, life  | ✅ released  |
-| 0.7.0   | Watch the tour: the whole portfolio as a directed short film                             | ✅ released  |
-| 0.8.0   | The tour's director's cut: Bezier camera moves, more of the valley, genie scrolls        | ✅ released  |
-| 1.0.0   | Real content filled in, tested on phones, custom domain                                  | ⏳ your turn |
+| Version | Theme                                                                                    | Status         |
+| ------- | ---------------------------------------------------------------------------------------- | -------------- |
+| 0.1.0   | Engine core, terrain, sky, the panda walking around                                      | ✅ released    |
+| 0.2.0   | Living nature: grass, bamboo, blossom trees, rocks, lake, waterfall                      | ✅ released    |
+| 0.3.0   | Architecture and landmarks: gate, pagoda, pavilion, village, bridge, bell, training yard | ✅ released    |
+| 0.4.0   | Portfolio zones and scrolls, discovery moments, map with quick travel, procedural audio  | ✅ released    |
+| 0.5.0   | Polish: accessibility, reduced motion, SEO and sharing, performance, mobile              | ✅ released    |
+| 0.6.0   | Visual update: waterfall and stream, stone, wood and bamboo detail, lantern light, life  | ✅ released    |
+| 0.7.0   | Watch the tour: the whole portfolio as a directed short film                             | ✅ released    |
+| 0.8.0   | The tour's director's cut: Bezier camera moves, more of the valley, genie scrolls        | ✅ released    |
+| 0.9.0   | Valley of Peace: misty peaks, the panda's gear, a faster start, real content, live site  | 🚧 in progress |
+| 1.0.0   | Tested on phones and real GPUs, tour narration, custom domain                            | ⏳ planned     |
 
 ## Ideas for later
 

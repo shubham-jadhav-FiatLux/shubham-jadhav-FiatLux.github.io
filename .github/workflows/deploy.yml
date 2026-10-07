@@ -1,6 +1,7 @@
 name: Deploy to GitHub Pages
 
-# Publishes the game to https://<user>.github.io/<repo>/ on every push to main.
+# Publishes the site to GitHub Pages on every push to main: at https://<user>.github.io/
+# for a <user>.github.io repository (like this one), at https://<user>.github.io/<repo>/ otherwise.
 # One-time setup: repository Settings -> Pages -> Source: "GitHub Actions".
 on:
   push:

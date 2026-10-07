@@ -1,0 +1,12 @@
+# Text files are stored and checked out with LF line endings on every platform.
+* text=auto eol=lf
+
+# Binary assets
+*.jpg binary
+*.png binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+
+# Generated files: collapsed in pull request diffs and left out of language statistics
+package-lock.json linguist-generated
