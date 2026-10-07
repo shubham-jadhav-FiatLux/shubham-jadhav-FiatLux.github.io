@@ -3,6 +3,8 @@ import { ATMOSPHERE, SUN_DIRECTION } from '../render/atmosphere';
 import type { QualitySettings } from '../core/Quality';
 
 const SHADOW_EXTENT = 32;
+/** half the width of a shadow frustum that takes in every caster in the valley */
+const VALLEY_EXTENT = 150;
 const lightSpace = new Matrix4();
 const lightSpaceInv = new Matrix4();
 const tmp = new Vector3();
@@ -52,6 +54,28 @@ export class Lighting {
       this.sun.shadow.map = null;
     }
     this.texel = (SHADOW_EXTENT * 2) / settings.shadowMapSize;
+  }
+
+  /**
+   * Stretches the shadow frustum over the whole valley (`true`), or back to its usual
+   * size round the point of interest. Used for one frame while loading, so that frame
+   * draws every shadow caster and their shadow shaders are compiled before the visitor
+   * sees anything (`compileAsync` only prepares the shaders of the visible materials).
+   */
+  coverValley(on: boolean): void {
+    const cam = this.sun.shadow.camera;
+    const extent = on ? VALLEY_EXTENT : SHADOW_EXTENT;
+    cam.left = -extent;
+    cam.right = extent;
+    cam.top = extent;
+    cam.bottom = -extent;
+    cam.far = on ? 600 : 240;
+    cam.updateProjectionMatrix();
+    if (on) {
+      this.sun.target.position.set(0, 0, 0);
+      this.sun.position.copy(SUN_DIRECTION).multiplyScalar(300);
+      this.sun.target.updateMatrixWorld();
+    }
   }
 
   /** Centres the shadow frustum on the point of interest. */
