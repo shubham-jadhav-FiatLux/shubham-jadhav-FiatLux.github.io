@@ -61,12 +61,15 @@ await sj_page.evaluate(() => {
     <div class="seal seal--lg"></div>
     <div class="og__title"></div>
     <div class="og__tagline"></div>
-    ${sj_named ? '<div class="og__owner"></div>' : ''}`;
+    ${sj_named ? '<div class="og__owner"><div class="og__name"></div><div class="og__role"></div></div>' : ''}`;
   sj_el.querySelector('.seal').textContent = sj_c.site.seal;
   sj_el.querySelector('.og__title').textContent = sj_c.site.title;
   sj_el.querySelector('.og__tagline').textContent = sj_c.site.tagline;
-  if (sj_named)
-    sj_el.querySelector('.og__owner').textContent = `${sj_c.owner.name} · ${sj_c.owner.role}`;
+  if (sj_named) {
+    // name and role on lines of their own, so a long role stays on the light side
+    sj_el.querySelector('.og__name').textContent = sj_c.owner.name;
+    sj_el.querySelector('.og__role').textContent = sj_c.owner.role;
+  }
   sj_el.style.cssText = `position: fixed; inset: 0; z-index: 999; display: flex;
     flex-direction: column; justify-content: center; align-items: flex-start; gap: 14px;
     padding: 0 0 0 70px; pointer-events: none;
@@ -78,8 +81,10 @@ await sj_page.evaluate(() => {
       line-height: 1.02; color: var(--ink); }
     .og__tagline { font-family: var(--font-display); font-style: italic; font-size: 32px;
       color: var(--ink-soft); }
-    .og__owner { margin-top: 6px; font-family: var(--font-display); font-weight: 700;
-      font-size: 20px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--seal-dark); }`;
+    .og__owner { margin-top: 6px; max-width: 560px; font-family: var(--font-display);
+      font-weight: 700; text-transform: uppercase; color: var(--seal-dark); }
+    .og__name { font-size: 22px; letter-spacing: 0.16em; }
+    .og__role { margin-top: 4px; font-size: 16px; letter-spacing: 0.12em; opacity: 0.85; }`;
   document.head.appendChild(sj_style);
   document.body.appendChild(sj_el);
 });
