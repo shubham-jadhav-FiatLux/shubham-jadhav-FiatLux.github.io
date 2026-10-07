@@ -11,6 +11,13 @@ updates:
       minor-and-patch:
         patterns: ['*']
         update-types: [minor, patch]
+    ignore:
+      # @types/node follows the Node version the site is built with (.nvmrc), not the latest
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+      # TypeScript 7 waits until typescript-eslint supports it (npm ci fails on the peer range)
+      - dependency-name: 'typescript'
+        update-types: ['version-update:semver-major']
   - package-ecosystem: github-actions
     directory: /
     schedule:
