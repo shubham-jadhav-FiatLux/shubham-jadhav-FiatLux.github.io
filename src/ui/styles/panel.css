@@ -635,6 +635,8 @@
   font-family: var(--font-display);
   font-weight: 700;
   color: var(--seal-dark);
+  /* a span like "2024 – now" stays on one line next to a long title */
+  white-space: nowrap;
 }
 
 .project__image {
