@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- My own story in every scroll: who I am and what I research, six disciplines on the
+  training dummies (graphics, parallel computing, languages, workflow, engine craft, and
+  systems and AI), seven projects on the banners, six turns of the bridge from school to
+  IIT Madras, and how to reach me. The link preview carries my name and role.
 - The site is live at [shubham-jadhav-fiatlux.github.io](https://shubham-jadhav-fiatlux.github.io/),
   and the repository is set up as an open-source project: a code of conduct (Contributor
   Covenant 2.1), a security policy with private reporting, issue forms, a pull request
@@ -34,6 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   code (see CONTRIBUTING.md).
 - Settings and found scrolls are saved under the name `valley-of-peace:` in the browser,
   so progress from earlier previews starts afresh.
+- The link preview image puts the name and the role on lines of their own, and a
+  project's years ("2024 – now") stay on one line in the scroll.
 - The weeping willows by the lake are grown anew: a stout trunk splits into limbs that
   rise like a vase, branches arch over from them, and a dense curtain of long, leafy
   strands falls from the arches almost to the ground, ragged at the ends and swaying
