@@ -194,6 +194,27 @@ function flatUv(g: BufferGeometry, u: number, v: number): BufferGeometry {
   return g;
 }
 
+/** The torso's profile round the neck as [height, radius] (as built in `Panda.ts`). */
+const NECK: readonly (readonly [number, number])[] = [
+  [0.69, 0.418],
+  [0.745, 0.398],
+  [0.8, 0.37],
+  [0.87, 0.33],
+  [0.93, 0.28],
+  [0.965, 0.24],
+];
+
+/** The torso's radius at height `y` round the neck. */
+function torsoRadius(y: number): number {
+  let [y0, r0] = NECK[0]!;
+  if (y <= y0) return r0;
+  for (const [y1, r1] of NECK) {
+    if (y <= y1) return r0 + ((r1 - r0) * (y - y0)) / (y1 - y0);
+    [y0, r0] = [y1, r1];
+  }
+  return r0;
+}
+
 /**
  * The scarf wound round the neck (a soft band that bunches into folds, lower at the
  * front) and its knot, in panda body space. `knot` is where the tails hang from.
@@ -208,17 +229,18 @@ export function createScarfGeometry(knot: Vector3): BufferGeometry {
     const th = u * Math.PI * 2;
     // the cloth bunches as it wraps: a few big folds and many small pleats
     const fold = Math.sin(th * 4 + 1.3) * 0.6 + Math.sin(th * 11) * 0.4;
-    const radius = 0.392 + 0.012 * fold;
+    // a little higher at the back; wound snugly, just proud of the fur all the way round
     const cy = 0.825 - 0.036 * Math.cos(th);
+    const radius = torsoRadius(cy) + 0.014 + 0.01 * fold;
     const half = 0.074 + 0.009 * Math.sin(th * 3 + 0.4);
-    const thick = 0.04 + 0.01 * fold;
+    const thick = 0.03 + 0.008 * fold;
     for (let j = 0; j <= across; j++) {
       const v = j / across;
       // start on the inside, so the texture seam is hidden against the neck
       const ph = Math.PI + v * Math.PI * 2;
       // a collar: the upper edge tucks in against the neck, the lower edge rests on the
       // shoulders
-      const r = radius + Math.cos(ph) * thick - Math.sin(ph) * half * 0.6;
+      const r = radius + Math.cos(ph) * thick - Math.sin(ph) * half * 0.35;
       positions.push(Math.sin(th) * r, cy + Math.sin(ph) * half, Math.cos(th) * r * 0.9);
       uvs.push(u * 6, v);
     }
@@ -229,7 +251,8 @@ export function createScarfGeometry(knot: Vector3): BufferGeometry {
     for (let j = 0; j < across; j++) {
       const a = i * row + j;
       const b = a + row;
-      index.push(a, a + 1, b, a + 1, b + 1, b);
+      // wound so that the outer face is the front face
+      index.push(a, b, a + 1, a + 1, b, b + 1);
     }
   }
   const band = new BufferGeometry();
@@ -237,6 +260,18 @@ export function createScarfGeometry(knot: Vector3): BufferGeometry {
   band.setAttribute('uv', new BufferAttribute(new Float32Array(uvs), 2));
   band.setIndex(index);
   band.computeVertexNormals();
+  // the first and last rings are the same place: share their normals so no crease shows
+  const normal = band.attributes.normal as BufferAttribute;
+  for (let j = 0; j <= across; j++) {
+    const first = j;
+    const last = around * row + j;
+    const nx = normal.getX(first) + normal.getX(last);
+    const ny = normal.getY(first) + normal.getY(last);
+    const nz = normal.getZ(first) + normal.getZ(last);
+    const len = Math.hypot(nx, ny, nz) || 1;
+    normal.setXYZ(first, nx / len, ny / len, nz / len);
+    normal.setXYZ(last, nx / len, ny / len, nz / len);
+  }
 
   // The knot: a firm centre and two loops, tied off on one side of the chest.
   const parts: BufferGeometry[] = [band];
@@ -250,12 +285,11 @@ export function createScarfGeometry(knot: Vector3): BufferGeometry {
     loop.translate(knot.x + side * 0.055, knot.y + 0.035, knot.z - 0.015);
     parts.push(flatUv(loop, 0.04, 0.5));
   }
-  const merged = mergeGeometries(
+  // (every part keeps its own smooth normals)
+  return mergeGeometries(
     parts.map((p) => (p.index ? p.toNonIndexed() : p)),
     false,
   )!;
-  merged.computeVertexNormals();
-  return merged;
 }
 
 let bandMap: CanvasTexture | null = null;
@@ -404,7 +438,7 @@ export function createGearGeometry(m: Matrix4): BufferGeometry {
 }
 
 /** A flat leather strap looped diagonally round the torso, with a brass buckle at the front. */
-function createStrap(): BufferGeometry {
+export function createStrap(): BufferGeometry {
   // the loop lies in the strap's own xy plane, then tilts across the body (from one
   // shoulder to the other hip)
   const m = new Matrix4().compose(
@@ -449,7 +483,8 @@ function createStrap(): BufferGeometry {
     const b = ((i + 1) % n) * 4;
     for (let k = 0; k < 4; k++) {
       const k1 = (k + 1) % 4;
-      index.push(a + k, b + k, a + k1, a + k1, b + k, b + k1);
+      // wound so that the faces look outwards
+      index.push(a + k, a + k1, b + k, a + k1, b + k1, b + k);
     }
   }
   const band = new BufferGeometry();
