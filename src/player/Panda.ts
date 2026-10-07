@@ -34,7 +34,8 @@ const NOSE = new Color('#19181a');
 
 /**
  * Builds the pear-shaped torso with the panda's black shoulder band baked into vertex
- * colours. Duplicate profile points at the band edges keep the boundary crisp.
+ * colours. Duplicate profile points at the band edges keep the boundary crisp. (The scarf
+ * follows this profile round the neck: `NECK` in `pandaGear.ts`.)
  */
 function createTorsoGeometry(): BufferGeometry {
   type P = [r: number, y: number, black: boolean];
