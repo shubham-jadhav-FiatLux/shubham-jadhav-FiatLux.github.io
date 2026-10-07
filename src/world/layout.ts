@@ -36,6 +36,15 @@ export const PLACES = {
   village: { x: 32, z: 38 },
 } as const satisfies Record<string, Place>;
 
+/**
+ * Which way the round buildings turn (radians about +y). The tea pavilion opens onto the
+ * path from the crossroads on one side and onto the lake on the other; the bell tower
+ * hangs its log striker across the line of sight of a visitor arriving along the north
+ * shore, so its swing into the bell is seen side on.
+ */
+export const PAVILION_ROT = -1.511;
+export const BELL_ROT = 0.6 - Math.PI / 2;
+
 export interface Ellipse {
   x: number;
   z: number;

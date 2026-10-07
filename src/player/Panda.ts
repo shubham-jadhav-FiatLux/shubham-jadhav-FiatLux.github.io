@@ -2,8 +2,6 @@ import {
   BufferAttribute,
   CapsuleGeometry,
   Color,
-  CylinderGeometry,
-  DoubleSide,
   Euler,
   Group,
   LatheGeometry,
@@ -22,15 +20,17 @@ import {
 } from 'three';
 import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { createFurMaterial } from '../render/materials/furMaterial';
+import {
+  createGearGeometry,
+  createScarfGeometry,
+  createScarfMaterial,
+  createTailMaterial,
+} from './pandaGear';
 
 const WHITE = new Color('#f4efe4');
 const CREAM = new Color('#f8f2e4');
 const BLACK = new Color('#242226');
 const NOSE = new Color('#19181a');
-const SCARF = new Color('#c8352c');
-const SCARF_DARK = new Color('#9e2622');
-const BAMBOO = new Color('#c2a45a');
-const WOOD = new Color('#5b3a24');
 
 /**
  * Builds the pear-shaped torso with the panda's black shoulder band baked into vertex
@@ -125,7 +125,7 @@ function meshOf(geo: BufferGeometry, mat: Material, name: string, shadow = true)
 
 /**
  * An original, procedurally modelled panda: soft pear-shaped body, big round head with
- * teardrop eye patches, a red scarf and a bamboo scroll case on its back.
+ * teardrop eye patches, a silk scarf and a bamboo scroll case slung across its back.
  * Parts that move together are baked into single vertex-coloured meshes (about ten draw
  * calls for the whole character); the group hierarchy exposes pivots for the animator.
  */
@@ -154,60 +154,29 @@ export class Panda {
     this.root.add(this.body);
     this.body.rotation.order = 'YXZ';
 
-    // --- body: torso, tail, scarf, scroll case, strap ---
+    // --- body: torso and tail; the scarf, the scroll case and its strap ---
+    const bodyGeo = mergeGeometries([
+      createTorsoGeometry().toNonIndexed(),
+      bake([{ geo: new SphereGeometry(0.085, 12, 10), color: WHITE, position: [0, 0.38, -0.37] }]),
+    ])!;
+    this.body.add(meshOf(bodyGeo, fur, 'panda-body'));
+    this.scarfKnot.position.set(-0.2, 0.71, 0.31);
+    this.body.add(this.scarfKnot);
+    this.body.add(
+      meshOf(createScarfGeometry(this.scarfKnot.position), createScarfMaterial(), 'panda-scarf'),
+    );
     const caseMatrix = new Matrix4().compose(
       new Vector3(0.02, 0.7, -0.35),
       new Quaternion().setFromEuler(new Euler(0.12, 0, 0.72)),
       new Vector3(1, 1, 1),
     );
-    const scrollCase = bake([
-      { geo: new CylinderGeometry(0.075, 0.075, 0.66, 14), color: BAMBOO },
-      {
-        geo: new TorusGeometry(0.077, 0.012, 6, 16),
-        color: WOOD,
-        position: [0, -0.16, 0],
-        rotation: [Math.PI / 2, 0, 0],
-      },
-      {
-        geo: new TorusGeometry(0.077, 0.012, 6, 16),
-        color: WOOD,
-        position: [0, 0.12, 0],
-        rotation: [Math.PI / 2, 0, 0],
-      },
-      { geo: new CylinderGeometry(0.085, 0.085, 0.06, 14), color: WOOD, position: [0, -0.34, 0] },
-      { geo: new CylinderGeometry(0.085, 0.085, 0.06, 14), color: WOOD, position: [0, 0.34, 0] },
-      { geo: new CylinderGeometry(0.05, 0.05, 0.1, 10), color: CREAM, position: [0, 0.41, 0] },
-    ]).applyMatrix4(caseMatrix);
-    const bodyGeo = mergeGeometries([
-      createTorsoGeometry().toNonIndexed(),
-      bake([
-        { geo: new SphereGeometry(0.085, 12, 10), color: WHITE, position: [0, 0.38, -0.37] },
-        {
-          geo: new TorusGeometry(0.355, 0.068, 12, 40),
-          color: SCARF,
-          position: [0, 0.8, 0],
-          rotation: [Math.PI / 2 + 0.12, 0, 0],
-          scale: [1, 0.9, 1],
-        },
-        {
-          geo: new SphereGeometry(0.08, 14, 10),
-          color: SCARF_DARK,
-          position: [-0.2, 0.74, 0.29],
-          scale: [1, 0.85, 0.75],
-        },
-        {
-          geo: new TorusGeometry(0.4, 0.016, 6, 40),
-          color: WOOD,
-          position: [0, 0.7, 0],
-          rotation: [Math.PI / 2, 0.72, 0],
-          scale: [1, 0.9, 1],
-        },
-      ]),
-      scrollCase,
-    ])!;
-    this.body.add(meshOf(bodyGeo, fur, 'panda-body'));
-    this.scarfKnot.position.set(-0.2, 0.71, 0.31);
-    this.body.add(this.scarfKnot);
+    this.body.add(
+      meshOf(
+        createGearGeometry(caseMatrix),
+        new MeshStandardMaterial({ vertexColors: true, roughness: 0.62, metalness: 0.05 }),
+        'panda-gear',
+      ),
+    );
 
     // --- legs ---
     const legGeo = bake([
@@ -322,8 +291,8 @@ export class Panda {
     }
   }
 
-  /** Material for the simulated scarf tails (double sided ribbons). */
-  static createRibbonMaterial(): MeshStandardMaterial {
-    return new MeshStandardMaterial({ color: SCARF, roughness: 0.75, side: DoubleSide });
+  /** Material for the simulated scarf tails: silk with gold hems and fringed ends. */
+  static createRibbonMaterial(): Material {
+    return createTailMaterial();
   }
 }

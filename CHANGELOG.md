@@ -6,8 +6,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A "schedushh!" as a scroll opens: a whoosh as it flies out, the knock of its rollers
+  parting and the rustle of the paper unfurling, timed to the scroll's flight.
+
 ### Changed
 
+- The weeping willows by the lake are grown anew: a stout trunk splits into limbs that
+  rise like a vase, branches arch over from them, and a dense curtain of long, leafy
+  strands falls from the arches almost to the ground, ragged at the ends and swaying
+  most at the tips.
+- The panda's gear in detail: a red silk scarf wound round its neck like a collar, folded
+  and pleated, hemmed in gold and tied in a knot, its tails ending in gold bands and
+  fringes; a bamboo scroll case with nodes, cord bindings, brass caps, a tassel and the
+  scroll inside tied with red cord, slung on a leather strap with a brass buckle.
+- The scroll is mounted like a real hanging scroll: a cord and a lacquered rod with a
+  silk tassel and jade bead, a pine-green brocade woven with gold coins, the two hanging
+  strips of the "heaven" panel, fret-patterned bands either side of aged, fibrous paper
+  with fret corners, a vermilion rule under the title, the section's character as a faint
+  watermark, the mounter's seal in the corner, and a heavy roller with jade knobs. It
+  still rises rolled up and unrolls the same way, and the tassel sways as it opens.
 - New mountains: ranges of karst towers and stone pillars crowned with woods and
   clinging pines, rising out of bands of mist, with ever paler and higher ranges behind
   them fading into the sky, and a sea of cloud below the rim of the valley. Sunlit faces
@@ -16,6 +35,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   big cream brush titles and gold place names, both outlined; the captions over the
   dummies and along the bridge set their second line in bold black instead of thin brown;
   the banners' titles and the gate's signboard are thicker, with a dark edge.
+- The training dummies are wooden warriors with arms all the way round: three tiers of
+  arms set at staggered angles and bent legs, each fixed in a brass collar, so they look
+  like training dummies from every side (and their arms whirl when struck).
+- The bell tower is turned a quarter round, so the log striker hangs across the view of
+  a visitor arriving along the shore and its swing into the bell is plain to see.
+- The tea pavilion is turned to face the path: one opening greets the visitor arriving
+  from the crossroads, the other looks out over the lake.
+- The big drum booms: a deeper, longer note with a second, higher tone that small
+  speakers can play, the beater's slap and the thud of the shell, and it carries across
+  the yard (about two and a half times as loud).
 - Renamed to **Valley of Peace**: the title screen, the corner badge, the tour and the
   link preview, with 和平谷 ("Valley of Peace") on the gate's signboard and 和 ("peace")
   on the red seal. The seal's character is now part of the content file (`site.seal`).
