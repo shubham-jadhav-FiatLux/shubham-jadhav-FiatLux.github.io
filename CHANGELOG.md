@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A Release workflow publishes every version tag as a GitHub release, with that
+  version's notes from this changelog.
+
 ## [0.9.0] - 2026-10-07
 
 Valley of Peace goes live: misty layered peaks, a detailed panda and scroll, a faster

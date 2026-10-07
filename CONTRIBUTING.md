@@ -49,7 +49,9 @@ npm run format       # prettier
 
 1. Move the **Unreleased** notes in `CHANGELOG.md` under a new version heading.
 2. `npm version <major|minor|patch>` – bumps `package.json` and creates a `vX.Y.Z` tag.
-3. `git push --follow-tags` – CI deploys `main` to GitHub Pages.
+3. `git push --follow-tags` – CI deploys `main` to GitHub Pages, and the
+   [Release](.github/workflows/release.yml) workflow publishes the tag as a GitHub release
+   with its notes from the changelog.
 
 ## Code style
 
