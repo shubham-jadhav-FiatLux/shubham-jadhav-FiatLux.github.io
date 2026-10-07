@@ -53,10 +53,10 @@ everything as a plain, accessible page.
 
 ## Screenshots
 
-| ![The panda crossing the zig-zag bridge over the koi lake, past a weeping willow](docs/images/bridge.jpg) | ![The panda below the pagoda, next to a project banner](docs/images/pagoda-top.jpg) |
-| --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| ![The waterfall pouring into its plunge pool by the bell tower](docs/images/falls.jpg)                    | ![Golden and green bamboo by the training grounds](docs/images/grove.jpg)           |
-| ![The About scroll unrolled over the lake](docs/images/scroll.jpg)                                        | ![The ink-wash map with quick travel](docs/images/map.jpg)                          |
+| ![The panda on the zig-zag bridge over the koi lake, where every turn marks a step of the journey](docs/images/bridge.jpg) | ![The panda below the pagoda, next to a project banner](docs/images/pagoda-top.jpg) |
+| -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| ![The waterfall pouring into its plunge pool by the bell tower](docs/images/falls.jpg)                                     | ![Golden and green bamboo by the training grounds](docs/images/grove.jpg)           |
+| ![The About scroll unrolled over the lake](docs/images/scroll.jpg)                                                         | ![The ink-wash map with quick travel](docs/images/map.jpg)                          |
 
 ## Controls
 
