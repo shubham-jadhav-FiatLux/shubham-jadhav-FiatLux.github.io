@@ -5,6 +5,7 @@ import type { Terrain } from '../world/Terrain';
 import { releaseFocus, trapFocus } from './focus';
 import { ICONS } from './icons';
 import { esc } from './render';
+import { whenIdle } from '../utils/idle';
 import { BRUSH_FONT } from '../world/architecture/textures';
 import { riverCourse } from '../world/heightfield';
 import { BRIDGE_POINTS, FALLS } from '../world/layout';
@@ -212,6 +213,8 @@ export class MapPanel extends Emitter<{ travel: SectionId; close: void }> {
   isOpen = false;
   private panda: HTMLElement;
   private markers = new Map<SectionId, HTMLButtonElement>();
+  /** paints the map picture: deferred, nobody needs it until the map is first opened */
+  private paint: (() => void) | null;
 
   constructor(
     root: HTMLElement,
@@ -238,11 +241,16 @@ export class MapPanel extends Emitter<{ travel: SectionId; close: void }> {
       </div>`;
     root.appendChild(this.el);
     const canvasWrap = this.el.querySelector('.map__canvas')! as HTMLElement;
-    const canvas = paintMap(terrain, trees, buildings);
-    canvas.className = 'map__image';
-    canvas.setAttribute('role', 'img');
-    canvas.setAttribute('aria-label', 'Painted map of the valley');
-    canvasWrap.prepend(canvas);
+    this.paint = () => {
+      this.paint = null;
+      const canvas = paintMap(terrain, trees, buildings);
+      canvas.className = 'map__image';
+      canvas.setAttribute('role', 'img');
+      canvas.setAttribute('aria-label', 'Painted map of the valley');
+      canvasWrap.prepend(canvas);
+    };
+    // Painting takes a while: do it in a quiet moment after the valley has opened.
+    whenIdle(() => this.paint?.(), 6000);
     this.panda = this.el.querySelector('.map__panda')!;
     for (const m of markers) {
       const meta = SECTIONS.find((s) => s.id === m.section)!;
@@ -264,6 +272,7 @@ export class MapPanel extends Emitter<{ travel: SectionId; close: void }> {
   }
 
   open(): void {
+    this.paint?.();
     for (const [id, b] of this.markers) {
       const found = this.progress.has(id);
       b.classList.toggle('map__marker--found', found);
