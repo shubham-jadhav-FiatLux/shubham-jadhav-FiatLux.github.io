@@ -20,12 +20,12 @@ export const sj_portfolio: PortfolioContent = {
     gateGlyphs: '和平谷', // "Valley of Peace"
     seal: '和', // peace, harmony
     tagline: 'A portfolio you can walk through',
-    // url: 'https://[you].github.io/', // set by the deploy workflow
-    sourceUrl: '', // TODO: e.g. 'https://github.com/[you]/[you].github.io'
+    // url: the deploy workflow sets it for GitHub Pages; set it here for other hosts
+    sourceUrl: 'https://github.com/shubham-jadhav-FiatLux/shubham-jadhav-FiatLux.github.io',
   },
 
   owner: {
-    name: '[Your Name]', // TODO
+    name: 'Shubham Jadhav',
     role: 'Computer Science Student · Graphics Programmer',
     location: '[City, Country]', // TODO
     intro: 'I build real-time graphics with OpenGL, WebGL and a lot of curiosity.',
@@ -114,7 +114,12 @@ export const sj_portfolio: PortfolioContent = {
           'Built with three.js, TypeScript and custom GLSL shaders, with a kinematic character controller and procedural animation.',
         ],
         tech: ['three.js', 'TypeScript', 'GLSL', 'Web Audio', 'Vite'],
-        links: [{ label: 'Source code', url: 'https://github.com/[you]/[you].github.io' }], // TODO
+        links: [
+          {
+            label: 'Source code',
+            url: 'https://github.com/shubham-jadhav-FiatLux/shubham-jadhav-FiatLux.github.io',
+          },
+        ],
       },
       {
         id: 'renderer',
@@ -186,7 +191,7 @@ export const sj_portfolio: PortfolioContent = {
       'The bell carries messages across the valley. Reach out for collaborations, internships or just to talk graphics.',
     email: 'you@example.com', // TODO
     links: [
-      { label: 'GitHub', url: 'https://github.com/[you]' }, // TODO
+      { label: 'GitHub', url: 'https://github.com/shubham-jadhav-FiatLux' },
       { label: 'LinkedIn', url: 'https://www.linkedin.com/in/[you]' }, // TODO
     ],
   },

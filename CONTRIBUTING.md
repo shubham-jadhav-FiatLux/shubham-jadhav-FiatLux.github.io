@@ -1,6 +1,14 @@
 # Contributing
 
 Thanks for wandering into the valley! Contributions, ideas and bug reports are welcome.
+Everyone taking part is expected to follow the [code of conduct](CODE_OF_CONDUCT.md).
+
+## Bugs and ideas
+
+Open an [issue](https://github.com/shubham-jadhav-FiatLux/shubham-jadhav-FiatLux.github.io/issues/new/choose)
+with the bug report or feature idea form. For a bug, the browser, the device and the quality
+preset help a lot, and so does a screenshot. Security problems go through a
+[private report](SECURITY.md) instead.
 
 ## Getting started
 

@@ -1,0 +1,53 @@
+name: Bug report
+description: Something in the valley is not behaving
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Security problems belong in a
+        [private report](https://github.com/shubham-jadhav-FiatLux/shubham-jadhav-FiatLux.github.io/security/advisories/new) instead.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you see, and what did you expect to see instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the site and choose "Begin the journey"
+        2. Walk to the bridge
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version
+      placeholder: Chrome, Firefox, Safari or Edge, with its version number
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device and graphics card
+      placeholder: MacBook Air M2, Pixel 8, Windows laptop with Intel Iris Xe...
+  - type: dropdown
+    id: quality
+    attributes:
+      label: Quality preset
+      description: The Graphics quality setting in the menu.
+      options:
+        - High
+        - Medium
+        - Low
+        - Not sure
+  - type: textarea
+    id: media
+    attributes:
+      label: Screenshot or recording
+      description: Optional, but it helps a lot. Drag files here.

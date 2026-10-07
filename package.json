@@ -3,8 +3,33 @@
   "version": "0.8.0",
   "private": true,
   "description": "An explorable 3D portfolio: guide a panda through a misty valley of bamboo, blossoms and pagodas to discover projects, skills and stories.",
-  "type": "module",
+  "keywords": [
+    "portfolio",
+    "3d-portfolio",
+    "threejs",
+    "webgl2",
+    "glsl",
+    "typescript",
+    "vite",
+    "web-audio",
+    "procedural-generation",
+    "creative-coding",
+    "game"
+  ],
+  "homepage": "https://shubham-jadhav-fiatlux.github.io/",
+  "bugs": {
+    "url": "https://github.com/shubham-jadhav-FiatLux/shubham-jadhav-FiatLux.github.io/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shubham-jadhav-FiatLux/shubham-jadhav-FiatLux.github.io.git"
+  },
   "license": "MIT",
+  "author": {
+    "name": "Shubham Jadhav",
+    "url": "https://github.com/shubham-jadhav-FiatLux"
+  },
+  "type": "module",
   "engines": {
     "node": ">=22.12.0"
   },
@@ -24,15 +49,6 @@
     "tour": "node scripts/tour.mjs",
     "og-image": "node scripts/og-image.mjs"
   },
-  "keywords": [
-    "portfolio",
-    "threejs",
-    "webgl",
-    "glsl",
-    "game",
-    "procedural",
-    "panda"
-  ],
   "dependencies": {
     "@fontsource/cormorant-garamond": "^5.3.0",
     "@fontsource/lora": "^5.3.0",
