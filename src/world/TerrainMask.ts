@@ -226,7 +226,11 @@ export class TerrainMask {
   }
 }
 
-/** Two-pass separable box blur in place. */
+/**
+ * Two-pass separable box blur in place, using running sums. The vertical pass keeps one
+ * running sum per column and walks the image row by row, so memory is read in order
+ * (stepping down each column in turn is several times slower on a 1024² map).
+ */
 function boxBlur(src: Uint8Array, n: number, radius: number): void {
   if (radius <= 0) return;
   const tmp = new Uint8Array(n * n);
@@ -242,14 +246,18 @@ function boxBlur(src: Uint8Array, n: number, radius: number): void {
       acc += add - sub;
     }
   }
-  for (let x = 0; x < n; x++) {
-    let acc = 0;
-    for (let y = -radius; y <= radius; y++) acc += tmp[Math.min(n - 1, Math.max(0, y)) * n + x]!;
-    for (let y = 0; y < n; y++) {
-      src[y * n + x] = acc / w;
-      const add = tmp[Math.min(n - 1, y + radius + 1) * n + x]!;
-      const sub = tmp[Math.max(0, y - radius) * n + x]!;
-      acc += add - sub;
+  const acc = new Int32Array(n);
+  for (let y = -radius; y <= radius; y++) {
+    const row = Math.min(n - 1, Math.max(0, y)) * n;
+    for (let x = 0; x < n; x++) acc[x]! += tmp[row + x]!;
+  }
+  for (let y = 0; y < n; y++) {
+    const row = y * n;
+    const addRow = Math.min(n - 1, y + radius + 1) * n;
+    const subRow = Math.max(0, y - radius) * n;
+    for (let x = 0; x < n; x++) {
+      src[row + x] = acc[x]! / w;
+      acc[x]! += tmp[addRow + x]! - tmp[subRow + x]!;
     }
   }
 }

@@ -41,20 +41,29 @@ export class Renderer {
   private bloomBoost = 0;
   private readonly bloomBase = 0.75;
 
+  /**
+   * @param context the WebGL 2 context already made on `canvas` while checking for
+   *   support (`createContext`), so the page never pays for a second one
+   */
   constructor(
     readonly canvas: HTMLCanvasElement,
     private readonly scene: Scene,
     private camera: PerspectiveCamera,
     settings: QualitySettings,
+    context?: WebGL2RenderingContext,
   ) {
     this.settings = settings;
     this.webgl = new WebGLRenderer({
       canvas,
+      context,
       antialias: false,
       stencil: false,
       depth: true,
       powerPreference: 'high-performance',
     });
+    // Checking every program for errors makes the browser wait for each shader to finish
+    // compiling (it cannot compile in the background): only worth it while developing.
+    this.webgl.debug.checkShaderErrors = import.meta.env.DEV;
     this.webgl.outputColorSpace = SRGBColorSpace;
     this.webgl.toneMapping = NoToneMapping;
     this.webgl.toneMappingExposure = 1.0;
@@ -135,6 +144,20 @@ export class Renderer {
     this.composer.setSize(this.width, this.height, true);
     this.camera.aspect = this.width / this.height;
     this.camera.updateProjectionMatrix();
+  }
+
+  /**
+   * Compiles the scene's shaders, in the background where the browser supports it. They
+   * are compiled for the state they are drawn in (into the post-processing buffer, not
+   * straight to the screen), or the first frame would compile them all over again.
+   */
+  compile(): Promise<unknown> {
+    const gl = this.webgl;
+    const previous = gl.getRenderTarget();
+    gl.setRenderTarget(this.composer.inputBuffer);
+    const done = gl.compileAsync(this.scene, this.camera);
+    gl.setRenderTarget(previous);
+    return done;
   }
 
   /** Briefly intensifies the bloom (discoveries, the bell). */

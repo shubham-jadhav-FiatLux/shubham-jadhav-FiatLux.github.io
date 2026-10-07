@@ -98,6 +98,7 @@ export class App extends Emitter<AppEvents> {
   constructor(
     readonly canvas: HTMLCanvasElement,
     readonly content: PortfolioContent = portfolio,
+    context?: WebGL2RenderingContext,
   ) {
     super();
     installAtmosphericFog();
@@ -108,7 +109,13 @@ export class App extends Emitter<AppEvents> {
       this.terrain ? this.terrain.heightAt(x, z) : 0,
     );
     this.rig.reducedMotion = this.reducedMotion;
-    this.renderer = new Renderer(canvas, this.scene, this.rig.camera, this.quality.settings);
+    this.renderer = new Renderer(
+      canvas,
+      this.scene,
+      this.rig.camera,
+      this.quality.settings,
+      context,
+    );
     this.loop = new Loop(this.tick);
     const sim = Number(new URLSearchParams(window.location.search).get('sim'));
     if (sim > 1) this.loop.substeps = Math.min(16, Math.round(sim));
@@ -126,7 +133,10 @@ export class App extends Emitter<AppEvents> {
     window.addEventListener('resize', this.onResize);
   }
 
-  /** Builds the world step by step so the loading bar can breathe between steps. */
+  /**
+   * Builds the world step by step so the loading bar can breathe between steps. Then
+   * the gameplay layer adds its own objects, and `prepare()` gets everything ready to draw.
+   */
   async load(progress: (fraction: number, label: string) => void): Promise<void> {
     await this.debug.init();
     // Canvas textures (signboards, banners, labels) need the brush font loaded first.
@@ -158,12 +168,25 @@ export class App extends Emitter<AppEvents> {
     }
     progress(steps.length / (steps.length + 1), 'Preparing shaders');
     await nextFrame();
+  }
+
+  /**
+   * Compiles every shader the valley needs before the first frame is shown (a shader
+   * compiled on first use stalls that frame), then starts the loop.
+   */
+  async prepare(progress: (fraction: number, label: string) => void): Promise<void> {
     this.onResize();
     try {
-      await this.renderer.webgl.compileAsync(this.scene, this.rig.camera);
+      // in the background where the browser can compile shaders in parallel
+      await this.renderer.compile();
     } catch {
-      /* compileAsync is an optimisation only */
+      /* an optimisation only */
     }
+    // One full frame with the sun's shadow stretched over the whole valley prepares what
+    // that leaves out: the shadow shaders of every caster and the post-processing passes.
+    this.lighting.coverValley(true);
+    this.renderer.render(0);
+    this.lighting.coverValley(false);
     progress(1, 'Ready');
     this.loop.start();
     this.emit('ready', undefined);
