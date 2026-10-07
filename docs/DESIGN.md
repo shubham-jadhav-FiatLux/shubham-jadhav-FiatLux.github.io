@@ -41,7 +41,9 @@ saturated but gentle colours, and rounded, friendly shapes.
 | UI           | rice paper `#f3ead6`, ink `#1e1a18`, seal red `#b8352b`                                                      |
 
 Typography: **Ma Shan Zheng** (brush, subset to the glyphs we use) for titles and seals,
-**Cormorant Garamond** for sub-headings, **Lora** for body copy.
+**Cormorant Garamond** for sub-headings, **Lora** for body copy. Lettering in the world
+(signs, captions, banners) is drawn thickened and outlined so it reads from afar, with
+bold Lora for its smaller lines.
 
 All geometry, textures and audio are generated in code. There are no downloaded models,
 images or sound files, which keeps the build tiny and the licensing simple.
@@ -73,6 +75,19 @@ images or sound files, which keeps the build tiny and the licensing simple.
 - **Bamboo.** Culms are light tubes; node rings, the waxy bloom and the striped grooves of
   golden bamboo are drawn in the shader from an internode coordinate, so detail costs no
   triangles.
+- **Mountains.** Four ranges ring the valley (`world/mountains`), each paler and higher
+  than the one before. A peak is a stack of rings from a hidden base to a summit: a
+  profile gives its silhouette (karst towers with rounded crowns, flat-topped pillars,
+  broken granite spires, massifs with arêtes) and a cross-section that varies with height
+  adds lumps, rain-cut flutes, ledges and a lean. Scrub clumps on the crowns and ledges
+  and pines leaning off the tops break the outlines. A painterly shader lights them with
+  a soft golden terminator, cool shade and glowing edges against the sun, then applies
+  aerial perspective in the sky's own haze colour and mist at the foot. Bands of mist hang
+  between the ranges, a sea of cloud fills the space below the rim (seen from the air),
+  and a wooded skirt slopes from the edge of the terrain down into it.
+- **Willows.** Limbs rise like a vase and branches arch over from them; a curtain of
+  leafy ribbons hangs from the arches almost to the ground, lit as one mass (normals point
+  away from the crown) and swaying most at the tips.
 
 ### Life
 
@@ -124,9 +139,11 @@ piers, each ringed with foam.
 
 ## 4. The panda
 
-An original character: a round, soft panda with a red scarf and a small scroll case on its
-back. Built procedurally from primitives in a transform hierarchy and animated
-procedurally (no skeleton needed):
+An original character: a round, soft panda with a red silk scarf and a bamboo scroll case
+slung across its back. Built procedurally from primitives in a transform hierarchy and
+animated procedurally (no skeleton needed). The scarf is a pleated silk collar with
+gold-embroidered hems and a knot; the case has nodes, cord bindings, brass caps, a tassel
+and the scroll inside tied with red cord, on a leather strap with a buckle.
 
 | State      | Input                               | Motion                                                                        | Sound                                                  |
 | ---------- | ----------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------ |
@@ -151,7 +168,13 @@ The signature moment when a scroll is found:
 4. The landmark's seal (e.g. 技) is stamped in red onto the progress bar.
 5. The camera eases into a framed shot. Once the bow and the golden light are over
    (2.4 s), the rolled scroll rises out of the panda like a genie from a lamp, a golden
-   wisp swelling along a Bezier curve to the middle of the screen, and unrolls there.
+   wisp swelling along a Bezier curve to the middle of the screen, and unrolls there with
+   a "schedushh": a whoosh in flight, the rollers knocking apart, the paper rustling open.
+
+The scroll itself is mounted like a real hanging scroll: a cord and a lacquered rod with
+a silk tassel, a brocade "heaven" panel with its two hanging strips, fret-patterned bands
+either side of aged paper (fret corners, the section's character as a watermark, the
+mounter's seal), a shorter "earth" panel and a heavy roller with jade knobs.
 
 ### The tour
 
@@ -222,7 +245,8 @@ Everything is synthesised with the Web Audio API at runtime:
 - **Ambience**: wind (filtered noise with gusts), birdsong (FM chirps, panned), water
   lapping near the lake, the waterfall roar, wind bells near the pagoda.
 - **Effects**: footsteps per surface, jump/land, strike whoosh, wood thwack, splash,
-  gong, scroll open/close, UI ticks.
+  gong, the big drum (a pitched boom with a higher mode that small speakers can play),
+  the scroll's whoosh and unroll, UI ticks.
 
 Audio starts only after the visitor presses _Begin_ (browser autoplay rules) and can be
 muted at any time (`N`); the music has its own toggle.

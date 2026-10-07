@@ -2,9 +2,10 @@
 
 ![A painted valley with a pagoda on a hill, a lake with a zig-zag bridge, a waterfall and a village](public/og-image.jpg)
 
-An explorable 3D portfolio. Guide a panda through a misty valley of bamboo groves,
-blossom trees, a koi lake fed by a mountain waterfall and a hilltop pagoda, with
-butterflies drifting over the meadows and lanterns glowing in the evening light. Every
+An explorable 3D portfolio. Guide a panda through a misty valley ringed by karst peaks
+that rise out of the clouds: bamboo groves, blossom trees, weeping willows, a koi lake fed
+by a mountain waterfall and a hilltop pagoda, with butterflies drifting over the meadows
+and lanterns glowing in the evening light. Every
 landmark holds a scroll with a piece of the author's story: who they are, what they can
 do, what they have built and how to reach them. Finding a scroll for the first time is a
 small ceremony: the panda bows, a ring of golden ink spreads through the grass, a seal is
