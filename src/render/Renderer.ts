@@ -82,7 +82,7 @@ export class Renderer {
 
     this.composer = new EffectComposer(this.webgl, {
       frameBufferType: HalfFloatType,
-      multisampling: settings.msaa,
+      multisampling: this.samplesFor(this.pixelRatioFor(settings)),
     });
     this.renderPass = new RenderPass(scene, camera);
     this.composer.addPass(this.renderPass);
@@ -112,9 +112,21 @@ export class Renderer {
         else if (m) m.needsUpdate = true;
       });
     }
-    this.composer.multisampling = settings.msaa;
     this.rebuildEffects();
     this.resize(this.width, this.height);
+  }
+
+  private pixelRatioFor(settings: QualitySettings): number {
+    return Math.min(window.devicePixelRatio || 1, settings.maxPixelRatio) * this.renderScale;
+  }
+
+  /**
+   * MSAA samples for a pixel ratio. On a high-density screen every CSS pixel is already
+   * drawn as several, so two samples smooth edges as well as four would, for half the
+   * memory and bandwidth (four samples of a half-float 4K buffer are several hundred MB).
+   */
+  private samplesFor(pixelRatio: number): number {
+    return pixelRatio >= 1.5 ? Math.min(this.settings.msaa, 2) : this.settings.msaa;
   }
 
   setRenderScale(scale: number): void {
@@ -137,9 +149,10 @@ export class Renderer {
   resize(width: number, height: number): void {
     this.width = Math.max(1, width);
     this.height = Math.max(1, height);
-    this.pixelRatio =
-      Math.min(window.devicePixelRatio || 1, this.settings.maxPixelRatio) * this.renderScale;
+    this.pixelRatio = this.pixelRatioFor(this.settings);
     this.webgl.setPixelRatio(this.pixelRatio);
+    const samples = this.samplesFor(this.pixelRatio);
+    if (this.composer.multisampling !== samples) this.composer.multisampling = samples;
     // The composer resizes the renderer as well as its own buffers.
     this.composer.setSize(this.width, this.height, true);
     this.camera.aspect = this.width / this.height;

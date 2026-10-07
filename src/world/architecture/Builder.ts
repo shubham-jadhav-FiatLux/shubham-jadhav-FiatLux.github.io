@@ -36,6 +36,14 @@ export interface LightSpot {
 
 const q = new Quaternion();
 const tmpSize = new Vector3();
+const tmpCentre = new Vector3();
+/**
+ * Edge (m) of the cells the big buckets are split into: each cell is its own mesh, so
+ * the camera, and the sun's shadow camera round the panda, skip the far ones. The small
+ * buckets (glow, lattice) stay whole: a few more triangles cost less than more draw calls.
+ */
+const CELL = 40;
+const SPLIT: Record<Bucket, boolean> = { paint: true, roof: true, glow: false, lattice: false };
 const grain = new Vector3();
 const AXIS_X = new Vector3(1, 0, 0);
 const AXIS_Y = new Vector3(0, 1, 0);
@@ -339,7 +347,11 @@ export class ArchBuilder {
     matrix: Matrix4,
     finish?: Finish,
   ): void {
-    let g = geometry.index ? geometry.toNonIndexed() : geometry.clone();
+    // Parts keep their shared vertices (indexed geometry): far fewer vertices to shade
+    // than one copy per triangle corner. A part without normals of its own is shaded
+    // flat, one normal per face, so it is split into separate triangles first.
+    let g =
+      geometry.index && !geometry.attributes.normal ? geometry.toNonIndexed() : geometry.clone();
     if (bucket === 'roof') {
       const uv = g.getAttribute('uv');
       if (uv) g.setAttribute('aRoofUv', uv.clone());
@@ -387,27 +399,50 @@ export class ArchBuilder {
       g.setAttribute('aGrain', new BufferAttribute(gr, 3));
     }
     g = g.applyMatrix4(matrix);
+    if (!g.index) {
+      const n = g.attributes.position!.count;
+      const index = new (n > 65535 ? Uint32Array : Uint16Array)(n);
+      for (let i = 0; i < n; i++) index[i] = i;
+      g.setIndex(new BufferAttribute(index, 1));
+    }
     this.parts[bucket].push(g);
   }
 
+  /** Merges the parts: one mesh per material bucket and cell of the valley. */
   build(): Mesh[] {
     const meshes: Mesh[] = [];
     for (const bucket of Object.keys(this.parts) as Bucket[]) {
-      const list = this.parts[bucket];
-      if (!list.length) continue;
-      const merged = mergeGeometries(list, false);
-      list.forEach((g) => g.dispose());
-      if (!merged) {
-        console.warn(`architecture: could not merge bucket ${bucket}`);
-        continue;
+      const cells = new Map<string, BufferGeometry[]>();
+      for (const g of this.parts[bucket]) {
+        g.computeBoundingBox();
+        g.boundingBox!.getCenter(tmpCentre);
+        const key = SPLIT[bucket]
+          ? `${Math.floor(tmpCentre.x / CELL)},${Math.floor(tmpCentre.z / CELL)}`
+          : 'all';
+        let list = cells.get(key);
+        if (!list) cells.set(key, (list = []));
+        list.push(g);
       }
-      merged.computeBoundingSphere();
-      const mesh = new Mesh(merged, this.materials[bucket]);
-      mesh.name = `architecture-${bucket}`;
-      mesh.castShadow = bucket !== 'glow';
-      mesh.receiveShadow = true;
-      mesh.matrixAutoUpdate = false;
-      meshes.push(mesh);
+      for (const [key, list] of cells) {
+        const merged = mergeGeometries(list, false);
+        list.forEach((g) => g.dispose());
+        if (!merged) {
+          console.warn(`architecture: could not merge ${bucket} @${key}`);
+          continue;
+        }
+        // centred on its own middle, so the renderer can sort it by distance
+        merged.computeBoundingSphere();
+        const centre = merged.boundingSphere!.center.clone();
+        merged.translate(-centre.x, -centre.y, -centre.z);
+        const mesh = new Mesh(merged, this.materials[bucket]);
+        mesh.name = `architecture-${bucket}@${key}`;
+        mesh.position.copy(centre);
+        mesh.castShadow = bucket !== 'glow';
+        mesh.receiveShadow = true;
+        mesh.matrixAutoUpdate = false;
+        mesh.updateMatrix();
+        meshes.push(mesh);
+      }
     }
     return meshes;
   }

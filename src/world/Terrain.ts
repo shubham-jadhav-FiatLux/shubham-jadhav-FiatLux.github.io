@@ -393,7 +393,6 @@ vec3 terrainColor(vec3 wp, vec3 nrm) {
   vec2 muv = (xz - uTerrain.x) / uTerrain.y;
   vec4 m = texture2D(uMaskMap, muv);
   vec4 det = texture2D(uDetailMap, muv);
-  float nLarge = fbm(xz * 0.045);
   float nMid = vnoise(xz * 0.55);
   float nFine = vnoise(xz * 2.7);
 
@@ -401,60 +400,43 @@ vec3 terrainColor(vec3 wp, vec3 nrm) {
   float nRag = vnoise(xz * 4.3);
   vec3 grass = grassGroundColor(xz) * (0.88 + 0.22 * nMid);
 
+  // How much of each material this point gets. Most of the valley is plain meadow, so
+  // each material's (costly) colour below is only worked out where it shows: mixing in
+  // a material by exactly zero leaves the colour exactly as it was.
   // Dirt paths and yards (looked up with a meandering offset). The mask is brighter down
   // the middle of a path: a compacted, darker tread with dusty, lighter margins.
   float mr = texture2D(uMaskMap, (xz + groundWarp(xz) - uTerrain.x) / uTerrain.y).r;
   float dirt = smoothstep(0.3, 0.6, mr + (nMid - 0.5) * 0.36 + (nRag - 0.5) * 0.2);
-  float tread = smoothstep(0.86, 0.98, mr);
-  vec3 dirtCol = mix(uDirtA, uDirtB, nFine) * (0.9 + 0.18 * nMid) * (0.94 + 0.12 * nLarge);
-  dirtCol *= mix(1.05, 0.88, tread);
-
   // Verge: trampled, drier grass with soil showing through in patches.
   float verge = smoothstep(0.06, 0.32, mr + (nRag - 0.5) * 0.12) * (1.0 - dirt);
-  vec3 worn = mix(grass, uGrassDry * 0.85, 0.4);
-  float soilPatch = smoothstep(0.5, 0.72, vnoise(xz * 3.3) * 0.7 + verge * 0.5);
-  worn = mix(worn, dirtCol * 0.92, soilPatch * 0.85);
-
   float sandAmt = 1.0 - smoothstep(0.18, 0.85, wp.y + (nMid - 0.5) * 0.35 + (nRag - 0.5) * 0.12);
-  float ripplesS = sin(dot(xz, vec2(2.3, 1.1)) * 3.1 + vnoise(xz * 0.9) * 4.0) * 0.5 + 0.5;
-  vec3 sandCol = uSand * (0.9 + 0.2 * nFine) * (0.95 + 0.07 * ripplesS);
   float slope = 1.0 - nrm.y;
   float rockAmt = smoothstep(0.3, 0.48, slope + (nMid - 0.5) * 0.12);
   // scree gathering at the foot of steep ground
   float talus = smoothstep(0.2, 0.3, slope + (nMid - 0.5) * 0.1) * (1.0 - rockAmt);
 
-  // Cliff rock: layered strata with lit ledges, shadowed undercuts and vertical joints.
-  float layerY = wp.y * (0.5 + 0.28 * vnoise(xz * 0.03)) + nLarge * 2.6 + vnoise(xz * 0.15) * 1.2;
-  float band = fract(layerY);
-  float layerId = floor(layerY);
-  float tone = hash12(vec2(layerId, 7.1));
-  float ledge = smoothstep(0.0, 0.05, band) * (1.0 - smoothstep(0.05, 0.2, band));
-  // ledges come and go along the cliff instead of running on forever
-  ledge *= smoothstep(0.3, 0.6, vnoise(vec2(dot(xz, vec2(0.6, 0.8)) * 0.25, layerId * 1.3)));
-  float undercut = smoothstep(0.7, 0.98, band);
-  float joint = smoothstep(0.88, 0.97,
-    vnoise(vec2(dot(xz, vec2(0.71, -0.71)) * 1.3 + layerId * 5.3, layerId * 1.7)));
-  float streak = vnoise(vec2(dot(xz, vec2(0.7, 0.7)) * 1.3, wp.y * 0.08));
-  vec3 rockCol = mix(uRock, uMoss, smoothstep(0.35, 0.7, nLarge) * (1.0 - smoothstep(0.35, 0.7, slope)));
-  rockCol *= (0.8 + 0.3 * tone) * (0.84 + 0.3 * streak) * (0.9 + 0.2 * nFine);
-  rockCol *= 1.0 + ledge * 0.3 - undercut * 0.34 - joint * 0.32;
-  // cooler grey patches and rusty seep stains
-  rockCol *= mix(vec3(1.0), vec3(0.82, 0.86, 0.9), smoothstep(0.5, 0.8, fbm(xz * 0.06 + wp.y * 0.05)));
-  float seep = smoothstep(0.7, 0.9, vnoise(vec2(dot(xz, vec2(0.7, 0.7)) * 0.9, wp.y * 0.04 + 3.0)));
-  rockCol = mix(rockCol, rockCol * vec3(0.95, 0.72, 0.52), seep * 0.5);
-  // Moss and little plants clinging to the ledges.
-  float ledgeMoss = ledge * smoothstep(0.4, 0.7, vnoise(xz * 0.9 + layerId * 2.3));
-  rockCol = mix(rockCol, uMoss * (0.75 + 0.35 * nFine), ledgeMoss * 0.85);
-  rockCol = mix(rockCol, uMoss * 0.85, smoothstep(0.55, 0.8, vnoise(xz * 0.4 + wp.y * 0.3)) * 0.45);
-  terrainRelief = rockAmt * (band * 0.4 - undercut * 0.3 - joint * 0.25 + nFine * 0.08);
+  float nLarge = 0.0;
+  if (dirt > 0.0 || verge > 0.0 || rockAmt > 0.0) nLarge = fbm(xz * 0.045);
+  float tread = smoothstep(0.86, 0.98, mr);
+  vec3 dirtCol = mix(uDirtA, uDirtB, nFine) * (0.9 + 0.18 * nMid) * (0.94 + 0.12 * nLarge);
+  dirtCol *= mix(1.05, 0.88, tread);
 
   vec3 col = grass;
-  col = mix(col, sandCol, sandAmt);
-  // where beach meets meadow: patches of dry grass holding the sand
-  float shore = sandAmt * (1.0 - sandAmt) * 4.0;
-  col = mix(col, mix(grass, uGrassDry, 0.55), shore * smoothstep(0.42, 0.68, vnoise(xz * 2.1 + 5.0)) * 0.65);
+  if (sandAmt > 0.0) {
+    float ripplesS = sin(dot(xz, vec2(2.3, 1.1)) * 3.1 + vnoise(xz * 0.9) * 4.0) * 0.5 + 0.5;
+    vec3 sandCol = uSand * (0.9 + 0.2 * nFine) * (0.95 + 0.07 * ripplesS);
+    col = mix(col, sandCol, sandAmt);
+    // where beach meets meadow: patches of dry grass holding the sand
+    float shore = sandAmt * (1.0 - sandAmt) * 4.0;
+    col = mix(col, mix(grass, uGrassDry, 0.55), shore * smoothstep(0.42, 0.68, vnoise(xz * 2.1 + 5.0)) * 0.65);
+  }
   col = mix(col, mix(uGravelA, uGravelB, nFine) * 0.85, talus * 0.5);
-  col = mix(col, worn, verge);
+  if (verge > 0.0) {
+    vec3 worn = mix(grass, uGrassDry * 0.85, 0.4);
+    float soilPatch = smoothstep(0.5, 0.72, vnoise(xz * 3.3) * 0.7 + verge * 0.5);
+    worn = mix(worn, dirtCol * 0.92, soilPatch * 0.85);
+    col = mix(col, worn, verge);
+  }
   col = mix(col, dirtCol, dirt);
 
   // Pebbles and grit: along the margins of paths, on the upper beach and in the scree.
@@ -494,10 +476,38 @@ vec3 terrainColor(vec3 wp, vec3 nrm) {
     col = mix(col, gcol, gravel);
   }
   // Fallen leaves under bamboo and trees.
-  float litter = det.b * smoothstep(0.3, 0.75, vnoise(xz * 2.3) * 0.6 + nFine * 0.55);
-  col = mix(col, mix(uLitterA, uLitterB, vnoise(xz * 7.0)), litter * 0.7);
+  if (det.b > 0.0) {
+    float litter = det.b * smoothstep(0.3, 0.75, vnoise(xz * 2.3) * 0.6 + nFine * 0.55);
+    col = mix(col, mix(uLitterA, uLitterB, vnoise(xz * 7.0)), litter * 0.7);
+  }
 
-  col = mix(col, rockCol, rockAmt);
+  // Cliff rock: layered strata with lit ledges, shadowed undercuts and vertical joints.
+  if (rockAmt > 0.0) {
+    float layerY = wp.y * (0.5 + 0.28 * vnoise(xz * 0.03)) + nLarge * 2.6 + vnoise(xz * 0.15) * 1.2;
+    float band = fract(layerY);
+    float layerId = floor(layerY);
+    float tone = hash12(vec2(layerId, 7.1));
+    float ledge = smoothstep(0.0, 0.05, band) * (1.0 - smoothstep(0.05, 0.2, band));
+    // ledges come and go along the cliff instead of running on forever
+    ledge *= smoothstep(0.3, 0.6, vnoise(vec2(dot(xz, vec2(0.6, 0.8)) * 0.25, layerId * 1.3)));
+    float undercut = smoothstep(0.7, 0.98, band);
+    float joint = smoothstep(0.88, 0.97,
+      vnoise(vec2(dot(xz, vec2(0.71, -0.71)) * 1.3 + layerId * 5.3, layerId * 1.7)));
+    float streak = vnoise(vec2(dot(xz, vec2(0.7, 0.7)) * 1.3, wp.y * 0.08));
+    vec3 rockCol = mix(uRock, uMoss, smoothstep(0.35, 0.7, nLarge) * (1.0 - smoothstep(0.35, 0.7, slope)));
+    rockCol *= (0.8 + 0.3 * tone) * (0.84 + 0.3 * streak) * (0.9 + 0.2 * nFine);
+    rockCol *= 1.0 + ledge * 0.3 - undercut * 0.34 - joint * 0.32;
+    // cooler grey patches and rusty seep stains
+    rockCol *= mix(vec3(1.0), vec3(0.82, 0.86, 0.9), smoothstep(0.5, 0.8, fbm(xz * 0.06 + wp.y * 0.05)));
+    float seep = smoothstep(0.7, 0.9, vnoise(vec2(dot(xz, vec2(0.7, 0.7)) * 0.9, wp.y * 0.04 + 3.0)));
+    rockCol = mix(rockCol, rockCol * vec3(0.95, 0.72, 0.52), seep * 0.5);
+    // Moss and little plants clinging to the ledges.
+    float ledgeMoss = ledge * smoothstep(0.4, 0.7, vnoise(xz * 0.9 + layerId * 2.3));
+    rockCol = mix(rockCol, uMoss * (0.75 + 0.35 * nFine), ledgeMoss * 0.85);
+    rockCol = mix(rockCol, uMoss * 0.85, smoothstep(0.55, 0.8, vnoise(xz * 0.4 + wp.y * 0.3)) * 0.45);
+    terrainRelief += rockAmt * (band * 0.4 - undercut * 0.3 - joint * 0.25 + nFine * 0.08);
+    col = mix(col, rockCol, rockAmt);
+  }
   // Baked soft contact shade under trees and buildings.
   col *= 1.0 - m.b * 0.42;
   // Wet ground and rock around the falls and the stream: darker, a little green.
@@ -532,7 +542,7 @@ vec3 terrainColor(vec3 wp, vec3 nrm) {
           '#include <emissivemap_fragment>\ntotalEmissiveRadiance += vec3(1.6, 1.1, 0.45) * inkRipple(vTerrainPos.xz) + uLampLight * terrainLight;',
         );
     };
-    mat.customProgramCacheKey = () => 'terrain-v5';
+    mat.customProgramCacheKey = () => 'terrain-v6';
     return mat;
   }
 }

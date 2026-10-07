@@ -134,3 +134,27 @@ vec3 bumpFromHeight(vec3 surfPos, vec3 surfNorm, float h) {
   return normalize(abs(det) * surfNorm - grad);
 }
 `;
+
+/**
+ * Vertex shaders only: does a sphere (centre in view space, radius) reach into the
+ * camera's view? The frustum's side planes come straight from the projection matrix
+ * (sums and differences of its rows), so any perspective projection works.
+ */
+export const VIEW_CULL_GLSL = /* glsl */ `
+bool sphereInView(vec3 c, float r) {
+  mat4 m = projectionMatrix;
+  vec4 row0 = vec4(m[0][0], m[1][0], m[2][0], m[3][0]);
+  vec4 row1 = vec4(m[0][1], m[1][1], m[2][1], m[3][1]);
+  vec4 row3 = vec4(m[0][3], m[1][3], m[2][3], m[3][3]);
+  vec4 p = vec4(c, 1.0);
+  vec4 left = row3 + row0;
+  vec4 right = row3 - row0;
+  vec4 bottom = row3 + row1;
+  vec4 top = row3 - row1;
+  return c.z < r
+    && dot(left, p) > -r * length(left.xyz)
+    && dot(right, p) > -r * length(right.xyz)
+    && dot(bottom, p) > -r * length(bottom.xyz)
+    && dot(top, p) > -r * length(top.xyz);
+}
+`;
