@@ -2,7 +2,7 @@
  * Safe wrapper around localStorage. Storage can be unavailable (private mode, sandboxed
  * iframes, blocked cookies), so every access is guarded and the game never depends on it.
  */
-const sj_PREFIX = 'vowb:';
+const sj_PREFIX = 'valley-of-peace:';
 
 export const sj_storage = {
   get<T>(sj_key: string, sj_fallback: T): T {
