@@ -163,12 +163,23 @@ export class Renderer {
    * Compiles the scene's shaders, in the background where the browser supports it. They
    * are compiled for the state they are drawn in (into the post-processing buffer, not
    * straight to the screen), or the first frame would compile them all over again.
+   *
+   * Without KHR_parallel_shader_compile the browser cannot report progress, and three.js's
+   * compileAsync would only add a console warning to the same work. Those browsers get the
+   * shaders queued and one pause until the next task: that lets the browser start on all
+   * of them together, where drawing at once made the valley about 60% slower to get ready
+   * (measured with SwiftShader, 9.5 s against 15.5 s).
    */
   compile(): Promise<unknown> {
     const sj_gl = this.webgl;
     const sj_previous = sj_gl.getRenderTarget();
     sj_gl.setRenderTarget(this.composer.inputBuffer);
-    const sj_done = sj_gl.compileAsync(this.scene, this.camera);
+    const sj_done = sj_gl.extensions.has('KHR_parallel_shader_compile')
+      ? sj_gl.compileAsync(this.scene, this.camera)
+      : new Promise((sj_resolve) => {
+          sj_gl.compile(this.scene, this.camera);
+          setTimeout(sj_resolve, 0);
+        });
     sj_gl.setRenderTarget(sj_previous);
     return sj_done;
   }
