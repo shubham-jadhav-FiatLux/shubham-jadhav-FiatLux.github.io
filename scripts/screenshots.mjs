@@ -36,7 +36,7 @@ const SHOTS = [
   },
   { name: 'pavilion', x: 8, z: 9, yaw: 2.6, cam: { yaw: -0.3, pitch: 0.3, distance: 12 } },
   { name: 'village', x: 30, z: 40, yaw: Math.PI, cam: { yaw: 0.2, pitch: 0.3, distance: 16 } },
-  { name: 'bridge', x: 31, z: 9, yaw: Math.PI, cam: { yaw: 0.5, pitch: 0.35, distance: 13 } },
+  { name: 'bridge', x: 28.8, z: 5, yaw: -2.3, cam: { yaw: 1.0, pitch: 0.32, distance: 12 } },
   { name: 'bell', x: 33, z: -30, yaw: 2.3, cam: { yaw: -0.6, pitch: 0.25, distance: 11 } },
   { name: 'dummies', x: -36, z: 18, yaw: -0.3, cam: { yaw: 0.3, pitch: 0.3, distance: 11 } },
   { name: 'vista', x: 2, z: 30, yaw: Math.PI, cam: { yaw: 0.15, pitch: 0.42, distance: 20 } },

@@ -29,7 +29,8 @@ await page.click('.loader__begin');
 await page.waitForTimeout(1500);
 
 // Let the opening camera flight finish, then hold a high view over the whole valley:
-// village in front, the lake and bridge, the waterfall and the pagoda on its hill.
+// village in front, the lake and bridge, the waterfall and the pagoda on its hill, and
+// the peaks rising out of the mist behind.
 await page.waitForTimeout(3500);
 await page.evaluate(
   ([pos, target]) => {
@@ -43,8 +44,8 @@ await page.evaluate(
     app.input.lastActivity = performance.now();
   },
   [
-    [62, 44, 76],
-    [10, 2, -14],
+    [62, 40, 76],
+    [8, 9, -20],
   ],
 );
 await page.waitForTimeout(Number(process.env.SETTLE ?? 5000));

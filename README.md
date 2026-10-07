@@ -1,6 +1,6 @@
 # Valley of Peace 和
 
-![A painted valley with a pagoda on a hill, a lake with a zig-zag bridge, a waterfall and a village](public/og-image.jpg)
+![A painted valley with a pagoda on a hill, a lake with a zig-zag bridge, a waterfall and a village, below karst peaks rising out of the mist](public/og-image.jpg)
 
 An explorable 3D portfolio. Guide a panda through a misty valley ringed by karst peaks
 that rise out of the clouds: bamboo groves, blossom trees, weeping willows, a koi lake fed
@@ -14,10 +14,10 @@ stamped, and the scroll rises out of the panda and unrolls.
 Built with **three.js**, **TypeScript** and hand-written **GLSL**. Every model, texture,
 sound and note of music is generated in code; there are no downloaded assets besides fonts.
 
-| ![The panda crossing the zig-zag bridge over the koi lake](docs/images/bridge.jpg)     | ![The panda below the pagoda, next to a project banner](docs/images/pagoda-top.jpg) |
-| -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| ![The waterfall pouring into its plunge pool by the bell tower](docs/images/falls.jpg) | ![Golden and green bamboo by the training grounds](docs/images/grove.jpg)           |
-| ![The About scroll unrolled over the lake](docs/images/scroll.jpg)                     | ![The ink-wash map with quick travel](docs/images/map.jpg)                          |
+| ![The panda crossing the zig-zag bridge over the koi lake, past a weeping willow](docs/images/bridge.jpg) | ![The panda below the pagoda, next to a project banner](docs/images/pagoda-top.jpg) |
+| --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| ![The waterfall pouring into its plunge pool by the bell tower](docs/images/falls.jpg)                    | ![Golden and green bamboo by the training grounds](docs/images/grove.jpg)           |
+| ![The About scroll unrolled over the lake](docs/images/scroll.jpg)                                        | ![The ink-wash map with quick travel](docs/images/map.jpg)                          |
 
 ## Play
 
