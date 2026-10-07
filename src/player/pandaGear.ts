@@ -7,6 +7,7 @@ import {
   CylinderGeometry,
   DoubleSide,
   Euler,
+  FrontSide,
   Matrix4,
   MeshPhysicalMaterial,
   Quaternion,
@@ -167,7 +168,7 @@ export function createSilkMaterial(
     sheenRoughness: 0.4,
     sheenColor: new Color('#ffc2a8'),
     alphaTest: options.alphaTest ?? 0,
-    side: options.doubleSided ? DoubleSide : undefined,
+    side: options.doubleSided ? DoubleSide : FrontSide,
   });
 }
 
