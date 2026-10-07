@@ -14,11 +14,22 @@ function withContent(sj_patch: (sj_c: PortfolioContent) => void): typeof prerend
 
 describe('index.html generation', () => {
   it('writes title, description and link-preview tags', () => {
-    const sj_html = renderIndexHtml(sj_template, prerender);
-    expect(sj_html).toContain('<title>Valley of Peace · An explorable portfolio</title>');
+    const sj_mod = withContent((sj_c) => {
+      sj_c.owner.name = 'Mei Lin';
+    });
+    const sj_html = renderIndexHtml(sj_template, sj_mod);
+    expect(sj_html).toContain('<title>Valley of Peace · Mei Lin</title>');
     expect(sj_html).toContain('<meta property="og:image" content="og-image.jpg" />');
     expect(sj_html).toContain('<meta name="twitter:card" content="summary_large_image" />');
     expect(sj_html).not.toContain('og:url');
+  });
+
+  it('leaves a placeholder name out of the title', () => {
+    const sj_mod = withContent((sj_c) => {
+      sj_c.owner.name = '[Your Name]';
+    });
+    const sj_html = renderIndexHtml(sj_template, sj_mod);
+    expect(sj_html).toContain('<title>Valley of Peace · An explorable portfolio</title>');
   });
 
   it('uses absolute preview URLs when the site address is known', () => {
