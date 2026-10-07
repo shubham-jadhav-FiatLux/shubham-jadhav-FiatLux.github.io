@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-07
+
+Valley of Peace goes live: misty layered peaks, a detailed panda and scroll, a faster
+start and smoother frames, and my own story in every scroll.
+
 ### Added
 
 - My own story in every scroll: who I am and what I research, six disciplines on the
@@ -328,7 +333,8 @@ lantern light, softer edges between materials and a little more life in the vall
 - Follow camera with orbit, zoom, look-ahead and cinematic shots.
 - Title screen, screenshot script and unit tests.
 
-[Unreleased]: https://github.com/shubham-jadhav-FiatLux/shubham-jadhav-FiatLux.github.io/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/shubham-jadhav-FiatLux/shubham-jadhav-FiatLux.github.io/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/shubham-jadhav-FiatLux/shubham-jadhav-FiatLux.github.io/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/shubham-jadhav-FiatLux/shubham-jadhav-FiatLux.github.io/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/shubham-jadhav-FiatLux/shubham-jadhav-FiatLux.github.io/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/shubham-jadhav-FiatLux/shubham-jadhav-FiatLux.github.io/compare/v0.5.1...v0.6.0
