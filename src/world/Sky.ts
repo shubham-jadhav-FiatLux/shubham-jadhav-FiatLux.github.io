@@ -84,7 +84,10 @@ export class Sky {
     this.mesh = new Mesh(new SphereGeometry(1800, 48, 24), material);
     this.mesh.name = 'sky';
     this.mesh.frustumCulled = false;
-    this.mesh.renderOrder = -10;
+    // Drawn after everything opaque: the dome sits at the far plane, so the depth test
+    // skips every pixel already covered by the valley and the painted sky (clouds and
+    // all) is only worked out where it can be seen.
+    this.mesh.renderOrder = 10;
     this.mesh.matrixAutoUpdate = false;
   }
 
