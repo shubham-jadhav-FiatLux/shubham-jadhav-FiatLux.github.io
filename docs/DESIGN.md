@@ -181,16 +181,16 @@ mounter's seal), a shorter "earth" panel and a heavy roller with jade knobs.
 **Watch the tour** plays the valley as a short film (a little over five minutes) for
 visitors who would rather sit back. It is the same world and the same gameplay, directed:
 
-| Scene       | What happens                                                                                                                                         | Camera                                                                       |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| Prologue    | Title over the falls and the lake; the panda looks into the camera, hops and waves                                                                   | a flight from the falls over the lake down the path; push-in at eye level    |
-| 迎 Gate     | Up the path past the stone lanterns and through the gate; ceremony; Welcome scroll                                                                   | dolly behind the bamboo, through-the-gate tripod, orbit, crane over the roof |
-| 我 About    | The panda reads the signpost at the crossroads, then goes round to the tea pavilion's door; ceremony at the table; About scroll                      | beside the signpost boards, follow, tripod with the lake beyond, low orbit   |
-| 技 Skills   | A run through the meadow (butterflies take off, the panda leaps after one), past the bamboo; one strike, ceremony, Skills scroll; a round of strikes | low glide in the grass, dolly behind the culms, crane from the grove, orbit  |
-| 路 Journey  | Down the village street under the lanterns; a glide over the lake past koi; ceremony at the first milestone; across the bridge                       | rising street shot, crane over the roofs, water skim and rise, dolly, crane  |
-| 作 Projects | Up the banner path; ceremony at the first banner; Projects scroll; the climb to the pagoda                                                           | leading track, orbit, low tripod, crane up the tiers                         |
-| 信 Contact  | Along the shore to the bell; the bell is rung, sky lanterns rise past the falls; ceremony; Contact scroll                                            | wide with the falls, close on the bell, tilt up, orbit                       |
-| Epilogue    | The panda meditates; the camera drifts up and away; closing card                                                                                     | pull-back to an aerial orbit                                                 |
+| Scene       | What happens                                                                                                                                         | Camera                                                                                |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Prologue    | Title over the falls and the lake; the panda looks into the camera, hops and waves                                                                   | a flight from the falls over the lake down the path; push-in at eye level             |
+| 迎 Gate     | Up the path past the stone lanterns and through the gate; ceremony; Welcome scroll                                                                   | dolly behind the bamboo, through-the-gate tripod, orbit, crane over the roof          |
+| 我 About    | The panda reads the signpost at the crossroads, then goes round to the tea pavilion's door; ceremony at the table; About scroll                      | beside the signpost boards, follow, tripod with the lake beyond, low orbit            |
+| 技 Skills   | A run through the meadow (butterflies take off, the panda leaps after one), past the bamboo; one strike, ceremony, Skills scroll; a round of strikes | low glide in the grass, dolly behind the culms, crane from the grove, drifting tripod |
+| 路 Journey  | Down the village street under the lanterns; a glide over the lake past koi; ceremony at the first milestone; across the bridge                       | rising street shot, crane over the roofs, water skim and rise, dolly, crane           |
+| 作 Projects | Up the banner path; ceremony at the first banner; Projects scroll; the climb to the pagoda                                                           | leading track, orbit, low tripod, crane up the tiers                                  |
+| 信 Contact  | Along the shore to the bell; the bell is rung, sky lanterns rise past the falls; ceremony; Contact scroll                                            | wide with the falls, close on the bell, tilt up, orbit                                |
+| Epilogue    | The panda meditates; the camera drifts up and away; closing card                                                                                     | pull-back to an aerial orbit                                                          |
 
 How it works (`src/tour/`):
 

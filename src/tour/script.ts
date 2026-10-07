@@ -460,10 +460,24 @@ const skills: Chapter = {
     await ctx.strike(last);
     await ctx.ceremony('skills');
     await ctx.read('skills');
-    // A round of the other dummies, each showing the skills it guards.
+    // A round of the other dummies, each showing the skills it guards, filmed from the
+    // south side of the yard and drifting west with the panda. (An orbit around the panda
+    // swept the camera through the dummies, whose arms reach out on every side, through
+    // their captions and over the drum.) The panda is held a little left of centre, so the
+    // skill cards on the right never cover it.
+    const round: XZ = [yard[0] + 4.2, yard[1] + 6.2];
+    const feet = pandaAt(ctx, 0);
+    const framed = new Vector3();
     ctx.cut(
-      orbit(ctx.panda, { radius: 8, height: 1.9, angle: 2.6, speed: -0.12, lookHeight: 0.9 }),
-      1,
+      tripod(
+        v(round[0], g(ctx, round[0], round[1]) + 3, round[1]),
+        () => {
+          const p = feet();
+          return framed.set(p.x + 1, p.y, p.z);
+        },
+        { fov: 44, lookHeight: 0.9, drift: v(-0.16, 0, 0.12) },
+      ),
+      1.5,
     );
     const groups = ctx.content.skills.groups;
     for (let i = last - 1; i >= 0; i--) {
@@ -492,8 +506,10 @@ const skills: Chapter = {
     await ctx.walk([at], { run: true });
     ctx.face(drum.x, drum.z);
     const yD = g(ctx, drum.x - 5, drum.z + 5.5);
+    // (eased in: the round above has drifted to almost the same place)
     ctx.cut(
       tripod(v(drum.x - 5.5, yD + 2.4, drum.z + 5.8), ctx.panda, { fov: 44, lookHeight: 0.8 }),
+      1.2,
     );
     await ctx.wait(0.6);
     await ctx.drum();

@@ -37,7 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the banners' titles and the gate's signboard are thicker, with a dark edge.
 - The training dummies are wooden warriors with arms all the way round: three tiers of
   arms set at staggered angles and bent legs, each fixed in a brass collar, so they look
-  like training dummies from every side (and their arms whirl when struck).
+  like training dummies from every side (and their arms whirl when struck). The tour now
+  films its round of the dummies from the side of the yard, clear of their arms.
 - The bell tower is turned a quarter round, so the log striker hangs across the view of
   a visitor arriving along the shore and its swing into the bell is plain to see.
 - The tea pavilion is turned to face the path: one opening greets the visitor arriving
